@@ -1,0 +1,396 @@
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/config/api";
+import { ScheduleEntry } from "@/data/dummyData";
+import { Plus, CalendarDays, LayoutGrid, MapPin, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import ShiftFormDialog from "@/features/scheduling/components/ShiftFormDialog";
+import ScheduleCalendarView from "@/features/scheduling/components/ScheduleCalendarView";
+import ScheduleWeekView from "@/features/scheduling/components/ScheduleWeekView";
+import ScheduleSiteView from "@/features/scheduling/components/ScheduleSiteView";
+
+type ViewMode = "calendar" | "week" | "site";
+
+const Scheduling = () => {
+  const [open, setOpen] = useState(false);
+  const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("calendar");
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [weekStart, setWeekStart] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1)); // Start of current week (Monday)
+    return d;
+  });
+  const [filterSite, setFilterSite] = useState("all");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch Guards
+  const { data: rawGuards = [] } = useQuery({
+    queryKey: ["guards", "all"],
+    queryFn: async () => {
+      try {
+        const response = await api.guards.list();
+        const raw = response.data as any;
+        let list: any[] = [];
+        if (Array.isArray(raw)) list = raw;
+        else if (Array.isArray(raw?.data)) list = raw.data;
+        else if (raw?.data && typeof raw.data === 'object') {
+          list = raw.data.guards || raw.data.items || raw.data.results || [];
+        } else {
+          list = raw?.guards || raw?.items || raw?.results || [];
+        }
+        return list;
+      } catch (error) {
+        return [];
+      }
+    }
+  });
+
+  const guards = useMemo(() => {
+    return rawGuards.map((g: any) => ({
+      ...g,
+      isVerified: g.isVerified === true || g.verified === true || g.verified === "true" || g.isVerified === "true"
+    })).filter((g: any) => g.isVerified);
+  }, [rawGuards]);
+
+  // Fetch Sites
+  const { data: sites = [] } = useQuery({
+    queryKey: ["sites", "all"],
+    queryFn: async () => {
+      try {
+        const response = await api.sites.list();
+        const raw = response.data as any;
+        let list: any[] = [];
+        if (Array.isArray(raw)) list = raw;
+        else if (Array.isArray(raw?.data)) list = raw.data;
+        else if (raw?.data && typeof raw.data === 'object') {
+          list = raw.data.site || raw.data.sites || raw.data.items || raw.data.results || [];
+        } else {
+          list = raw?.site || raw?.sites || raw?.items || raw?.results || [];
+        }
+        return list;
+      } catch (error) {
+        return [];
+      }
+    }
+  });
+
+  const activeSites = useMemo(() => sites.filter((s: any) => s.status === "active"), [sites]);
+
+  // Fetch Scheduling Entries
+  const { data: rawEntries = [], isLoading: isLoadingEntries } = useQuery({
+    queryKey: ["scheduling", "list"],
+    queryFn: async () => {
+      const response = await api.scheduling.list();
+      const raw = response.data as any;
+      const list = Array.isArray(raw) ? raw : (raw?.data || raw?.schedules || raw?.items || []);
+      return Array.isArray(list) ? list : [];
+    }
+  });
+
+  const entries = useMemo(() => {
+    const guardsMap = new Map(guards.map((g: any) => [g.id || g._id, g.name || g.fullName || "Unknown Guard"]));
+    const sitesMap = new Map(sites.map((s: any) => [s.id || s._id, s.name || "Unknown Site"]));
+    
+    const parsed: ScheduleEntry[] = [];
+    
+    for (const s of rawEntries) {
+      const siteName = s.site?.name || s.siteName || sitesMap.get(s.siteId) || "Unknown Site";
+      
+      const startStr = s.startDate || s.date;
+      const endStr = s.endDate || s.date || s.startDate;
+      
+      if (!startStr) continue;
+      
+      const start = new Date(startStr);
+      const end = endStr ? new Date(endStr) : new Date(start);
+      
+      if (isNaN(start.getTime())) continue;
+      
+      const guardIds = s.guardIds && Array.isArray(s.guardIds) ? s.guardIds : (s.guardId ? [s.guardId] : []);
+      
+      if (guardIds.length === 0 && (s.guard || s.guardName)) {
+         const guardName = s.guard?.name || s.guardName;
+         // Check if this guard name exists in our verified guards map
+         const isVerified = Array.from(guardsMap.values()).includes(guardName);
+         
+         if (isVerified) {
+           parsed.push({
+              id: s.id || s._id,
+              guard: guardName,
+              site: siteName,
+              date: start.toISOString().split('T')[0],
+              shiftStart: (s.shiftStart || "00:00").substring(0, 5),
+              shiftEnd: (s.shiftEnd || "00:00").substring(0, 5),
+              status: s.status || "scheduled",
+              actualStart: s.actualStart,
+              actualEnd: s.actualEnd
+           });
+         }
+         continue;
+      }
+      
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        
+        for (const gId of guardIds) {
+          const guardName = guardsMap.get(gId);
+          if (!guardName) continue; // Skip unverified or unknown guards
+          
+          parsed.push({
+            id: `${s.id || s._id}-${gId}-${dateStr}`,
+            guard: guardName,
+            site: siteName,
+            date: dateStr,
+            shiftStart: (s.shiftStart || "00:00:00").substring(0, 5),
+            shiftEnd: (s.shiftEnd || "00:00:00").substring(0, 5),
+            status: s.status || "scheduled",
+            actualStart: s.actualStart,
+            actualEnd: s.actualEnd
+          });
+        }
+      }
+    }
+    return parsed;
+  }, [rawEntries, guards, sites]);
+
+  const createMutation = useMutation({
+    mutationFn: (payload: any) => api.scheduling.create(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["scheduling"] });
+      toast({ title: "Schedule Created", description: "The shifts have been successfully scheduled." });
+      setOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Creation Failed",
+        description: error.response?.data?.message || "Failed to create schedule. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { id: string, payload: any }) => api.scheduling.update(data.id, data.payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["scheduling"] });
+      toast({ title: "Shift Updated", description: "The shift information has been updated." });
+      setOpen(false);
+      setEditEntry(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.response?.data?.message || "Failed to update shift.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.scheduling.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["scheduling"] });
+      toast({ title: "Shift Deleted", description: "The shift has been removed." });
+    }
+  });
+
+  const handlePrevWeek = () => {
+    const prev = new Date(weekStart);
+    prev.setDate(prev.getDate() - 7);
+    setWeekStart(prev);
+  };
+
+  const handleNextWeek = () => {
+    const next = new Date(weekStart);
+    next.setDate(next.getDate() + 7);
+    setWeekStart(next);
+  };
+
+  const getWeekRangeText = () => {
+    const start = new Date(weekStart);
+    const end = new Date(weekStart);
+    end.setDate(end.getDate() + 6);
+    
+    const startOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+    const endOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    
+    return `Week of ${start.toLocaleDateString('en-US', startOptions)} – ${end.toLocaleDateString('en-US', endOptions)}`;
+  };
+
+  const handleSave = (payload: any) => {
+    if (editEntry) {
+      updateMutation.mutate({ id: editEntry.id, payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
+
+  const handleEdit = (entry: ScheduleEntry) => {
+    setEditEntry(entry);
+    setOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
+
+  const todayShifts = useMemo(() => entries.filter((s: ScheduleEntry) => s.date === selectedDate), [entries, selectedDate]);
+
+  const viewTabs: { id: ViewMode; label: string; icon: React.ReactNode }[] = [
+    { id: "calendar", label: "Calendar", icon: <CalendarDays className="w-4 h-4" /> },
+    { id: "week", label: "Weekly", icon: <LayoutGrid className="w-4 h-4" /> },
+    { id: "site", label: "By Site", icon: <MapPin className="w-4 h-4" /> },
+  ];
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="module-page-header">
+        <div>
+          <h1 className="module-page-title">Scheduling</h1>
+          <p className="text-sm text-muted-foreground">Create shifts, assign guards, and manage weekly schedules</p>
+        </div>
+        <button
+          onClick={() => { setEditEntry(null); setOpen(true); }}
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+        >
+          <Plus className="w-4 h-4" />Create Shift
+        </button>
+      </div>
+
+      {/* View Toggle & Filters */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between" >
+        <div className="flex bg-secondary rounded-lg p-1">
+          {viewTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setViewMode(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                viewMode === tab.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.icon}{tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <select
+            value={filterSite}
+            onChange={(e) => setFilterSite(e.target.value)}
+            className="px-3 py-1.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="all">All Sites</option>
+            {activeSites.map((s: any) => (
+              <option key={s.id} value={s.name}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Views */}
+      {isLoadingEntries ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4 bg-card rounded-xl border border-border">
+          <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          <p className="text-muted-foreground">Loading schedules...</p>
+        </div>
+      ) : (
+        <>
+          {viewMode === "calendar" && (
+            <ScheduleCalendarView entries={entries} onSelectDate={setSelectedDate} selectedDate={selectedDate} />
+          )}
+
+          {viewMode === "week" && (
+            <>
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={handlePrevWeek}
+                  className="p-2 bg-secondary rounded-lg hover:bg-muted transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 text-foreground" />
+                </button>
+                <h2 className="text-base font-semibold text-foreground">{getWeekRangeText()}</h2>
+                <button 
+                  onClick={handleNextWeek}
+                  className="p-2 bg-secondary rounded-lg hover:bg-muted transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4 text-foreground" />
+                </button>
+              </div>
+              <ScheduleWeekView 
+                guards={guards}
+                entries={entries} 
+                onEdit={handleEdit} 
+                onDelete={handleDelete} 
+                filterSite={filterSite}
+                weekStart={weekStart}
+              />
+            </>
+          )}
+        </>
+      )}
+
+      {viewMode === "site" && (
+        <ScheduleSiteView entries={entries} selectedDate={selectedDate} />
+      )}
+
+      {/* Selected Day Detail */}
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="text-base font-semibold text-foreground">
+            Shifts for {new Date(selectedDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          </h2>
+          <span className="text-xs text-muted-foreground">{todayShifts.length} shift(s)</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-secondary">
+                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">GUARD</th>
+                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SITE</th>
+                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SCHEDULED</th>
+                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTUAL START</th>
+                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">STATUS</th>
+                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {todayShifts.length === 0 ? (
+                <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">No shifts scheduled for this date</td></tr>
+              ) : todayShifts.map((entry) => (
+                <tr key={entry.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
+                  <td className="px-5 py-3 text-sm font-medium text-foreground">{entry.guard}</td>
+                  <td className="px-5 py-3 text-sm text-muted-foreground">{entry.site}</td>
+                  <td className="px-5 py-3 text-sm text-foreground">{entry.shiftStart} – {entry.shiftEnd}</td>
+                  <td className="px-5 py-3 text-sm text-foreground">{entry.actualStart || "—"}</td>
+                  <td className="px-5 py-3">
+                    <span className={
+                      entry.status === "in-progress" ? "status-badge-active" :
+                      entry.status === "completed" ? "status-badge-active" :
+                      entry.status === "missed" ? "status-badge-danger" : "status-badge-inactive"
+                    }>{entry.status}</span>
+                  </td>
+                  <td className="px-5 py-3 flex gap-2">
+                    <button onClick={() => handleEdit(entry)} className="text-sm text-primary hover:underline">Edit</button>
+                    <button onClick={() => handleDelete(entry.id)} className="text-sm text-destructive hover:underline">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <ShiftFormDialog
+        open={open}
+        onOpenChange={(o) => { setOpen(o); if (!o) setEditEntry(null); }}
+        onSave={handleSave}
+        editEntry={editEntry}
+        existingEntries={entries}
+      />
+    </div>
+  );
+};
+
+export default Scheduling;

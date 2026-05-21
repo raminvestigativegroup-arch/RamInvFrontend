@@ -1,0 +1,263 @@
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/config/api";
+import { ScheduleEntry } from "@/data/dummyData";
+import { Check, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (entries: ScheduleEntry[]) => void;
+  editEntry?: ScheduleEntry | null;
+  existingEntries: ScheduleEntry[];
+}
+
+const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntries }: Props) => {
+  const { toast } = useToast();
+  const [form, setForm] = useState({
+    selectedGuards: [] as string[], // Now stores guard IDs
+    siteId: "", // Now stores site ID
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    shiftStart: "06:00",
+    shiftEnd: "14:00",
+  });
+
+  // Fetch verified guards from API
+  const { data: guards = [], isLoading: isLoadingGuards } = useQuery({
+    queryKey: ["guards", "verified"],
+    queryFn: async () => {
+      try {
+        const response = await api.guards.list({ verified: true });
+        const raw = response.data as any;
+        
+        let list: any[] = [];
+        if (Array.isArray(raw)) list = raw;
+        else if (Array.isArray(raw?.data)) list = raw.data;
+        else if (raw?.data && typeof raw.data === 'object') {
+          list = raw.data.guards || raw.data.items || raw.data.results || [];
+        } else {
+          list = raw?.guards || raw?.items || raw?.results || [];
+        }
+        
+        return (Array.isArray(list) ? list : [])
+          .map((g: any) => ({
+            id: g.id || g._id,
+            name: g.name || g.fullName || "Unnamed",
+            site: g.site || g.siteName || "Unassigned",
+            verified: g.verified === true || g.verified === "true" || g.isVerified === true
+          }))
+          .filter((g: any) => g.verified);
+      } catch (error: any) {
+        if (error.response?.status === 404) return [];
+        throw error;
+      }
+    },
+    enabled: open
+  });
+
+  // Fetch active sites from API
+  const { data: sites = [], isLoading: isLoadingSites } = useQuery({
+    queryKey: ["sites", "active"],
+    queryFn: async () => {
+      try {
+        const response = await api.sites.list({ status: "active" });
+        const raw = response.data as any;
+        
+        let list: any[] = [];
+        if (Array.isArray(raw)) list = raw;
+        else if (Array.isArray(raw?.data)) list = raw.data;
+        else if (raw?.data && typeof raw.data === 'object') {
+          list = raw.data.site || raw.data.sites || raw.data.items || raw.data.results || [];
+        } else {
+          list = raw?.site || raw?.sites || raw?.items || raw?.results || [];
+        }
+        
+        return (Array.isArray(list) ? list : [])
+          .map((s: any) => ({
+            id: s.id || s._id,
+            name: s.name || "Unnamed Site",
+            status: s.status || "inactive"
+          }))
+          .filter((s: any) => s.status === "active");
+      } catch (error: any) {
+        if (error.response?.status === 404) return [];
+        throw error;
+      }
+    },
+    enabled: open
+  });
+
+  useEffect(() => {
+    if (open) {
+      if (editEntry) {
+        // Try to find guard ID by name if possible, or use a fallback
+        const guardId = guards.find(g => g.name === editEntry.guard)?.id || "";
+        const siteId = sites.find(s => s.name === editEntry.site)?.id || "";
+
+        setForm({
+          selectedGuards: guardId ? [guardId] : [],
+          siteId: siteId,
+          startDate: editEntry.date,
+          endDate: editEntry.date,
+          shiftStart: editEntry.shiftStart.substring(0, 5),
+          shiftEnd: editEntry.shiftEnd.substring(0, 5),
+        });
+      } else {
+        setForm({ 
+          selectedGuards: [], 
+          siteId: sites[0]?.id || "", 
+          startDate: new Date().toISOString().split('T')[0], 
+          endDate: new Date().toISOString().split('T')[0],
+          shiftStart: "06:00", 
+          shiftEnd: "14:00" 
+        });
+      }
+    }
+  }, [editEntry, open, sites, guards]);
+
+  const toggleGuard = (id: string) => {
+    if (editEntry) {
+      setForm((f) => ({ ...f, selectedGuards: [id] }));
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      selectedGuards: f.selectedGuards.includes(id)
+        ? f.selectedGuards.filter((gId) => gId !== id)
+        : [...f.selectedGuards, id],
+    }));
+  };
+
+  const selectAllGuards = () => {
+    if (editEntry) return;
+    setForm((f) => ({
+      ...f,
+      selectedGuards: f.selectedGuards.length === guards.length ? [] : guards.map((g: any) => g.id),
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (form.selectedGuards.length === 0 || !form.siteId || !form.startDate || !form.endDate) {
+      toast({ title: "Validation Error", description: "Select at least one guard and fill all fields.", variant: "destructive" });
+      return;
+    }
+
+    // Prepare payload in the specific format requested
+    const payload = {
+      guardIds: form.selectedGuards,
+      siteId: form.siteId,
+      startDate: form.startDate,
+      endDate: form.endDate,
+      shiftStart: `${form.shiftStart}:00`,
+      shiftEnd: `${form.shiftEnd}:00`,
+    };
+
+    onSave(payload as any); // Type cast since onSave expects ScheduleEntry[] usually, will fix in parent
+    onOpenChange(false);
+  };
+
+  const isLoading = isLoadingGuards || isLoadingSites;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{editEntry ? "Edit Shift" : "Create New Shift"}</DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-10 gap-3">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <p className="text-sm text-muted-foreground">Fetching data...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Site *</label>
+              <select 
+                value={form.siteId} 
+                onChange={(e) => setForm((f) => ({ ...f, siteId: e.target.value }))} 
+                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="" disabled>Select a site</option>
+                {sites.map((s: any) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                {editEntry ? "Guard *" : "Guards *"}{" "}
+                <span className="text-muted-foreground font-normal">({form.selectedGuards.length} selected)</span>
+              </label>
+              <div className="border border-border rounded-lg bg-secondary max-h-40 overflow-y-auto">
+                {!editEntry && (
+                  <button type="button" onClick={selectAllGuards} className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary hover:bg-accent transition-colors border-b border-border">
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${form.selectedGuards.length === guards.length ? "bg-primary border-primary" : "border-border"}`}>
+                      {form.selectedGuards.length === guards.length && guards.length > 0 && <Check className="w-3 h-3 text-primary-foreground" />}
+                    </div>
+                    Select All Verified
+                  </button>
+                )}
+                {guards.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-muted-foreground">No verified guards available</div>
+                ) : guards.map((g: any) => (
+                  <button key={g.id} type="button" onClick={() => toggleGuard(g.id)} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors text-left">
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${form.selectedGuards.includes(g.id) ? "bg-primary border-primary" : "border-border"}`}>
+                      {form.selectedGuards.includes(g.id) && <Check className="w-3 h-3 text-primary-foreground" />}
+                    </div>
+                    <span className="text-foreground">{g.name}</span>
+                    <span className="text-muted-foreground text-xs ml-auto">{g.site}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Start Date *</label>
+                <input 
+                  type="date" 
+                  value={form.startDate} 
+                  onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} 
+                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">End Date *</label>
+                <input 
+                  type="date" 
+                  value={form.endDate} 
+                  onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))} 
+                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" 
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Shift Start</label>
+                <input type="time" value={form.shiftStart} onChange={(e) => setForm((f) => ({ ...f, shiftStart: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Shift End</label>
+                <input type="time" value={form.shiftEnd} onChange={(e) => setForm((f) => ({ ...f, shiftEnd: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={() => onOpenChange(false)} className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+                {editEntry ? "Update Shift" : `Create ${form.selectedGuards.length > 0 ? `${form.selectedGuards.length} Shift(s)` : "Shift"}`}
+              </button>
+            </div>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ShiftFormDialog;
