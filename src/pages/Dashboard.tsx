@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import KpiCards from "@/features/dashboard/components/KpiCards";
 import HoursSummary from "@/features/dashboard/components/HoursSummary";
 import LiveMapView from "@/features/dashboard/components/LiveMapView";
@@ -18,6 +19,12 @@ const Dashboard = () => {
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: guardStatusList = [] } = useQuery({
+    queryKey: ["dashboard", "guard-status"],
+    queryFn: () => dashboardService.getGuardStatus(),
+    refetchInterval: 10000,
+  });
 
   useEffect(() => {
     let active = true;
@@ -72,7 +79,7 @@ const Dashboard = () => {
       {/* Map & Guard Status */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 relative group">
-          <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} />
+          <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} />
           <button
             onClick={() => setMapFullscreen(true)}
             className="absolute top-12 right-3 z-10 p-2 bg-card/90 border border-border rounded-lg shadow-md hover:bg-accent transition-colors opacity-0 group-hover:opacity-100"
@@ -82,7 +89,7 @@ const Dashboard = () => {
           </button>
         </div>
         <div>
-          <GuardStatusPanel selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} />
+          <GuardStatusPanel selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} />
         </div>
       </div>
 
@@ -95,7 +102,7 @@ const Dashboard = () => {
           <div className="h-full flex">
             {/* Map area */}
             <div className="flex-1 relative">
-              <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} />
+              <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} />
               <style>{`.h-\\[340px\\] { height: 100% !important; }`}</style>
             </div>
             {/* Guard real-time panel */}
@@ -105,7 +112,7 @@ const Dashboard = () => {
                 <p className="text-xs text-muted-foreground mt-0.5">Live status from GPS tracking</p>
               </div>
               <div className="divide-y divide-border">
-                {guards.map((guard) => (
+                {guardStatusList.map((guard) => (
                   <button
                     key={guard.id}
                     onClick={() => setSelectedGuardId(guard.id)}

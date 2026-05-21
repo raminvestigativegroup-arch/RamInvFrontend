@@ -6,13 +6,16 @@ import { useNavigate } from "react-router-dom";
 interface GuardStatusPanelProps {
   selectedGuardId?: string | null;
   onSelectGuard?: (guardId: string) => void;
+  guards?: any[];
 }
 
-const GuardStatusPanel = ({ selectedGuardId, onSelectGuard }: GuardStatusPanelProps) => {
+const GuardStatusPanel = ({ selectedGuardId, onSelectGuard, guards: dynamicGuards }: GuardStatusPanelProps) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
-  const filtered = guards.filter(g =>
+  const activeGuardsList = dynamicGuards || guards;
+
+  const filtered = activeGuardsList.filter(g =>
     g.name.toLowerCase().includes(search.toLowerCase()) ||
     g.site.toLowerCase().includes(search.toLowerCase())
   );

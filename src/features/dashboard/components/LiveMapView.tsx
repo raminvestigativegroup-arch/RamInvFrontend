@@ -16,25 +16,28 @@ const getStatusLabel = (guard: typeof guards[0]) => {
 interface LiveMapViewProps {
   onSelectGuard?: (guardId: string) => void;
   selectedGuardId?: string | null;
+  guards?: any[];
 }
 
-const LiveMapView = ({ onSelectGuard, selectedGuardId }: LiveMapViewProps) => {
+const LiveMapView = ({ onSelectGuard, selectedGuardId, guards: dynamicGuards }: LiveMapViewProps) => {
   const [siteFilter, setSiteFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const activeGuardsList = dynamicGuards || guards;
+
   const siteNames = ["all", ...sites.filter(s => s.status === "active").map(s => s.name)];
 
-  const filteredGuards = guards.filter(g => {
+  const filteredGuards = activeGuardsList.filter(g => {
     const showByStatus = g.status !== "off-duty" || g.geofenceAlert;
     const showBySite = siteFilter === "all" || g.site === siteFilter;
     return showByStatus && showBySite;
   });
 
   const searchResults = searchQuery.length > 0
-    ? guards.filter(g => g.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? activeGuardsList.filter(g => g.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
 
-  const handleSearchSelect = (guard: typeof guards[0]) => {
+  const handleSearchSelect = (guard: any) => {
     setSearchQuery("");
     onSelectGuard?.(guard.id);
   };
@@ -42,7 +45,7 @@ const LiveMapView = ({ onSelectGuard, selectedGuardId }: LiveMapViewProps) => {
   // Build Google Maps Static-style embed URL (no key needed for embed)
   const center = selectedGuardId
     ? (() => {
-        const g = guards.find(g => g.id === selectedGuardId);
+        const g = activeGuardsList.find(g => g.id === selectedGuardId);
         return g ? `${g.lat},${g.lng}` : "40.73,-73.99";
       })()
     : "40.73,-73.99";

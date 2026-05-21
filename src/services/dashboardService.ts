@@ -28,6 +28,19 @@ export const dashboardService = {
       throw error;
     }
   },
+  async getGuardStatus(): Promise<any[]> {
+    try {
+      const response = await api.dashboard.guardStatus();
+      const responseData = response.data as any;
+      if (responseData.success && responseData.data) {
+        return responseData.data;
+      }
+      throw new Error(responseData.message || "Failed to fetch guard status data");
+    } catch (error) {
+      console.error("Dashboard guardStatus fetch error:", error);
+      throw error;
+    }
+  },
 };
 
 export default dashboardService;
