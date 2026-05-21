@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
-import { Search, Download, Sparkles, Camera, X, CalendarDays, Loader2, AlertCircle, MoreVertical, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Search, Download, Sparkles, Camera, X, CalendarDays, Loader2, AlertCircle, MoreVertical, CheckCircle2, Clock, AlertTriangle, FileWarning } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import StateMessage from "@/components/common/StateMessage";
 
 interface Incident {
   id: string;
@@ -170,6 +171,11 @@ const IncidentManagement = () => {
     });
   }, [incidentList, search, priorityFilter, siteFilter, guardFilter, dateFilter]);
 
+  const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
+  const showLoader = isLoading && filtered.length > 0;
+  const showEmpty = filtered.length === 0 || isNotFound;
+  const showError = isError && !isNotFound;
+
   const aiSelected = aiIncidentId ? incidentList.find((i) => i.id === aiIncidentId) : null;
 
   const uniqueDates = useMemo(() => [...new Set(incidentList.map((i) => i.date))].sort().reverse(), [incidentList]);
@@ -243,70 +249,84 @@ const IncidentManagement = () => {
         {/* Incident List */}
         <div className={`${selectedIncident ? "w-1/2" : "w-full"} transition-all`}>
           <div className="data-table">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-secondary">
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">INCIDENT</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SITE</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">GUARD</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">PRIORITY</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">STATUS</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">DATE</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground px-5 py-3">ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading && (
-                  <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />Loading incidents...</td></tr>
-                )}
-                {isError && (
-                  <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-destructive"><AlertCircle className="w-5 h-5 mx-auto mb-2" />Failed to load incidents.</td></tr>
-                )}
-                {!isLoading && !isError && filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">No incidents match the current filters</td></tr>
-                ) : filtered.map((inc) => (
-                  <tr key={inc.id} className={`border-b border-border cursor-pointer transition-colors ${selectedIncidentId === inc.id ? "bg-accent" : "hover:bg-secondary/50"}`} onClick={() => setSelectedIncidentId(inc.id)}>
-                    <td className="px-5 py-3">
-                      <p className="text-sm font-medium text-foreground">{inc.title}</p>
-                      <p className="text-xs text-muted-foreground">{inc.type}</p>
-                    </td>
-                    <td className="px-5 py-3 text-sm text-muted-foreground">{inc.site}</td>
-                    <td className="px-5 py-3 text-sm text-foreground">{guardMap[inc.guard] || inc.guard}</td>
-                    <td className="px-5 py-3"><span className={`priority-${inc.priority}`}>{inc.priority.toUpperCase()}</span></td>
-                    <td className="px-5 py-3">
-                      <span className={
-                        inc.status === "resolved" ? "status-badge-active" : 
-                        inc.status === "open" ? "status-badge-danger" : 
-                        "status-badge-warning"
-                      }>
-                        {inc.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-sm text-muted-foreground whitespace-nowrap">{inc.date}<br /><span className="text-xs">{inc.time}</span></td>
-                    <td className="px-5 py-3 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <button className="p-1 hover:bg-secondary rounded-lg transition-colors">
-                            <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'open' }); }}>
-                            <AlertTriangle className="w-4 h-4 mr-2 text-destructive" /> Mark Open
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'in-progress' }); }}>
-                            <Clock className="w-4 h-4 mr-2 text-warning" /> In Progress
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'resolved' }); }}>
-                            <CheckCircle2 className="w-4 h-4 mr-2 text-success" /> Resolved
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
+            {showLoader && (
+              <StateMessage type="loading" message="Loading incidents..." className="p-4" />
+            )}
+            {showError && (
+              <StateMessage
+                type="error"
+                title="Failed to load incidents"
+                message={error instanceof Error ? error.message : undefined}
+                className="p-4"
+              />
+            )}
+            {!showLoader && !showError && showEmpty && (
+              <StateMessage
+                type="empty"
+                title="Incident not found"
+                message="Create a new incident to get started."
+                icon={FileWarning}
+                className="p-4"
+              />
+            )}
+            {!showLoader && !showError && !showEmpty && (
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-secondary">
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">INCIDENT</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SITE</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">GUARD</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">PRIORITY</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">STATUS</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">DATE</th>
+                    <th className="text-right text-xs font-medium text-muted-foreground px-5 py-3">ACTIONS</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filtered.map((inc) => (
+                    <tr key={inc.id} className={`border-b border-border cursor-pointer transition-colors ${selectedIncidentId === inc.id ? "bg-accent" : "hover:bg-secondary/50"}`} onClick={() => setSelectedIncidentId(inc.id)}>
+                      <td className="px-5 py-3">
+                        <p className="text-sm font-medium text-foreground">{inc.title}</p>
+                        <p className="text-xs text-muted-foreground">{inc.type}</p>
+                      </td>
+                      <td className="px-5 py-3 text-sm text-muted-foreground">{inc.site}</td>
+                      <td className="px-5 py-3 text-sm text-foreground">{guardMap[inc.guard] || inc.guard}</td>
+                      <td className="px-5 py-3"><span className={`priority-${inc.priority}`}>{inc.priority.toUpperCase()}</span></td>
+                      <td className="px-5 py-3">
+                        <span className={
+                          inc.status === "resolved" ? "status-badge-active" : 
+                          inc.status === "open" ? "status-badge-danger" : 
+                          "status-badge-warning"
+                        }>
+                          {inc.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-sm text-muted-foreground whitespace-nowrap">{inc.date}<br /><span className="text-xs">{inc.time}</span></td>
+                      <td className="px-5 py-3 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <button className="p-1 hover:bg-secondary rounded-lg transition-colors">
+                              <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'open' }); }}>
+                              <AlertTriangle className="w-4 h-4 mr-2 text-destructive" /> Mark Open
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'in-progress' }); }}>
+                              <Clock className="w-4 h-4 mr-2 text-warning" /> In Progress
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'resolved' }); }}>
+                              <CheckCircle2 className="w-4 h-4 mr-2 text-success" /> Resolved
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 

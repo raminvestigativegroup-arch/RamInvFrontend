@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { sites, Guard } from "@/data/dummyData";
-import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload } from "lucide-react";
+import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import EntityCard from "@/components/common/EntityCard";
 import EntityDialog from "@/components/common/EntityDialog";
 import FormField from "@/components/common/FormField";
+import StateMessage from "@/components/common/StateMessage";
 
 type GuardApiResponse =
   | Guard[]
@@ -179,6 +180,11 @@ const GuardManagement = () => {
     [guardList, search]
   );
 
+  const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
+  const showLoader = isLoading && filtered.length > 0;
+  const showEmpty = filtered.length === 0 || isNotFound;
+  const showError = isError && !isNotFound;
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -254,25 +260,28 @@ const GuardManagement = () => {
         </button>
       </div>
 
-      {isLoading && (
-        <div className="bg-card rounded-xl border border-border p-6 text-sm text-muted-foreground">
-          Loading guards...
-        </div>
+      {showLoader && (
+        <StateMessage type="loading" message="Loading guards..." />
       )}
 
-      {isError && (
-        <div className="bg-card rounded-xl border border-destructive/40 p-6 text-sm text-destructive">
-          Failed to load guards{error instanceof Error ? `: ${error.message}` : "."}
-        </div>
+      {showError && (
+        <StateMessage
+          type="error"
+          title="Failed to load guards"
+          message={error instanceof Error ? error.message : undefined}
+        />
       )}
 
-      {!isLoading && !isError && filtered.length === 0 && (
-        <div className="bg-card rounded-xl border border-border p-6 text-sm text-muted-foreground">
-          No guards found.
-        </div>
+      {!showLoader && !showError && showEmpty && (
+        <StateMessage
+          type="empty"
+          title="Guard not found"
+          message="Create a new guard to get started."
+          icon={Users}
+        />
       )}
 
-      {!isLoading && !isError && filtered.length > 0 && (
+      {!showLoader && !showError && !showEmpty && filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((guard) => (
             <EntityCard

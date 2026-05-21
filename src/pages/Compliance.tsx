@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import FormField from "@/components/common/FormField";
+import StateMessage from "@/components/common/StateMessage";
 
 const normalizeImageUrl = (url?: string) => {
   if (!url) return undefined;
@@ -58,7 +59,7 @@ const Compliance = () => {
 
 
   // Fetch documents
-  const { data: rawDocuments = [], isLoading: isLoadingDocs, isError: isErrorDocs } = useQuery({
+  const { data: rawDocuments = [], isLoading: isLoadingDocs, isError: isErrorDocs, error: errorDocs } = useQuery({
     queryKey: ["documents"],
     queryFn: async () => {
       const response = await api.documents.list();
@@ -140,6 +141,7 @@ const Compliance = () => {
 
   const isLoading = isLoadingDocs;
   const isError = isErrorDocs;
+  const error = errorDocs;
 
   const filtered = useMemo(() => {
     return documents.filter(doc => {
@@ -154,6 +156,11 @@ const Compliance = () => {
       return matchesFilter && matchesSearch;
     });
   }, [documents, filter, search]);
+
+  const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
+  const showLoader = isLoading && filtered.length > 0;
+  const showEmpty = filtered.length === 0 || isNotFound;
+  const showError = isError && !isNotFound;
 
   const counts = useMemo(() => ({
     all: documents.length,
@@ -218,16 +225,23 @@ const Compliance = () => {
 
       {/* Table */}
       <div className="data-table overflow-hidden">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <Loader2 className="w-8 h-8 animate-spin mb-2" />
-            <p>Loading compliance records...</p>
-          </div>
-        ) : isError ? (
-          <div className="flex flex-col items-center justify-center py-20 text-destructive">
-            <AlertTriangle className="w-8 h-8 mb-2" />
-            <p>Error loading documents. Please try again.</p>
-          </div>
+        {showLoader ? (
+          <StateMessage type="loading" message="Loading compliance records..." className="m-4" />
+        ) : showError ? (
+          <StateMessage
+            type="error"
+            title="Failed to load compliance records"
+            message="Error loading documents. Please try again."
+            className="m-4"
+          />
+        ) : showEmpty ? (
+          <StateMessage
+            type="empty"
+            title="Document not found"
+            message="Upload a new document to get started."
+            icon={ShieldCheck}
+            className="m-4"
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -242,44 +256,36 @@ const Compliance = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.length > 0 ? (
-                  filtered.map(doc => (
-                    <tr 
-                      key={doc.id} 
-                      onClick={() => setSelectedDoc(doc as any)}
-                      className="hover:bg-secondary/30 transition-colors group cursor-pointer"
-                    >
-                      <td className="px-5 py-4 text-sm font-medium text-foreground">{doc.personName}</td>
-                      <td className="px-5 py-4">
-                        <span className="text-[10px] font-bold uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                          {doc.personType}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-foreground">{doc.docType}</td>
-                      <td className="px-5 py-4 text-sm text-muted-foreground">{doc.expiryDate}</td>
-                      <td className="px-5 py-4">
-                        <span className={`status-badge ${
-                          doc.status === "valid" ? "status-badge-active" : 
-                          doc.status === "expiring" ? "status-badge-warning" : 
-                          "status-badge-danger"
-                        }`}>
-                          {doc.status === "valid" ? "Valid" : doc.status === "expiring" ? "Expiring" : "Invalid"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <button className="text-xs font-semibold text-primary hover:underline">
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">
-                      No documents found matching your criteria.
+                {filtered.map(doc => (
+                  <tr 
+                    key={doc.id} 
+                    onClick={() => setSelectedDoc(doc as any)}
+                    className="hover:bg-secondary/30 transition-colors group cursor-pointer"
+                  >
+                    <td className="px-5 py-4 text-sm font-medium text-foreground">{doc.personName}</td>
+                    <td className="px-5 py-4">
+                      <span className="text-[10px] font-bold uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                        {doc.personType}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-foreground">{doc.docType}</td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">{doc.expiryDate}</td>
+                    <td className="px-5 py-4">
+                      <span className={`status-badge ${
+                        doc.status === "valid" ? "status-badge-active" : 
+                        doc.status === "expiring" ? "status-badge-warning" : 
+                        "status-badge-danger"
+                      }`}>
+                        {doc.status === "valid" ? "Valid" : doc.status === "expiring" ? "Expiring" : "Invalid"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <button className="text-xs font-semibold text-primary hover:underline">
+                        View Details
+                      </button>
                     </td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>

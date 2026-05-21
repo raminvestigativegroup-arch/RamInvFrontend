@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { sites, Manager } from "@/data/dummyData";
-import { Plus, MoreVertical, Mail, Phone, MapPin, User, ShieldCheck, Trash2, AlertCircle, Image, Upload } from "lucide-react";
+import { Plus, MoreVertical, Mail, Phone, MapPin, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, UserCog } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import EntityCard from "@/components/common/EntityCard";
 import EntityDialog from "@/components/common/EntityDialog";
 import FormField from "@/components/common/FormField";
+import StateMessage from "@/components/common/StateMessage";
 
 type ManagerApiResponse =
   | Manager[]
@@ -93,6 +94,11 @@ const ManagerManagement = () => {
       return normalizeManagersResponse(response.data as ManagerApiResponse).map(normalizeManager);
     },
   });
+
+  const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
+  const showLoader = isLoading && managerList.length > 0;
+  const showEmpty = managerList.length === 0 || isNotFound;
+  const showError = isError && !isNotFound;
 
   const { data: rolesList = [] } = useQuery({
     queryKey: ["roles"],
@@ -358,25 +364,28 @@ const ManagerManagement = () => {
         </FormField> */}
       </EntityDialog>
 
-      {isLoading && (
-        <div className="bg-card rounded-xl border border-border p-6 text-sm text-muted-foreground">
-          Loading managers...
-        </div>
+      {showLoader && (
+        <StateMessage type="loading" message="Loading managers..." />
       )}
 
-      {isError && (
-        <div className="bg-card rounded-xl border border-destructive/40 p-6 text-sm text-destructive">
-          Failed to load managers{error instanceof Error ? `: ${error.message}` : "."}
-        </div>
+      {showError && (
+        <StateMessage
+          type="error"
+          title="Failed to load managers"
+          message={error instanceof Error ? error.message : undefined}
+        />
       )}
 
-      {!isLoading && !isError && managerList.length === 0 && (
-        <div className="bg-card rounded-xl border border-border p-6 text-sm text-muted-foreground">
-          No managers found.
-        </div>
+      {!showLoader && !showError && showEmpty && (
+        <StateMessage
+          type="empty"
+          title="Manager not found"
+          message="Create a new manager to get started."
+          icon={UserCog}
+        />
       )}
 
-      {!isLoading && !isError && managerList.length > 0 && (
+      {!showLoader && !showError && !showEmpty && managerList.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {managerList.map(mgr => (
             <EntityCard

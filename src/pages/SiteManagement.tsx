@@ -17,6 +17,7 @@ import {
 import EntityCard from "@/components/common/EntityCard";
 import EntityDialog from "@/components/common/EntityDialog";
 import FormField from "@/components/common/FormField";
+import StateMessage from "@/components/common/StateMessage";
 
 const normalizeSitesResponse = (response: any): any[] => {
   if (Array.isArray(response)) return response;
@@ -73,6 +74,11 @@ const SiteManagement = () => {
       return normalizeSitesResponse(response.data).map(normalizeSite);
     },
   });
+
+  const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
+  const showLoader = isLoading && siteList.length > 0;
+  const showEmpty = siteList.length === 0 || isNotFound;
+  const showError = isError && !isNotFound;
 
   // Fetch Guards (to show avatars/names if available)
   const { data: guardList = [] } = useQuery({
@@ -353,25 +359,28 @@ const SiteManagement = () => {
         </div>
       </EntityDialog>
 
-      {isLoading && (
-        <div className="bg-card rounded-xl border border-border p-6 text-sm text-muted-foreground">
-          Loading sites...
-        </div>
+      {showLoader && (
+        <StateMessage type="loading" message="Loading sites..." />
       )}
 
-      {isError && (
-        <div className="bg-card rounded-xl border border-destructive/40 p-6 text-sm text-destructive">
-          Failed to load sites{error instanceof Error ? `: ${error.message}` : "."}
-        </div>
+      {showError && (
+        <StateMessage
+          type="error"
+          title="Failed to load sites"
+          message={error instanceof Error ? error.message : undefined}
+        />
       )}
 
-      {!isLoading && !isError && siteList.length === 0 && (
-        <div className="bg-card rounded-xl border border-border p-6 text-sm text-muted-foreground">
-          No sites found.
-        </div>
+      {!showLoader && !showError && showEmpty && (
+        <StateMessage
+          type="empty"
+          title="Site not found"
+          message="Create a new site to get started."
+          icon={MapPin}
+        />
       )}
 
-      {!isLoading && !isError && siteList.length > 0 && (
+      {!showLoader && !showError && !showEmpty && siteList.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {siteList.map(site => (
           <EntityCard

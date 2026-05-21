@@ -2,12 +2,13 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { ScheduleEntry } from "@/data/dummyData";
-import { Plus, CalendarDays, LayoutGrid, MapPin, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, CalendarDays, LayoutGrid, MapPin, ChevronLeft, ChevronRight, Loader2, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ShiftFormDialog from "@/features/scheduling/components/ShiftFormDialog";
 import ScheduleCalendarView from "@/features/scheduling/components/ScheduleCalendarView";
 import ScheduleWeekView from "@/features/scheduling/components/ScheduleWeekView";
 import ScheduleSiteView from "@/features/scheduling/components/ScheduleSiteView";
+import StateMessage from "@/components/common/StateMessage";
 
 type ViewMode = "calendar" | "week" | "site";
 
@@ -79,7 +80,7 @@ const Scheduling = () => {
   const activeSites = useMemo(() => sites.filter((s: any) => s.status === "active"), [sites]);
 
   // Fetch Scheduling Entries
-  const { data: rawEntries = [], isLoading: isLoadingEntries } = useQuery({
+  const { data: rawEntries = [], isLoading: isLoadingEntries, isError: isErrorEntries, error: errorEntries } = useQuery({
     queryKey: ["scheduling", "list"],
     queryFn: async () => {
       const response = await api.scheduling.list();
@@ -154,6 +155,11 @@ const Scheduling = () => {
     }
     return parsed;
   }, [rawEntries, guards, sites]);
+
+  const isNotFound = isErrorEntries && ((errorEntries as any)?.response?.status === 404 || (errorEntries as any)?.message?.includes("404"));
+  const showLoader = isLoadingEntries && entries.length > 0;
+  const showEmpty = entries.length === 0 || isNotFound;
+  const showError = isErrorEntries && !isNotFound;
 
   const createMutation = useMutation({
     mutationFn: (payload: any) => api.scheduling.create(payload),
@@ -290,11 +296,23 @@ const Scheduling = () => {
       </div>
 
       {/* Views */}
-      {isLoadingEntries ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 bg-card rounded-xl border border-border">
-          <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="text-muted-foreground">Loading schedules...</p>
-        </div>
+      {showLoader ? (
+        <StateMessage type="loading" message="Loading schedules..." className="py-20" />
+      ) : showError ? (
+        <StateMessage
+          type="error"
+          title="Failed to load schedules"
+          message={errorEntries instanceof Error ? errorEntries.message : undefined}
+          className="py-20"
+        />
+      ) : showEmpty ? (
+        <StateMessage
+          type="empty"
+          title="Schedule not found"
+          message="Create a new shift/schedule to get started."
+          className="py-20"
+          icon={Calendar}
+        />
       ) : (
         <>
           {viewMode === "calendar" && (
@@ -343,43 +361,47 @@ const Scheduling = () => {
           </h2>
           <span className="text-xs text-muted-foreground">{todayShifts.length} shift(s)</span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-secondary">
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">GUARD</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SITE</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SCHEDULED</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTUAL START</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">STATUS</th>
-                <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {todayShifts.length === 0 ? (
-                <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">No shifts scheduled for this date</td></tr>
-              ) : todayShifts.map((entry) => (
-                <tr key={entry.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
-                  <td className="px-5 py-3 text-sm font-medium text-foreground">{entry.guard}</td>
-                  <td className="px-5 py-3 text-sm text-muted-foreground">{entry.site}</td>
-                  <td className="px-5 py-3 text-sm text-foreground">{entry.shiftStart} – {entry.shiftEnd}</td>
-                  <td className="px-5 py-3 text-sm text-foreground">{entry.actualStart || "—"}</td>
-                  <td className="px-5 py-3">
-                    <span className={
-                      entry.status === "in-progress" ? "status-badge-active" :
-                      entry.status === "completed" ? "status-badge-active" :
-                      entry.status === "missed" ? "status-badge-danger" : "status-badge-inactive"
-                    }>{entry.status}</span>
-                  </td>
-                  <td className="px-5 py-3 flex gap-2">
-                    <button onClick={() => handleEdit(entry)} className="text-sm text-primary hover:underline">Edit</button>
-                    <button onClick={() => handleDelete(entry.id)} className="text-sm text-destructive hover:underline">Delete</button>
-                  </td>
+        {todayShifts.length === 0 ? (
+          <div className="p-4">
+            <StateMessage type="empty" message="No shifts scheduled for this date" />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-secondary">
+                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">GUARD</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SITE</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SCHEDULED</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTUAL START</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">STATUS</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTIONS</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {todayShifts.map((entry) => (
+                  <tr key={entry.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
+                    <td className="px-5 py-3 text-sm font-medium text-foreground">{entry.guard}</td>
+                    <td className="px-5 py-3 text-sm text-muted-foreground">{entry.site}</td>
+                    <td className="px-5 py-3 text-sm text-foreground">{entry.shiftStart} – {entry.shiftEnd}</td>
+                    <td className="px-5 py-3 text-sm text-foreground">{entry.actualStart || "—"}</td>
+                    <td className="px-5 py-3">
+                      <span className={
+                        entry.status === "in-progress" ? "status-badge-active" :
+                        entry.status === "completed" ? "status-badge-active" :
+                        entry.status === "missed" ? "status-badge-danger" : "status-badge-inactive"
+                      }>{entry.status}</span>
+                    </td>
+                    <td className="px-5 py-3 flex gap-2">
+                      <button onClick={() => handleEdit(entry)} className="text-sm text-primary hover:underline">Edit</button>
+                      <button onClick={() => handleDelete(entry.id)} className="text-sm text-destructive hover:underline">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <ShiftFormDialog
