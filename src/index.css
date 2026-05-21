@@ -164,3 +164,32 @@
     @apply w-full bg-card rounded-xl border border-border overflow-hidden;
   }
 }
+
+/* Custom scrollbars globally */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.45);
+}
+
+/* Sidebar scrollbars override to blend with sidebar's dark background */
+.bg-sidebar ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+.bg-sidebar ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.bg-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import KpiCards from "@/features/dashboard/components/KpiCards";
 import HoursSummary from "@/features/dashboard/components/HoursSummary";
@@ -9,11 +9,42 @@ import ComplianceAlerts from "@/features/dashboard/components/ComplianceAlerts";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Maximize2 } from "lucide-react";
 import { guards } from "@/data/dummyData";
+import { dashboardService, DashboardKpis } from "@/services/dashboardService";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [selectedGuardId, setSelectedGuardId] = useState<string | null>(null);
   const [mapFullscreen, setMapFullscreen] = useState(false);
+  const [kpis, setKpis] = useState<DashboardKpis | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const fetchKpis = async () => {
+      try {
+        setLoading(true);
+        const data = await dashboardService.getKpis();
+        if (active) {
+          setKpis(data);
+          setError(null);
+        }
+      } catch (err: any) {
+        if (active) {
+          setError(err.message || "Failed to load dashboard data");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchKpis();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="p-5 space-y-5 max-w-full">
@@ -29,8 +60,14 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <KpiCards />
-      <HoursSummary />
+      {error && (
+        <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+          Error: {error}
+        </div>
+      )}
+
+      <KpiCards kpis={kpis} loading={loading} />
+      <HoursSummary kpis={kpis} loading={loading} />
 
       {/* Map & Guard Status */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -69,39 +106,38 @@ const Dashboard = () => {
               </div>
               <div className="divide-y divide-border">
                 {guards.map((guard) => (
-                    <button
-                      key={guard.id}
-                      onClick={() => setSelectedGuardId(guard.id)}
-                      className={`w-full text-left p-3 hover:bg-accent/50 transition-colors ${selectedGuardId === guard.id ? "bg-accent" : ""}`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div className="relative">
-                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                            {guard.avatar}
-                          </div>
-                          <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${
-                            guard.geofenceAlert ? "bg-destructive" : guard.status === "on-duty" ? "bg-success" : "bg-muted-foreground"
+                  <button
+                    key={guard.id}
+                    onClick={() => setSelectedGuardId(guard.id)}
+                    className={`w-full text-left p-3 hover:bg-accent/50 transition-colors ${selectedGuardId === guard.id ? "bg-accent" : ""}`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                          {guard.avatar}
+                        </div>
+                        <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${guard.geofenceAlert ? "bg-destructive" : guard.status === "on-duty" ? "bg-success" : "bg-muted-foreground"
                           }`} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-foreground truncate">{guard.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{guard.site}</p>
-                        </div>
                       </div>
-                      <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-                        <span className="text-muted-foreground">Status</span>
-                        <span className={`font-medium text-right ${guard.geofenceAlert ? "text-destructive" : guard.status === "on-duty" ? "text-success" : "text-muted-foreground"}`}>
-                          {guard.geofenceAlert ? "⚠ Alert" : guard.status}
-                        </span>
-                        <span className="text-muted-foreground">Last seen</span>
-                        <span className="text-foreground text-right">{guard.lastSeen}</span>
-                        <span className="text-muted-foreground">Hours</span>
-                        <span className="text-foreground text-right">{guard.hoursThisWeek}h / {guard.scheduledHours}h</span>
-                        <span className="text-muted-foreground">GPS</span>
-                        <span className="text-foreground text-right">{guard.lat.toFixed(4)}, {guard.lng.toFixed(4)}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">{guard.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{guard.site}</p>
                       </div>
-                    </button>
-                  ))}
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                      <span className="text-muted-foreground">Status</span>
+                      <span className={`font-medium text-right ${guard.geofenceAlert ? "text-destructive" : guard.status === "on-duty" ? "text-success" : "text-muted-foreground"}`}>
+                        {guard.geofenceAlert ? "⚠ Alert" : guard.status}
+                      </span>
+                      <span className="text-muted-foreground">Last seen</span>
+                      <span className="text-foreground text-right">{guard.lastSeen}</span>
+                      <span className="text-muted-foreground">Hours</span>
+                      <span className="text-foreground text-right">{guard.hoursThisWeek}h / {guard.scheduledHours}h</span>
+                      <span className="text-muted-foreground">GPS</span>
+                      <span className="text-foreground text-right">{guard.lat.toFixed(4)}, {guard.lng.toFixed(4)}</span>
+                    </div>
+                  </button>
+                ))}
 
               </div>
             </div>

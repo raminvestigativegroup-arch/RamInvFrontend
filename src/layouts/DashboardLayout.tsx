@@ -36,16 +36,54 @@ const DashboardLayout = () => {
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <aside
-        className={`flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ${
-          collapsed ? "w-[72px]" : "w-64"
-        }`}
+        className={`flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ${collapsed ? "w-[72px]" : "w-64"
+          }`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border shrink-0">
-          <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-            <Shield className="w-5 h-5 text-sidebar-primary-foreground" />
+        {/* Header */}
+        <div className="border-b border-sidebar-border shrink-0">
+          {/* Logo + Title + Toggle beside text */}
+          <div
+            className={`flex items-center h-16 px-4 ${collapsed ? "justify-center" : "justify-between"
+              }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
+                <Shield className="w-5 h-5 text-sidebar-primary-foreground" />
+              </div>
+              {!collapsed && (
+                <div className="flex items-center gap-5">
+                  <span className="text-lg font-bold text-sidebar-primary-foreground">
+                    SecurePro
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {!collapsed && (
+              <div className="flex items-center">
+                {/* Button next to text when sidebar open */}
+                <button
+                  onClick={() => setCollapsed(true)}
+                  className="p-1.5 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </div>
-          {!collapsed && <span className="text-lg font-bold text-sidebar-primary-foreground">SecurePro</span>}
+
+          {/* Button below logo when sidebar collapsed */}
+          {collapsed && (
+            <div className="p-2 pt-0 flex justify-center">
+              <button
+                onClick={() => setCollapsed(false)}
+                className="flex items-center justify-center w-10 h-10 rounded-lg text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Nav Items */}
@@ -56,10 +94,9 @@ const DashboardLayout = () => {
               to={item.path}
               end={item.path === "/dashboard"}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 } ${collapsed ? "justify-center" : ""}`
               }
               title={collapsed ? item.label : undefined}
@@ -74,21 +111,13 @@ const DashboardLayout = () => {
         <div className="px-2 py-3 border-t border-sidebar-border space-y-1">
           <button
             onClick={handleLogout}
-            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors ${
-              collapsed ? "justify-center" : ""
-            }`}
+            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors ${collapsed ? "justify-center" : ""
+              }`}
           >
             <LogOut className="w-5 h-5 shrink-0" />
             {!collapsed && <span>Logout</span>}
           </button>
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors ${
-              collapsed ? "justify-center" : ""
-            }`}
-          >
-            {collapsed ? <ChevronRight className="w-5 h-5" /> : <><ChevronLeft className="w-5 h-5" /><span>Collapse</span></>}
-          </button>
+
         </div>
       </aside>
 

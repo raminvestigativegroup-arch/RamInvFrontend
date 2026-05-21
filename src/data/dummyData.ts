@@ -1,4 +1,5 @@
-// Dummy data store for the SecurePro prototype
+
+import { ReactNode } from "react";
 
 export const DEMO_CREDENTIALS = {
   email: "admin@securepro.com",
@@ -6,6 +7,7 @@ export const DEMO_CREDENTIALS = {
 };
 
 export interface Guard {
+  avatar: ReactNode;
   id: string;
   name: string;
   email: string;

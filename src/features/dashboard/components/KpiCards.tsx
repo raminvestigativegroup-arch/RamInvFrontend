@@ -1,16 +1,53 @@
 import { Users, MapPin, FileWarning, ShieldAlert, TrendingUp } from "lucide-react";
-import { kpiData } from "@/data/dummyData";
 import { useNavigate } from "react-router-dom";
+import { DashboardKpis } from "@/services/dashboardService";
 
-const kpiCards = [
-  { label: "Active Guards", value: kpiData.activeGuards, subtitle: `of ${kpiData.totalGuards} total`, icon: Users, color: "text-primary", bg: "bg-accent", link: "/dashboard/guards" },
-  { label: "Sites Covered", value: kpiData.activeSites, subtitle: `of ${kpiData.totalSites} total`, icon: MapPin, color: "text-success", bg: "bg-success/10", link: "/dashboard/sites" },
-  { label: "Incidents Today", value: kpiData.incidentsToday, subtitle: `${kpiData.openIncidents} open`, icon: FileWarning, color: "text-warning", bg: "bg-warning/10", link: "/dashboard/incidents" },
-  { label: "Compliance Alerts", value: kpiData.complianceAlerts, subtitle: "need attention", icon: ShieldAlert, color: "text-destructive", bg: "bg-destructive/10", link: "/dashboard/compliance" },
-];
+interface KpiCardsProps {
+  kpis: DashboardKpis | null;
+  loading?: boolean;
+}
 
-const KpiCards = () => {
+const KpiCards = ({ kpis, loading }: KpiCardsProps) => {
   const navigate = useNavigate();
+
+  const kpiCards = [
+    {
+      label: "Active Guards",
+      value: loading ? "..." : (kpis?.activeGuards ?? 0),
+      subtitle: loading ? "Loading..." : `of ${kpis?.totalGuards ?? 0} total`,
+      icon: Users,
+      color: "text-primary",
+      bg: "bg-accent",
+      link: "/dashboard/guards",
+    },
+    {
+      label: "Sites Covered",
+      value: loading ? "..." : (kpis?.activeSites ?? 0),
+      subtitle: loading ? "Loading..." : `of ${kpis?.totalSites ?? 0} total`,
+      icon: MapPin,
+      color: "text-success",
+      bg: "bg-success/10",
+      link: "/dashboard/sites",
+    },
+    {
+      label: "Incidents Today",
+      value: loading ? "..." : (kpis?.incidentsToday ?? 0),
+      subtitle: loading ? "Loading..." : `${kpis?.openIncidents ?? 0} open`,
+      icon: FileWarning,
+      color: "text-warning",
+      bg: "bg-warning/10",
+      link: "/dashboard/incidents",
+    },
+    {
+      label: "Compliance Alerts",
+      value: loading ? "..." : (kpis?.complianceAlerts ?? 0),
+      subtitle: "need attention",
+      icon: ShieldAlert,
+      color: "text-destructive",
+      bg: "bg-destructive/10",
+      link: "/dashboard/compliance",
+    },
+  ];
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
