@@ -5,6 +5,7 @@ import { ScheduleEntry } from "@/data/dummyData";
 import { Check, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import SelectDropdown from "@/components/common/SelectDropdown";
 
 interface Props {
   open: boolean;
@@ -177,16 +178,12 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Site *</label>
-              <select 
-                value={form.siteId} 
-                onChange={(e) => setForm((f) => ({ ...f, siteId: e.target.value }))} 
-                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="" disabled>Select a site</option>
-                {sites.map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <SelectDropdown
+                value={form.siteId}
+                onChange={val => setForm(f => ({ ...f, siteId: val }))}
+                options={sites.map((s: any) => ({ value: s.id, label: s.name }))}
+                placeholder="Select a site"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">

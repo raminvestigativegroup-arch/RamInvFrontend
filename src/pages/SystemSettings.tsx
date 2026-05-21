@@ -1,6 +1,12 @@
+import { useState } from "react";
 import { Shield, Save, Upload } from "lucide-react";
+import SelectDropdown from "@/components/common/SelectDropdown";
 
 const SystemSettings = () => {
+  const [timezone, setTimezone] = useState("Eastern Time (ET)");
+  const [dateFormat, setDateFormat] = useState("MM/DD/YYYY");
+  const [language, setLanguage] = useState("English");
+
   return (
     <div className="p-6 space-y-6">
       <div className="module-page-header">
@@ -49,27 +55,42 @@ const SystemSettings = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">Timezone</label>
-            <select className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
-              <option>Eastern Time (ET)</option>
-              <option>Central Time (CT)</option>
-              <option>Pacific Time (PT)</option>
-            </select>
+            <SelectDropdown
+              value={timezone}
+              onChange={setTimezone}
+              options={[
+                { value: "Eastern Time (ET)", label: "Eastern Time (ET)" },
+                { value: "Central Time (CT)", label: "Central Time (CT)" },
+                { value: "Pacific Time (PT)", label: "Pacific Time (PT)" },
+              ]}
+              placeholder=""
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">Date Format</label>
-            <select className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
-              <option>MM/DD/YYYY</option>
-              <option>DD/MM/YYYY</option>
-              <option>YYYY-MM-DD</option>
-            </select>
+            <SelectDropdown
+              value={dateFormat}
+              onChange={setDateFormat}
+              options={[
+                { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
+                { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
+                { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
+              ]}
+              placeholder=""
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">Language</label>
-            <select className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
-              <option>English</option>
-              <option>Spanish</option>
-              <option>French</option>
-            </select>
+            <SelectDropdown
+              value={language}
+              onChange={setLanguage}
+              options={[
+                { value: "English", label: "English" },
+                { value: "Spanish", label: "Spanish" },
+                { value: "French", label: "French" },
+              ]}
+              placeholder=""
+            />
           </div>
         </div>
       </div>

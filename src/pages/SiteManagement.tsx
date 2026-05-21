@@ -18,6 +18,7 @@ import EntityCard from "@/components/common/EntityCard";
 import EntityDialog from "@/components/common/EntityDialog";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
+import SelectDropdown from "@/components/common/SelectDropdown";
 
 const normalizeSitesResponse = (response: any): any[] => {
   if (Array.isArray(response)) return response;
@@ -318,24 +319,23 @@ const SiteManagement = () => {
           />
         </FormField>
         <FormField label="Manager">
-          <select 
-            value={form.manager} 
-            onChange={e => setForm(f => ({ ...f, manager: e.target.value }))} 
-            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">Select a manager</option>
-            {managersList.filter(m => m.isVerified).map(m => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <SelectDropdown
+            value={form.manager}
+            onChange={val => setForm(f => ({ ...f, manager: val }))}
+            options={managersList.filter(m => m.isVerified).map(m => ({ value: m.id, label: m.name }))}
+            placeholder="Select a manager"
+          />
         </FormField>
         <FormField label="Status">
-          <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as "active" | "inactive" }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+          <SelectDropdown
+            value={form.status}
+            onChange={val => setForm(f => ({ ...f, status: val as "active" | "inactive" }))}
+            options={[
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+            ]}
+            placeholder=""
+          />
         </FormField>
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Latitude (Optional)">

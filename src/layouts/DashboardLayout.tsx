@@ -8,23 +8,32 @@ import {
 import authService from "@/services/authService";
 
 const navItems = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/dashboard/guards", label: "Guard Management", icon: Users },
-  { path: "/dashboard/managers", label: "Manager Management", icon: UserCog },
-  { path: "/dashboard/sites", label: "Site Management", icon: MapPin },
-  { path: "/dashboard/incidents", label: "Incidents", icon: FileWarning },
-  { path: "/dashboard/scheduling", label: "Scheduling", icon: Calendar },
-  { path: "/dashboard/compliance", label: "Compliance", icon: ShieldCheck },
-  { path: "/dashboard/hours", label: "Hours & Attendance", icon: Clock },
-  { path: "/dashboard/reports", label: "Reports & Export", icon: FileText },
-  { path: "/dashboard/notifications", label: "Notifications", icon: Bell },
-  { path: "/dashboard/roles", label: "Roles & Permissions", icon: Shield },
-  { path: "/dashboard/settings", label: "Settings", icon: Settings },
+  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard" },
+  { path: "/dashboard/guards", label: "Guard Management", icon: Users, permission: "guard" },
+  { path: "/dashboard/managers", label: "Manager Management", icon: UserCog, permission: "manager" },
+  { path: "/dashboard/sites", label: "Site Management", icon: MapPin, permission: "site" },
+  { path: "/dashboard/incidents", label: "Incidents", icon: FileWarning, permission: "incident" },
+  { path: "/dashboard/scheduling", label: "Scheduling", icon: Calendar, permission: "scheduling" },
+  { path: "/dashboard/compliance", label: "Compliance", icon: ShieldCheck, permission: "compliance" },
+  { path: "/dashboard/hours", label: "Hours & Attendance", icon: Clock, permission: "hour" },
+  { path: "/dashboard/reports", label: "Reports & Export", icon: FileText, permission: "report" },
+  { path: "/dashboard/notifications", label: "Notifications", icon: Bell, permission: "notification" },
+  { path: "/dashboard/roles", label: "Roles & Permissions", icon: Shield, permission: "role" },
+  { path: "/dashboard/settings", label: "Settings", icon: Settings, permission: "setting" },
 ];
 
 const DashboardLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
+
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (user?.role === "admin") return true;
+    return permissions.includes(item.permission);
+  });
 
   const handleLogout = async () => {
     await authService.logout();
@@ -88,7 +97,7 @@ const DashboardLayout = () => {
 
         {/* Nav Items */}
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}

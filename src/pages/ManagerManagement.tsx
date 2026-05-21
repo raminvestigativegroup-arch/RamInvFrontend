@@ -20,6 +20,7 @@ import EntityCard from "@/components/common/EntityCard";
 import EntityDialog from "@/components/common/EntityDialog";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
+import SelectDropdown from "@/components/common/SelectDropdown";
 
 type ManagerApiResponse =
   | Manager[]
@@ -68,6 +69,7 @@ const normalizeManager = (manager: any, index: number): Manager => ({
   licenseExpiry: String(manager.licenseExpiry || manager.license_expiry || "N/A"),
   avatar: String(manager.profilePhoto || manager.avatar || ""),
   isVerified: manager.isVerified === true || manager.verified === true || manager.verified === "true" || manager.isVerified === "true",
+  roleId: manager.roleId ? String(manager.roleId) : undefined,
 });
 
 const ManagerManagement = () => {
@@ -129,7 +131,7 @@ const ManagerManagement = () => {
   });
 
   const updateManagerMutation = useMutation({
-    mutationFn: async (payload: { id: string; name?: string; phoneNumber?: string; status?: string; licenseExpiry?: string; verified?: string; image?: string }) => {
+    mutationFn: async (payload: { id: string; name?: string; phoneNumber?: string; roleId?: string; status?: string; licenseExpiry?: string; verified?: string; image?: string }) => {
       const { id, ...data } = payload;
       const response = await api.managers.update(id, data);
       return response.data;
@@ -203,6 +205,7 @@ const ManagerManagement = () => {
         id: editingManager.id,
         name: form.name,
         phoneNumber: form.phoneNumber,
+        roleId: form.roleId,
         status: form.status,
         licenseExpiry: form.licenseExpiry,
         profilePhoto: form.image
@@ -320,26 +323,12 @@ const ManagerManagement = () => {
           <input value={form.phoneNumber} onChange={e => setForm(f => ({ ...f, phoneNumber: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. +1 555-0300" />
         </FormField>
         <FormField label="Role">
-          {editingManager ? (
-            <input
-              value={editingManager.role}
-              disabled
-              className="w-full px-3 mb-1 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground opacity-50 cursor-not-allowed"
-            />
-          ) : (
-            <select
-              value={form.roleId}
-              onChange={e => setForm(f => ({ ...f, roleId: e.target.value }))}
-              className="w-full px-3 mb-1 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">Select a role</option>
-              {rolesList.map(role => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
-          )}
+          <SelectDropdown
+            value={form.roleId}
+            onChange={val => setForm(f => ({ ...f, roleId: val }))}
+            options={rolesList.map(role => ({ value: role.id, label: role.name }))}
+            placeholder="Select a role"
+          />
         </FormField>
         {/* <FormField label="Assigned Sites">
           <div className="flex flex-wrap gap-2">

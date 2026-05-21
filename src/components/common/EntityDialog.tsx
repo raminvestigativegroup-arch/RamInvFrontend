@@ -32,14 +32,14 @@ const EntityDialog: React.FC<EntityDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={maxWidth}>
-        <DialogHeader>
+        <DialogHeader className="border-b pb-4">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4 mt-2">
           <div className="max-h-[75vh] overflow-y-auto px-1 -mx-1 space-y-4">
             {children}
           </div>
-          <div className="flex justify-end gap-3 pt-2 border-t border-border mt-4">
+          <div className="flex justify-end gap-3 pt-5 border-t border-border mt-4">
             <button
               type="button"
               disabled={isLoading}

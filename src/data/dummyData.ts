@@ -25,6 +25,7 @@ export interface Guard {
   geofenceAlert?: boolean;
   nextShift?: string;
   isVerified?: boolean;
+  roleId?: string;
 }
 
 export interface Manager {
@@ -38,6 +39,7 @@ export interface Manager {
   status: "active" | "inactive";
   licenseExpiry: string;
   isVerified?: boolean;
+  roleId?: string;
 }
 
 export interface Site {

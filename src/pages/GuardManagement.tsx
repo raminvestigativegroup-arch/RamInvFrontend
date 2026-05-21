@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import EntityCard from "@/components/common/EntityCard";
 import EntityDialog from "@/components/common/EntityDialog";
+import SelectDropdown from "@/components/common/SelectDropdown";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 
@@ -59,6 +60,20 @@ const normalizeGuardsResponse = (response: unknown): RawRecord[] => {
   return [];
 };
 
+const normalizeRolesResponse = (response: any): any[] => {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (response.data && !Array.isArray(response.data)) {
+    return response.data.roles || response.data.role || response.data.items || response.data.results || [];
+  }
+  return response.roles || response.role || response.items || response.results || [];
+};
+
+const normalizeRole = (role: any): any => ({
+  id: String(role.id || role._id || ""),
+  name: String(role.name || "Unknown Role"),
+});
+
 const normalizeGuard = (guard: RawRecord, index: number): Guard => {
   const name = String(guard.name || guard.fullName || "Unnamed Guard");
   return {
@@ -80,6 +95,7 @@ const normalizeGuard = (guard: RawRecord, index: number): Guard => {
     hoursThisWeek: Number(guard.hoursThisWeek || 0),
     scheduledHours: Number(guard.scheduledHours || 0),
     isVerified: guard.isVerified === true || guard.verified === true || guard.verified === "true" || guard.isVerified === "true",
+    roleId: String(guard.roleId || ""),
   };
 };
 
@@ -94,6 +110,7 @@ const GuardManagement = () => {
     site: sites[0]?.name || "",
     licenseExpiry: "2027-01-01",
     image: "",
+    roleType: "",
   });
   const [editingGuard, setEditingGuard] = useState<Guard | null>(null);
   const [deletingGuard, setDeletingGuard] = useState<Guard | null>(null);
@@ -114,6 +131,14 @@ const GuardManagement = () => {
     },
   });
 
+  const { data: rolesList = [] } = useQuery({
+    queryKey: ["roles"],
+    queryFn: async () => {
+      const response = await api.roles.list();
+      return normalizeRolesResponse(response.data).map(normalizeRole);
+    },
+  });
+
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -122,7 +147,7 @@ const GuardManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guards"] });
       setOpen(false);
-      setForm({ name: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "" });
+      setForm({ name: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "" });
       toast({ title: "Guard Added", description: "The new guard has been registered successfully." });
     },
     onError: (error: any) => {
@@ -135,13 +160,13 @@ const GuardManagement = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { id: string; name?: string; phoneNumber?: string; verified?: string; image?: string }) =>
+    mutationFn: (data: { id: string; name?: string; phoneNumber?: string; roleType?: string; verified?: string; image?: string }) =>
       api.guards.update(data.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guards"] });
       setOpen(false);
       setEditingGuard(null);
-      setForm({ name: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "" });
+      setForm({ name: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "" });
       toast({ title: "Guard Updated", description: "The guard information has been updated successfully." });
     },
     onError: (error: any) => {
@@ -208,6 +233,7 @@ const GuardManagement = () => {
         id: editingGuard.id,
         name: form.name,
         phoneNumber: form.phoneNumber,
+        roleType: form.roleType,
         profilePhoto: form.image,
       });
     } else {
@@ -215,7 +241,7 @@ const GuardManagement = () => {
         name: form.name,
         email: form.email,
         phoneNumber: form.phoneNumber,
-        roleType: "guard",
+        roleType: form.roleType || "guard",
         profilePhoto: form.image,
       });
     }
@@ -230,6 +256,7 @@ const GuardManagement = () => {
       site: guard.site,
       licenseExpiry: guard.licenseExpiry,
       image: guard.profilePhoto?.startsWith("data:") ? guard.profilePhoto : "",
+      roleType: rolesList.find((r: any) => r.id === guard.roleId)?.name || "",
     });
     setOpen(true);
   };
@@ -287,6 +314,7 @@ const GuardManagement = () => {
             <EntityCard
               key={guard.id}
               title={guard.name}
+              subtitle={rolesList.find((r: any) => r.id === guard.roleId)?.name || "Guard"}
               avatar={{
                 text: getInitials(guard.name),
                 src: guard.profilePhoto?.startsWith("data:") ? guard.profilePhoto : undefined
@@ -405,6 +433,14 @@ const GuardManagement = () => {
         </FormField>
         <FormField label="Phone">
           <input value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="e.g. +1 555-0100" className="w-full mb-1 px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+        </FormField>
+        <FormField label="Role">
+          <SelectDropdown
+            value={form.roleType}
+            onChange={val => setForm(f => ({ ...f, roleType: val }))}
+            options={rolesList.map(role => ({ value: role.name, label: role.name }))}
+            placeholder="Select a role"
+          />
         </FormField>
         {/* <FormField label="Assigned Site">
           <select value={form.site} onChange={(e) => setForm((f) => ({ ...f, site: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">

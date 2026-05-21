@@ -19,16 +19,16 @@ const Login = () => {
     try {
       const response = await authService.login(email, password);
 
-      // localStorage.setItem("user", JSON.stringify(response.data));
-      // localStorage.setItem("securepro_auth", "true");
+      localStorage.setItem("user", JSON.stringify(response.data));
+      localStorage.setItem("securepro_auth", "true");
 
       toast({
         title: "Login successful",
         description: response.message || `Welcome back, ${response.data.name}.`,
       });
       navigate("/dashboard");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Invalid email or password.";
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || "Invalid email or password.";
       toast({
         title: "Login Failed",
         description: message,

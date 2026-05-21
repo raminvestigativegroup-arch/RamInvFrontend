@@ -113,11 +113,12 @@ export const api = {
   // Roles & Permissions
   roles: {
     list: (params?: any) => httpClient.get("/role", { params }),
-    create: (data: any) => httpClient.post("/roles", data),
-    getById: (id: string) => httpClient.get(`/roles/${id}`),
-    update: (id: string, data: any) => httpClient.put(`/roles/${id}`, data),
-    delete: (id: string) => httpClient.delete(`/roles/${id}`),
+    create: (data: any) => httpClient.post("/role", data),
+    getById: (id: string) => httpClient.get(`/role/${id}`),
+    update: (id: string, data: any) => httpClient.put(`/role/${id}`, data),
+    delete: (id: string) => httpClient.delete(`/role/${id}`),
     permissions: () => httpClient.get("/permissions"),
+    assignPermissions: (data: { roleId: string; permission: string[] }) => httpClient.post("/permissions", data),
   },
 
   // System Settings
