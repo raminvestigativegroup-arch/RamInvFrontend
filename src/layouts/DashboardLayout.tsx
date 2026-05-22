@@ -6,6 +6,7 @@ import {
   ChevronRight, LogOut, ShieldCheck, UserCog
 } from "lucide-react";
 import authService from "@/services/authService";
+import logo from "@/assets/logo.png";
 
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard" },
@@ -57,13 +58,15 @@ const DashboardLayout = () => {
               }`}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-                <Shield className="w-5 h-5 text-sidebar-primary-foreground" />
-              </div>
+              <img
+                src={logo}
+                alt="SecurePro Logo"
+                className="w-18 h-11 object-cover shrink-0"
+              />
               {!collapsed && (
                 <div className="flex items-center gap-5">
-                  <span className="text-lg font-bold text-sidebar-primary-foreground">
-                    SecurePro
+                  <span className="text-lg font-bold text-xs text-sidebar-primary-foreground">
+                    Ram Investigative Group
                   </span>
                 </div>
               )}

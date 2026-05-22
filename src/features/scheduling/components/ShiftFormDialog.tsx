@@ -109,7 +109,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
       } else {
         setForm({ 
           selectedGuards: [], 
-          siteId: sites[0]?.id || "", 
+          siteId: "", 
           startDate: new Date().toISOString().split('T')[0], 
           endDate: new Date().toISOString().split('T')[0],
           shiftStart: "06:00", 

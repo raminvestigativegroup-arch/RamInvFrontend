@@ -1,19 +1,20 @@
 import { ScheduleEntry } from "@/data/dummyData";
-import { sites } from "@/data/dummyData";
 import { MapPin, Users, Clock } from "lucide-react";
 
 interface Props {
   entries: ScheduleEntry[];
   selectedDate: string;
+  sites: any[];
 }
 
-const ScheduleSiteView = ({ entries, selectedDate }: Props) => {
+const ScheduleSiteView = ({ entries, selectedDate, sites }: Props) => {
   const activeSites = sites.filter((s) => s.status === "active");
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 border border-400-red">
       {activeSites.map((site) => {
         const siteShifts = entries.filter((e) => e.site === site.name && e.date === selectedDate);
+        const managerName = site.Manager?.name || site.manager || "Unassigned";
         return (
           <div key={site.id} className="bg-card rounded-xl border border-border p-4 hover:shadow-md transition-shadow">
             <div className="flex items-start gap-3 mb-3">
@@ -27,7 +28,7 @@ const ScheduleSiteView = ({ entries, selectedDate }: Props) => {
             </div>
             <div className="flex items-center gap-4 mb-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{siteShifts.length} shifts</span>
-              <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />Manager: {site.manager.split(" ")[0]}</span>
+              <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />Manager: {managerName.split(" ")[0]}</span>
             </div>
             {siteShifts.length > 0 ? (
               <div className="space-y-2">

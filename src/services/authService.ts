@@ -125,6 +125,48 @@ export const authService = {
       throw error;
     }
   },
+
+  /**
+   * Request password reset OTP
+   * @param email - User email
+   */
+  async forgotPassword(email: string) {
+    try {
+      const response = await api.auth.forgotPassword(email);
+      return response.data;
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reset password using OTP
+   * @param data - { email, otp, newPassword }
+   */
+  async resetPassword(data: any) {
+    try {
+      const response = await api.auth.resetPassword(data);
+      return response.data;
+    } catch (error) {
+      console.error("Reset password error:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Change password for logged-in user
+   * @param data - { oldPassword, newPassword }
+   */
+  async changePassword(data: any) {
+    try {
+      const response = await api.auth.changePassword(data);
+      return response.data;
+    } catch (error) {
+      console.error("Change password error:", error);
+      throw error;
+    }
+  },
 };
 
 /**

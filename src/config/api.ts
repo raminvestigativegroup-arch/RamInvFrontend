@@ -21,6 +21,9 @@ export const api = {
     refresh: (data?: AuthRefreshRequest) => httpClient.post<ApiResponse<AuthRefreshResponse>>("/auth/refresh-token", data),
     me: () => httpClient.get("/auth/me"),
     register: (data: any) => httpClient.post("/auth/register", data),
+    forgotPassword: (email: string) => httpClient.post("/auth/forgot-password", { email }),
+    resetPassword: (data: any) => httpClient.post("/auth/reset-password", data),
+    changePassword: (data: any) => httpClient.post("/auth/change-password", data),
   },
 
   // Guards Management

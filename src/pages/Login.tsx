@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Shield, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import authService from "@/services/authService";
+import logo from "@/assets/logo.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -44,17 +45,17 @@ const Login = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg">
-            <Shield className="w-8 h-8 text-primary-foreground" />
+          <div className="w-40 h-30  mb-4 ">
+            <img src={logo} alt="SecurePro Logo" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">SecurePro</h1>
-          <p className="text-muted-foreground mt-1">Admin Dashboard</p>
+          <h1 className="text-3xl font-bold text-foreground">Ram Investigative Group</h1>
+          <p className="text-muted-foreground mt-1">Professional Investigation Services</p>
         </div>
 
         {/* Login Card */}
         <div className="bg-card rounded-2xl p-8 shadow-lg border border-border">
           <h2 className="text-xl font-semibold text-foreground mb-6">Sign in to continue</h2>
-          
+
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Email</label>
@@ -92,9 +93,9 @@ const Login = () => {
             </div>
 
             <div className="flex justify-end">
-              <button type="button" className="text-sm font-medium text-primary hover:underline">
+              <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
                 Forgot Password?
-              </button>
+              </Link>
             </div>
 
             <button

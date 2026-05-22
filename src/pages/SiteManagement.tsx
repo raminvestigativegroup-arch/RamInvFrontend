@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { guards, Site } from "@/data/dummyData";
-import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User } from "lucide-react";
+import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, Locate, Search, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -56,6 +56,7 @@ const normalizeManager = (manager: any): any => ({
 });
 
 const SiteManagement = () => {
+  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [form, setForm] = useState({ name: "", address: "", manager: "", status: "active" as "active" | "inactive", lat: "", lng: "" });
@@ -63,22 +64,45 @@ const SiteManagement = () => {
   const [deletingSite, setDeletingSite] = useState<Site | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
 
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   const {
     data: siteList = [],
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["sites"],
+    queryKey: ["sites", debouncedSearch],
     queryFn: async () => {
-      const response = await api.sites.list();
+      const params: any = {};
+      if (debouncedSearch.trim()) {
+        params.search = debouncedSearch.trim();
+      }
+      const response = await api.sites.list(params);
       return normalizeSitesResponse(response.data).map(normalizeSite);
     },
   });
 
+  const { data: managersList = [] } = useQuery({
+    queryKey: ["managers", "select"],
+    queryFn: async () => {
+      const response = await api.managers.list();
+      return normalizeManagersResponse(response.data).map(normalizeManager);
+    },
+  });
+
+  const filtered = siteList;
+
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
-  const showLoader = isLoading && siteList.length > 0;
-  const showEmpty = siteList.length === 0 || isNotFound;
+  const showLoader = isLoading && filtered.length > 0;
+  const showEmpty = filtered.length === 0 || isNotFound;
   const showError = isError && !isNotFound;
 
   // Fetch Guards (to show avatars/names if available)
@@ -139,14 +163,6 @@ const SiteManagement = () => {
   const siteGuardCounts: Record<string, number> = {};
   for (const [k, v] of siteGuardIdsMap.entries()) siteGuardCounts[k] = v.size;
 
-  const { data: managersList = [] } = useQuery({
-    queryKey: ["managers", "select"],
-    queryFn: async () => {
-      const response = await api.managers.list();
-      return normalizeManagersResponse(response.data).map(normalizeManager);
-    },
-  });
-
   const queryClient = useQueryClient();
 
   const createSiteMutation = useMutation({
@@ -161,10 +177,10 @@ const SiteManagement = () => {
       setForm({ name: "", address: "", manager: "", status: "active", lat: "", lng: "" });
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Error", 
-        description: error.response?.data?.message || "Failed to create site.", 
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to create site.",
+        variant: "destructive"
       });
     }
   });
@@ -212,22 +228,22 @@ const SiteManagement = () => {
 
   const handleAddressBlur = async () => {
     if (!form.address || editingSite) return;
-    
+
     setIsGeocoding(true);
     try {
       const response = await api.sites.geocode(form.address);
       if (response.data && response.data.success) {
         const { latitude, longitude } = response.data.data;
-        setForm(f => ({ 
-          ...f, 
-          lat: String(latitude), 
-          lng: String(longitude) 
+        setForm(f => ({
+          ...f,
+          lat: String(latitude),
+          lng: String(longitude)
         }));
         toast({ title: "Coordinates Updated", description: "Latitude and Longitude fetched from address." });
       }
     } catch (error) {
       console.error("Geocoding failed", error);
-      // Don't show toast for every blur failure to avoid annoyance, 
+      // Don't show toast for every blur failure to avoid annoyance,
       // but maybe log it or show a subtle hint.
     } finally {
       setIsGeocoding(false);
@@ -251,8 +267,8 @@ const SiteManagement = () => {
     };
 
     if (editingSite) {
-      updateSiteMutation.mutate({ 
-        id: editingSite.id, 
+      updateSiteMutation.mutate({
+        id: editingSite.id,
         managerid: form.manager,
         status: form.status
       });
@@ -288,6 +304,21 @@ const SiteManagement = () => {
           <Plus className="w-4 h-4" />Add Site
         </button>
       </div>
+
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search sites..."
+            className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">
+          <Filter className="w-4 h-4" />Filters
+        </button>
+      </div>
       <EntityDialog
         open={open}
         onOpenChange={(val) => {
@@ -300,29 +331,29 @@ const SiteManagement = () => {
         submitLabel={editingSite ? (updateSiteMutation.isPending ? "Updating..." : "Update Profile") : (createSiteMutation.isPending ? "Creating..." : "Add Site")}
       >
         <FormField label="Site Name" required>
-          <input 
-            value={form.name} 
-            onChange={e => setForm(f => ({ ...f, name: e.target.value }))} 
+          <input
+            value={form.name}
+            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
             disabled={!!editingSite}
-            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed" 
-            placeholder="e.g. Corporate Tower B" 
+            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            placeholder="e.g. Corporate Tower B"
           />
         </FormField>
         <FormField label="Address" required>
-          <input 
-            value={form.address} 
-            onChange={e => setForm(f => ({ ...f, address: e.target.value }))} 
+          <input
+            value={form.address}
+            onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
             onBlur={handleAddressBlur}
             disabled={!!editingSite || isGeocoding}
-            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed" 
-            placeholder={isGeocoding ? "Fetching coordinates..." : "e.g. 100 Park Ave, New York, NY"} 
+            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            placeholder={isGeocoding ? "Fetching coordinates..." : "e.g. 100 Park Ave, New York, NY"}
           />
         </FormField>
         <FormField label="Manager">
           <SelectDropdown
             value={form.manager}
             onChange={val => setForm(f => ({ ...f, manager: val }))}
-            options={managersList.filter(m => m.isVerified).map(m => ({ value: m.id, label: m.name }))}
+            options={managersList.map(m => ({ value: m.id, label: m.name }))}
             placeholder="Select a manager"
           />
         </FormField>
@@ -339,20 +370,20 @@ const SiteManagement = () => {
         </FormField>
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Latitude (Optional)">
-            <input 
-              value={form.lat} 
-              onChange={e => setForm(f => ({ ...f, lat: e.target.value }))} 
+            <input
+              value={form.lat}
+              onChange={e => setForm(f => ({ ...f, lat: e.target.value }))}
               disabled={!!editingSite}
-              className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed" 
+              className="w-full px-3 mb-1 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Auto-fetched if empty"
             />
           </FormField>
           <FormField label="Longitude (Optional)">
-            <input 
-              value={form.lng} 
-              onChange={e => setForm(f => ({ ...f, lng: e.target.value }))} 
+            <input
+              value={form.lng}
+              onChange={e => setForm(f => ({ ...f, lng: e.target.value }))}
               disabled={!!editingSite}
-              className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed" 
+              className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
               placeholder="Auto-fetched if empty"
             />
           </FormField>
@@ -380,59 +411,59 @@ const SiteManagement = () => {
         />
       )}
 
-      {!showLoader && !showError && !showEmpty && siteList.length > 0 && (
+      {!showLoader && !showError && !showEmpty && filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {siteList.map(site => (
-          <EntityCard
-            key={site.id}
-            title={site.name}
-            badge={{
-              label: site.status,
-              className: site.status === "active" ? "status-badge-active" : "status-badge-inactive"
-            }}
-            details={[
-              { icon: MapPin, content: site.address },
-              { icon: Users, content: `${siteGuardCounts[site.id] ?? site.guards.length} guards assigned` },
-            ]}
-            footerRight={
-              <span className="text-xs text-muted-foreground">Manager: {managersList.find(m => m.id === site.manager)?.name || site.manager}</span>
-            }
-            menuItems={[
-              { 
-                label: "Profile Update", 
-                icon: User, 
-                onClick: () => handleEditClick(site) 
-              },
-              { 
-                label: "Delete Site", 
-                icon: Trash2, 
-                variant: "destructive",
-                onClick: () => setDeletingSite(site) 
-              },
-            ]}
-            footerContent={(siteGuardIdsMap.get(site.id) && siteGuardIdsMap.get(site.id)!.size > 0) ? (
-              <div className="flex -space-x-2">
-                {Array.from(siteGuardIdsMap.get(site.id)!).slice(0,5).map(gId => {
-                  const g = guardList.find(gu => String(gu.id) === String(gId));
-                  
-                  let avatarContent: React.ReactNode;
-                  if (g?.profilePhoto) {
-                    avatarContent = <img src={g.profilePhoto} alt={g.name || "Guard"} className="w-full h-full object-cover rounded-full" />;
-                  } else {
-                    avatarContent = g ? (g.name ? g.name.split(" ").map((n:string)=>n[0].toUpperCase()).join("") : "") : String(gId).slice(0,2).toUpperCase();
-                  }
+          {filtered.map(site => (
+            <EntityCard
+              key={site.id}
+              title={site.name}
+              badge={{
+                label: site.status,
+                className: site.status === "active" ? "status-badge-active" : "status-badge-inactive"
+              }}
+              details={[
+                { icon: MapPin, content: site.address },
+                { icon: Users, content: `${siteGuardCounts[site.id] ?? site.guards.length} guards assigned` },
+              ]}
+              footerRight={
+                <span className="text-xs text-muted-foreground">Manager: {managersList.find(m => m.id === site.manager)?.name || site.manager}</span>
+              }
+              menuItems={[
+                {
+                  label: "Site Update",
+                  icon: MapPin,
+                  onClick: () => handleEditClick(site)
+                },
+                {
+                  label: "Delete Site",
+                  icon: Trash2,
+                  variant: "destructive",
+                  onClick: () => setDeletingSite(site)
+                },
+              ]}
+              footerContent={(siteGuardIdsMap.get(site.id) && siteGuardIdsMap.get(site.id)!.size > 0) ? (
+                <div className="flex -space-x-2">
+                  {Array.from(siteGuardIdsMap.get(site.id)!).slice(0, 5).map(gId => {
+                    const g = guardList.find(gu => String(gu.id) === String(gId));
 
-                  return (
-                    <div key={gId} className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden">
-                      {avatarContent}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
-          />
-        ))}
-      </div>
+                    let avatarContent: React.ReactNode;
+                    if (g?.profilePhoto) {
+                      avatarContent = <img src={g.profilePhoto} alt={g.name || "Guard"} className="w-full h-full object-cover rounded-full" />;
+                    } else {
+                      avatarContent = g ? (g.name ? g.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : "") : String(gId).slice(0, 2).toUpperCase();
+                    }
+
+                    return (
+                      <div key={gId} className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden">
+                        {avatarContent}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+            />
+          ))}
+        </div>
       )}
 
       {/* Delete Confirmation Dialog */}

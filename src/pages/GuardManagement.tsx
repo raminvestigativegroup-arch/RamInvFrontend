@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { sites, Guard } from "@/data/dummyData";
@@ -75,10 +75,16 @@ const normalizeRole = (role: any): any => ({
 });
 
 const normalizeGuard = (guard: RawRecord, index: number): Guard => {
-  const name = String(guard.name || guard.fullName || "Unnamed Guard");
+  const firstName = String(guard.firstName || "");
+  const middleName = String(guard.middleName || "");
+  const lastName = String(guard.lastName || "");
+  const name = String(guard.name || [firstName, middleName, lastName].filter(Boolean).join(" ") || guard.fullName || "Unnamed Guard");
   return {
     id: String(guard.id || guard._id || `G${String(index + 1).padStart(3, "0")}`),
     name,
+    firstName,
+    middleName,
+    lastName,
     email: String(guard.email || ""),
     phoneNumber: String(guard.phoneNumber || guard.mobile || ""),
     site: String(guard.site || guard.siteName || "Unassigned"),
@@ -104,7 +110,9 @@ const GuardManagement = () => {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    middleName: "",
+    lastName: "",
     email: "",
     phoneNumber: "",
     site: sites[0]?.name || "",
@@ -118,15 +126,28 @@ const GuardManagement = () => {
   const [isVerifiedChecked, setIsVerifiedChecked] = useState(false);
 
 
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   const {
     data: guardList = [],
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["guards"],
+    queryKey: ["guards", debouncedSearch],
     queryFn: async () => {
-      const response = await api.guards.list();
+      const params: any = {};
+      if (debouncedSearch.trim()) {
+        params.search = debouncedSearch.trim();
+      }
+      const response = await api.guards.list(params);
       return normalizeGuardsResponse(response.data as GuardApiResponse).map(normalizeGuard);
     },
   });
@@ -142,12 +163,12 @@ const GuardManagement = () => {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: (data: { name: string; email: string; phoneNumber: string; roleType: string; image?: string }) =>
+    mutationFn: (data: { firstName: string; middleName?: string; lastName: string; email: string; phoneNumber: string; roleType: string; image?: string }) =>
       api.guards.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guards"] });
       setOpen(false);
-      setForm({ name: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "" });
+      setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "" });
       toast({ title: "Guard Added", description: "The new guard has been registered successfully." });
     },
     onError: (error: any) => {
@@ -160,13 +181,13 @@ const GuardManagement = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { id: string; name?: string; phoneNumber?: string; roleType?: string; verified?: string; image?: string }) =>
+    mutationFn: (data: { id: string; firstName?: string; middleName?: string; lastName?: string; phoneNumber?: string; roleType?: string; verified?: string; image?: string }) =>
       api.guards.update(data.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guards"] });
       setOpen(false);
       setEditingGuard(null);
-      setForm({ name: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "" });
+      setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "" });
       toast({ title: "Guard Updated", description: "The guard information has been updated successfully." });
     },
     onError: (error: any) => {
@@ -195,15 +216,7 @@ const GuardManagement = () => {
   });
 
 
-  const filtered = useMemo(
-    () =>
-      guardList.filter(
-        (g) =>
-          g.name.toLowerCase().includes(search.toLowerCase()) ||
-          g.site.toLowerCase().includes(search.toLowerCase())
-      ),
-    [guardList, search]
-  );
+  const filtered = guardList;
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
   const showLoader = isLoading && filtered.length > 0;
@@ -223,26 +236,30 @@ const GuardManagement = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email) {
-      toast({ title: "Validation Error", description: "Name and email are required.", variant: "destructive" });
+    if (!form.firstName || !form.lastName || !form.email) {
+      toast({ title: "Validation Error", description: "First name, last name, and email are required.", variant: "destructive" });
       return;
     }
 
     if (editingGuard) {
       updateMutation.mutate({
         id: editingGuard.id,
-        name: form.name,
+        firstName: form.firstName,
+        middleName: form.middleName,
+        lastName: form.lastName,
         phoneNumber: form.phoneNumber,
         roleType: form.roleType,
-        profilePhoto: form.image,
+        image: form.image,
       });
     } else {
       createMutation.mutate({
-        name: form.name,
+        firstName: form.firstName,
+        middleName: form.middleName,
+        lastName: form.lastName,
         email: form.email,
         phoneNumber: form.phoneNumber,
         roleType: form.roleType || "guard",
-        profilePhoto: form.image,
+        image: form.image,
       });
     }
   };
@@ -250,7 +267,9 @@ const GuardManagement = () => {
   const handleEditClick = (guard: Guard) => {
     setEditingGuard(guard);
     setForm({
-      name: guard.name,
+      firstName: guard.firstName || "",
+      middleName: guard.middleName || "",
+      lastName: guard.lastName || "",
       email: guard.email,
       phoneNumber: guard.phoneNumber,
       site: guard.site,
@@ -418,9 +437,17 @@ const GuardManagement = () => {
           )}
         </FormField>
 
-        <FormField label="Full Name" required>
-          <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. John Smith" className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
-        </FormField>
+        <div className="grid grid-cols-3 gap-3">
+          <FormField label="First Name" required>
+            <input value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} placeholder="e.g. John" className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          </FormField>
+          <FormField label="Middle Name">
+            <input value={form.middleName} onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))} placeholder="e.g. M." className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          </FormField>
+          <FormField label="Last Name" required>
+            <input value={form.lastName} onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))} placeholder="e.g. Smith" className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          </FormField>
+        </div>
         <FormField label="Email" required>
           <input
             type="email"

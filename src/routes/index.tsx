@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import Dashboard from "@/pages/Dashboard";
 import GuardManagement from "@/pages/GuardManagement";
@@ -19,6 +20,7 @@ export const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="guards" element={<GuardManagement />} />

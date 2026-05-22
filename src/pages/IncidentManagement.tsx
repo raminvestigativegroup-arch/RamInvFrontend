@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import StateMessage from "@/components/common/StateMessage";
+import SelectDropdown from "@/components/common/SelectDropdown";
 
 interface Incident {
   id: string;
@@ -226,22 +227,37 @@ const IncidentManagement = () => {
           </div>
 
           {/* Date */}
-          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="px-3 py-1.5 bg-secondary border border-border rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
-            <option value="all">All Dates</option>
-            {uniqueDates.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
+          <div className="w-36">
+            <SelectDropdown
+              value={dateFilter}
+              onChange={setDateFilter}
+              options={[{ value: "all", label: "All Dates" }, ...uniqueDates.map((d) => ({ value: d, label: d }))]}
+              placeholder="All Dates"
+              className="h-[32px] mb-0 text-xs"
+            />
+          </div>
 
           {/* Site */}
-          <select value={siteFilter} onChange={(e) => setSiteFilter(e.target.value)} className="px-3 py-1.5 bg-secondary border border-border rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
-            <option value="all">All Sites</option>
-            {siteNames.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <div className="w-36">
+            <SelectDropdown
+              value={siteFilter}
+              onChange={setSiteFilter}
+              options={[{ value: "all", label: "All Sites" }, ...siteNames.map((s) => ({ value: s, label: s }))]}
+              placeholder="All Sites"
+              className="h-[32px] mb-0 text-xs"
+            />
+          </div>
 
           {/* Guard */}
-          <select value={guardFilter} onChange={(e) => setGuardFilter(e.target.value)} className="px-3 py-1.5 bg-secondary border border-border rounded-lg text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
-            <option value="all">All Guards</option>
-            {guardIds.map((id) => <option key={id} value={id}>{guardMap[id] || id}</option>)}
-          </select>
+          <div className="w-36">
+            <SelectDropdown
+              value={guardFilter}
+              onChange={setGuardFilter}
+              options={[{ value: "all", label: "All Guards" }, ...guardIds.map((id) => ({ value: id, label: guardMap[id] || id }))]}
+              placeholder="All Guards"
+              className="h-[32px] mb-0 text-xs"
+            />
+          </div>
         </div>
       </div>
 
@@ -347,19 +363,17 @@ const IncidentManagement = () => {
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className={`priority-${selectedIncident.priority}`}>{selectedIncident.priority.toUpperCase()}</span>
-                    <div className="relative">
-                      <select 
-                        value={selectedIncident.status} 
-                        onChange={(e) => updateStatusMutation.mutate({ id: selectedIncident.id, status: e.target.value })}
-                        className={`status-badge-${selectedIncident.status === 'resolved' ? 'active' : selectedIncident.status === 'open' ? 'danger' : 'warning'} appearance-none cursor-pointer pr-8 focus:outline-none focus:ring-2 focus:ring-primary`}
-                      >
-                        <option value="open">Open</option>
-                        <option value="in-progress">In-Progress</option>
-                        <option value="resolved">Resolved</option>
-                      </select>
-                      <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-                        <svg className="w-3 h-3 text-current opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                      </div>
+                    <div className="relative w-32">
+                      <SelectDropdown
+                        value={selectedIncident.status}
+                        onChange={(val) => updateStatusMutation.mutate({ id: selectedIncident.id, status: val })}
+                        options={[
+                          { value: "open", label: "Open" },
+                          { value: "in-progress", label: "In-Progress" },
+                          { value: "resolved", label: "Resolved" },
+                        ]}
+                        className={`status-badge-${selectedIncident.status === 'resolved' ? 'active' : selectedIncident.status === 'open' ? 'danger' : 'warning'} h-[28px] py-0 mb-0`}
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-sm">

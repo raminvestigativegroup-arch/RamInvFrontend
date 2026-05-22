@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { sites, Manager } from "@/data/dummyData";
-import { Plus, MoreVertical, Mail, Phone, MapPin, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, UserCog } from "lucide-react";
+import { Plus, MoreVertical, Mail, Phone, MapPin, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, UserCog, Search, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -54,28 +54,38 @@ const normalizeManagersResponse = (response: any): any[] => {
   return response.managers || response.items || response.results || [];
 };
 
-const normalizeManager = (manager: any, index: number): Manager => ({
-  id: String(manager.id || manager._id || `M${String(index + 1).padStart(3, "0")}`),
-  name: String(manager.name || manager.fullName || "Unnamed Manager"),
-  email: String(manager.email || ""),
-  phoneNumber: String(manager.phoneNumber || manager.mobile || ""),
-  role: String(manager.role || "Site Manager"),
-  sites: Array.isArray(manager.sites)
-    ? manager.sites.map(String)
-    : manager.site
-      ? [String(manager.site)]
-      : [],
-  status: manager.status === "inactive" ? "inactive" : "active",
-  licenseExpiry: String(manager.licenseExpiry || manager.license_expiry || "N/A"),
-  avatar: String(manager.profilePhoto || manager.avatar || ""),
-  isVerified: manager.isVerified === true || manager.verified === true || manager.verified === "true" || manager.isVerified === "true",
-  roleId: manager.roleId ? String(manager.roleId) : undefined,
-});
+const normalizeManager = (manager: any, index: number): Manager => {
+  const firstName = String(manager.firstName || "");
+  const middleName = String(manager.middleName || "");
+  const lastName = String(manager.lastName || "");
+  const name = String(manager.name || [firstName, middleName, lastName].filter(Boolean).join(" ") || manager.fullName || "Unnamed Manager");
+  return {
+    id: String(manager.id || manager._id || `M${String(index + 1).padStart(3, "0")}`),
+    name,
+    firstName,
+    middleName,
+    lastName,
+    email: String(manager.email || ""),
+    phoneNumber: String(manager.phoneNumber || manager.mobile || ""),
+    role: String(manager.role || "Site Manager"),
+    sites: Array.isArray(manager.sites)
+      ? manager.sites.map(String)
+      : manager.site
+        ? [String(manager.site)]
+        : [],
+    status: manager.status === "inactive" ? "inactive" : "active",
+    licenseExpiry: String(manager.licenseExpiry || manager.license_expiry || "N/A"),
+    avatar: String(manager.profilePhoto || manager.avatar || ""),
+    isVerified: manager.isVerified === true || manager.verified === true || manager.verified === "true" || manager.isVerified === "true",
+    roleId: manager.roleId ? String(manager.roleId) : undefined,
+  };
+};
 
 const ManagerManagement = () => {
+  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const [form, setForm] = useState({ name: "", email: "", phoneNumber: "", roleId: "", selectedSites: [] as string[], status: "active" as "active" | "inactive", licenseExpiry: "2027-01-01", image: "" });
+  const [form, setForm] = useState({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", roleId: "", selectedSites: [] as string[], status: "active" as "active" | "inactive", licenseExpiry: "2027-01-01", image: "" });
   const [editingManager, setEditingManager] = useState<Manager | null>(null);
   const [deletingManager, setDeletingManager] = useState<Manager | null>(null);
   const [verifyingManager, setVerifyingManager] = useState<Manager | null>(null);
@@ -84,22 +94,37 @@ const ManagerManagement = () => {
   const queryClient = useQueryClient();
 
 
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   const {
     data: managerList = [],
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["managers", "full-list"],
+    queryKey: ["managers", debouncedSearch],
     queryFn: async () => {
-      const response = await api.managers.list();
+      const params: any = {};
+      if (debouncedSearch.trim()) {
+        params.search = debouncedSearch.trim();
+      }
+      const response = await api.managers.list(params);
       return normalizeManagersResponse(response.data as ManagerApiResponse).map(normalizeManager);
     },
   });
 
+  const filtered = managerList;
+
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
-  const showLoader = isLoading && managerList.length > 0;
-  const showEmpty = managerList.length === 0 || isNotFound;
+  const showLoader = isLoading && filtered.length > 0;
+  const showEmpty = filtered.length === 0 || isNotFound;
   const showError = isError && !isNotFound;
 
   const { data: rolesList = [] } = useQuery({
@@ -119,7 +144,7 @@ const ManagerManagement = () => {
       queryClient.invalidateQueries({ queryKey: ["managers"] });
       toast({ title: "Success", description: "Manager created successfully." });
       setOpen(false);
-      setForm({ name: "", email: "", phoneNumber: "", roleId: "", selectedSites: [], status: "active", licenseExpiry: "2027-01-01", image: "" });
+      setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", roleId: "", selectedSites: [], status: "active", licenseExpiry: "2027-01-01", image: "" });
     },
     onError: (error: any) => {
       toast({
@@ -131,7 +156,7 @@ const ManagerManagement = () => {
   });
 
   const updateManagerMutation = useMutation({
-    mutationFn: async (payload: { id: string; name?: string; phoneNumber?: string; roleId?: string; status?: string; licenseExpiry?: string; verified?: string; image?: string }) => {
+    mutationFn: async (payload: { id: string; firstName?: string; middleName?: string; lastName?: string; phoneNumber?: string; roleId?: string; status?: string; licenseExpiry?: string; verified?: string; image?: string }) => {
       const { id, ...data } = payload;
       const response = await api.managers.update(id, data);
       return response.data;
@@ -141,7 +166,7 @@ const ManagerManagement = () => {
       toast({ title: "Success", description: "Manager updated successfully." });
       setOpen(false);
       setEditingManager(null);
-      setForm({ name: "", email: "", phoneNumber: "", roleId: "", selectedSites: [], status: "active", licenseExpiry: "2027-01-01", image: "" });
+      setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", roleId: "", selectedSites: [], status: "active", licenseExpiry: "2027-01-01", image: "" });
     },
     onError: (error: any) => {
       toast({
@@ -185,13 +210,15 @@ const ManagerManagement = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email) {
-      toast({ title: "Validation Error", description: "Name and email are required.", variant: "destructive" });
+    if (!form.firstName || !form.lastName || !form.email) {
+      toast({ title: "Validation Error", description: "First name, last name, and email are required.", variant: "destructive" });
       return;
     }
 
     const payload: any = {
-      name: form.name,
+      firstName: form.firstName,
+      middleName: form.middleName,
+      lastName: form.lastName,
       email: form.email,
       phoneNumber: form.phoneNumber,
       roleId: form.roleId,
@@ -203,7 +230,9 @@ const ManagerManagement = () => {
     if (editingManager) {
       const updatePayload = {
         id: editingManager.id,
-        name: form.name,
+        firstName: form.firstName,
+        middleName: form.middleName,
+        lastName: form.lastName,
         phoneNumber: form.phoneNumber,
         roleId: form.roleId,
         status: form.status,
@@ -219,7 +248,9 @@ const ManagerManagement = () => {
   const handleEditClick = (mgr: Manager) => {
     setEditingManager(mgr);
     setForm({
-      name: mgr.name,
+      firstName: mgr.firstName || "",
+      middleName: mgr.middleName || "",
+      lastName: mgr.lastName || "",
       email: mgr.email,
       phoneNumber: mgr.phoneNumber,
       roleId: mgr.role === "Site Manager" ? "1" : mgr.role === "Regional Manager" ? "2" : "", // Fallback
@@ -253,6 +284,21 @@ const ManagerManagement = () => {
           className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
         >
           <Plus className="w-4 h-4" />Add Manager
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search managers..."
+            className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">
+          <Filter className="w-4 h-4" />Filters
         </button>
       </div>
       <EntityDialog
@@ -306,9 +352,17 @@ const ManagerManagement = () => {
           )}
         </FormField>
 
-        <FormField label="Full Name" required>
-          <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. John Smith" />
-        </FormField>
+        <div className="grid grid-cols-3 gap-3">
+          <FormField label="First Name" required>
+            <input value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} placeholder="e.g. John" className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          </FormField>
+          <FormField label="Middle Name">
+            <input value={form.middleName} onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))} placeholder="e.g. M." className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          </FormField>
+          <FormField label="Last Name" required>
+            <input value={form.lastName} onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))} placeholder="e.g. Smith" className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          </FormField>
+        </div>
         <FormField label="Email" required>
           <input
             type="email"
@@ -374,9 +428,9 @@ const ManagerManagement = () => {
         />
       )}
 
-      {!showLoader && !showError && !showEmpty && managerList.length > 0 && (
+      {!showLoader && !showError && !showEmpty && filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {managerList.map(mgr => (
+          {filtered.map(mgr => (
             <EntityCard
               key={mgr.id}
               title={mgr.name}

@@ -10,6 +10,9 @@ export interface Guard {
   avatar: ReactNode;
   id: string;
   name: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
   email: string;
   phoneNumber: string;
   site: string;
@@ -31,6 +34,9 @@ export interface Guard {
 export interface Manager {
   id: string;
   name: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
   email: string;
   phoneNumber: string;
   profilePhoto?: Text;

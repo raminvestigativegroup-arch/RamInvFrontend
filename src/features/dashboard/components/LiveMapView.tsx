@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { guards, sites } from "@/data/dummyData";
 import { Search, LocateFixed } from "lucide-react";
+import SelectDropdown from "@/components/common/SelectDropdown";
 
 const getMarkerColor = (guard: typeof guards[0]) => {
   if (guard.geofenceAlert) return "#ef4444";
@@ -81,15 +82,15 @@ const LiveMapView = ({ onSelectGuard, selectedGuardId, guards: dynamicGuards }: 
             )}
           </div>
           {/* Site Filter */}
-          <select
-            value={siteFilter}
-            onChange={e => setSiteFilter(e.target.value)}
-            className="text-xs bg-secondary border border-border rounded-lg px-2 py-1.5 text-foreground max-w-[160px]"
-          >
-            {siteNames.map(s => (
-              <option key={s} value={s}>{s === "all" ? "All Sites" : s}</option>
-            ))}
-          </select>
+          <div className="w-40">
+            <SelectDropdown
+              value={siteFilter}
+              onChange={setSiteFilter}
+              options={siteNames.map(s => ({ value: s, label: s === "all" ? "All Sites" : s }))}
+              placeholder="All Sites"
+              className="h-[32px] mb-0"
+            />
+          </div>
           {/* Reset */}
           <button onClick={() => { onSelectGuard?.(""); setSiteFilter("all"); }} title="Reset view" className="p-1.5 bg-secondary border border-border rounded-lg hover:bg-muted transition-colors">
             <LocateFixed className="w-3.5 h-3.5 text-foreground" />

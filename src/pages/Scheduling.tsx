@@ -9,6 +9,7 @@ import ScheduleCalendarView from "@/features/scheduling/components/ScheduleCalen
 import ScheduleWeekView from "@/features/scheduling/components/ScheduleWeekView";
 import ScheduleSiteView from "@/features/scheduling/components/ScheduleSiteView";
 import StateMessage from "@/components/common/StateMessage";
+import SelectDropdown from "@/components/common/SelectDropdown";
 
 type ViewMode = "calendar" | "week" | "site";
 
@@ -81,9 +82,13 @@ const Scheduling = () => {
 
   // Fetch Scheduling Entries
   const { data: rawEntries = [], isLoading: isLoadingEntries, isError: isErrorEntries, error: errorEntries } = useQuery({
-    queryKey: ["scheduling", "list"],
+    queryKey: ["scheduling", "list", filterSite],
     queryFn: async () => {
-      const response = await api.scheduling.list();
+      const params: any = {};
+      if (filterSite && filterSite !== "all") {
+        params.site = filterSite;
+      }
+      const response = await api.scheduling.list(params);
       const raw = response.data as any;
       const list = Array.isArray(raw) ? raw : (raw?.data || raw?.schedules || raw?.items || []);
       return Array.isArray(list) ? list : [];
@@ -242,7 +247,9 @@ const Scheduling = () => {
     deleteMutation.mutate(id);
   };
 
-  const todayShifts = useMemo(() => entries.filter((s: ScheduleEntry) => s.date === selectedDate), [entries, selectedDate]);
+  const filteredEntries = entries;
+
+  const todayShifts = useMemo(() => filteredEntries.filter((s: ScheduleEntry) => s.date === selectedDate), [filteredEntries, selectedDate]);
 
   const viewTabs: { id: ViewMode; label: string; icon: React.ReactNode }[] = [
     { id: "calendar", label: "Calendar", icon: <CalendarDays className="w-4 h-4" /> },
@@ -281,17 +288,16 @@ const Scheduling = () => {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
-          <select
+        <div className="flex items-center gap-3 w-48">
+          <SelectDropdown
             value={filterSite}
-            onChange={(e) => setFilterSite(e.target.value)}
-            className="px-3 py-1.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">All Sites</option>
-            {activeSites.map((s: any) => (
-              <option key={s.id} value={s.name}>{s.name}</option>
-            ))}
-          </select>
+            onChange={setFilterSite}
+            options={[
+              { value: "all", label: "All Sites" },
+              ...activeSites.map((s: any) => ({ value: s.name, label: s.name }))
+            ]}
+            placeholder="All Sites"
+          />
         </div>
       </div>
 
@@ -316,7 +322,7 @@ const Scheduling = () => {
       ) : (
         <>
           {viewMode === "calendar" && (
-            <ScheduleCalendarView entries={entries} onSelectDate={setSelectedDate} selectedDate={selectedDate} />
+            <ScheduleCalendarView entries={filteredEntries} onSelectDate={setSelectedDate} selectedDate={selectedDate} />
           )}
 
           {viewMode === "week" && (
@@ -350,7 +356,7 @@ const Scheduling = () => {
       )}
 
       {viewMode === "site" && (
-        <ScheduleSiteView entries={entries} selectedDate={selectedDate} />
+        <ScheduleSiteView entries={entries} selectedDate={selectedDate} sites={activeSites} />
       )}
 
       {/* Selected Day Detail */}
