@@ -266,6 +266,8 @@ const RolesPermissions = () => {
           title="No Roles Found"
           message="Create a new role to begin defining permissions."
           icon={UserCog}
+          onRetry={() => setCreateModalOpen(true)}
+          retryLabel="Create Role"
         />
       )}
 
