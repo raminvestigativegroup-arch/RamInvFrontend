@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import authService from "@/services/authService";
 import settingsService from "@/services/settingsService";
 import logo from "@/assets/logo.png";
+import FormField from "@/components/common/FormField";
 
 const SystemSettings = () => {
   // Company Info states
@@ -155,17 +156,15 @@ const SystemSettings = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Company Name</label>
+              <FormField label="Company Name" required>
                 <input
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                   placeholder="Company Name"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
+              </FormField>
+              <FormField label="Email" required>
                 <input
                   type="email"
                   value={email}
@@ -173,25 +172,23 @@ const SystemSettings = () => {
                   className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-muted-foreground cursor-not-allowed opacity-60 focus:outline-none transition-all"
                   placeholder="Email"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Phone</label>
+              </FormField>
+              <FormField label="Phone" required>
                 <input
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                   placeholder="Phone"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Address</label>
+              </FormField>
+              <FormField label="Address" required>
                 <input
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                   placeholder="Address"
                 />
-              </div>
+              </FormField>
             </div>
 
             <div className="flex justify-end pt-4 border-t border-border">
@@ -212,8 +209,7 @@ const SystemSettings = () => {
       <div className="bg-card rounded-xl border border-border p-6">
         <h2 className="text-lg font-semibold text-foreground mb-5">Change Password</h2>
         <form onSubmit={handlePasswordChange} className="space-y-5 max-w-xl">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Current Password</label>
+          <FormField label="Current Password" required>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
@@ -231,10 +227,9 @@ const SystemSettings = () => {
                 {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-          </div>
+          </FormField>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">New Password</label>
+          <FormField label="New Password" required>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
@@ -252,10 +247,9 @@ const SystemSettings = () => {
                 {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-          </div>
+          </FormField>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Confirm New Password</label>
+          <FormField label="Confirm New Password" required>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
@@ -273,7 +267,7 @@ const SystemSettings = () => {
                 {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-          </div>
+          </FormField>
 
           <div className="pt-2">
             <button
