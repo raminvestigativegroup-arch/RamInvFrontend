@@ -11,7 +11,7 @@ const ScheduleSiteView = ({ entries, selectedDate, sites }: Props) => {
   const activeSites = sites.filter((s) => s.status === "active");
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 border border-400-red">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {activeSites.map((site) => {
         const siteShifts = entries.filter((e) => e.site === site.name && e.date === selectedDate);
         const managerName = site.Manager?.name || site.manager || "Unassigned";
@@ -37,12 +37,11 @@ const ScheduleSiteView = ({ entries, selectedDate, sites }: Props) => {
                     <span className="text-sm font-medium text-foreground">{shift.guard}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">{shift.shiftStart}–{shift.shiftEnd}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                        shift.status === "completed" ? "bg-success/10 text-success" :
-                        shift.status === "in-progress" ? "bg-primary/10 text-primary" :
-                        shift.status === "missed" ? "bg-destructive/10 text-destructive" :
-                        "bg-muted text-muted-foreground"
-                      }`}>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${shift.status === "completed" ? "bg-success/10 text-success" :
+                          shift.status === "in-progress" ? "bg-primary/10 text-primary" :
+                            shift.status === "missed" ? "bg-destructive/10 text-destructive" :
+                              "bg-muted text-muted-foreground"
+                        }`}>
                         {shift.status}
                       </span>
                     </div>

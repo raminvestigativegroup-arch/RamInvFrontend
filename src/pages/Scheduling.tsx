@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { ScheduleEntry } from "@/data/dummyData";
-import { Plus, CalendarDays, LayoutGrid, MapPin, ChevronLeft, ChevronRight, Loader2, Calendar } from "lucide-react";
+import { Plus, CalendarDays, LayoutGrid, MapPin, ChevronLeft, ChevronRight, Loader2, Calendar, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ShiftFormDialog from "@/features/scheduling/components/ShiftFormDialog";
 import ScheduleCalendarView from "@/features/scheduling/components/ScheduleCalendarView";
@@ -10,6 +10,16 @@ import ScheduleWeekView from "@/features/scheduling/components/ScheduleWeekView"
 import ScheduleSiteView from "@/features/scheduling/components/ScheduleSiteView";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type ViewMode = "calendar" | "week" | "site";
 
@@ -26,7 +36,6 @@ const Scheduling = () => {
   const [filterSite, setFilterSite] = useState("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
   // Fetch Guards
   const { data: rawGuards = [] } = useQuery({
     queryKey: ["guards", "all"],
@@ -98,52 +107,52 @@ const Scheduling = () => {
   const entries = useMemo(() => {
     const guardsMap = new Map(guards.map((g: any) => [g.id || g._id, g.name || g.fullName || "Unknown Guard"]));
     const sitesMap = new Map(sites.map((s: any) => [s.id || s._id, s.name || "Unknown Site"]));
-    
+
     const parsed: ScheduleEntry[] = [];
-    
+
     for (const s of rawEntries) {
       const siteName = s.site?.name || s.siteName || sitesMap.get(s.siteId) || "Unknown Site";
-      
+
       const startStr = s.startDate || s.date;
       const endStr = s.endDate || s.date || s.startDate;
-      
+
       if (!startStr) continue;
-      
+
       const start = new Date(startStr);
       const end = endStr ? new Date(endStr) : new Date(start);
-      
+
       if (isNaN(start.getTime())) continue;
-      
+
       const guardIds = s.guardIds && Array.isArray(s.guardIds) ? s.guardIds : (s.guardId ? [s.guardId] : []);
-      
+
       if (guardIds.length === 0 && (s.guard || s.guardName)) {
-         const guardName = s.guard?.name || s.guardName;
-         // Check if this guard name exists in our verified guards map
-         const isVerified = Array.from(guardsMap.values()).includes(guardName);
-         
-         if (isVerified) {
-           parsed.push({
-              id: s.id || s._id,
-              guard: guardName,
-              site: siteName,
-              date: start.toISOString().split('T')[0],
-              shiftStart: (s.shiftStart || "00:00").substring(0, 5),
-              shiftEnd: (s.shiftEnd || "00:00").substring(0, 5),
-              status: s.status || "scheduled",
-              actualStart: s.actualStart,
-              actualEnd: s.actualEnd
-           });
-         }
-         continue;
+        const guardName = s.guard?.name || s.guardName;
+        // Check if this guard name exists in our verified guards map
+        const isVerified = Array.from(guardsMap.values()).includes(guardName);
+
+        if (isVerified) {
+          parsed.push({
+            id: s.id || s._id,
+            guard: guardName,
+            site: siteName,
+            date: start.toISOString().split('T')[0],
+            shiftStart: (s.shiftStart || "00:00").substring(0, 5),
+            shiftEnd: (s.shiftEnd || "00:00").substring(0, 5),
+            status: s.status || "scheduled",
+            actualStart: s.actualStart,
+            actualEnd: s.actualEnd
+          });
+        }
+        continue;
       }
-      
+
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0];
-        
+
         for (const gId of guardIds) {
           const guardName = guardsMap.get(gId);
           if (!guardName) continue; // Skip unverified or unknown guards
-          
+
           parsed.push({
             id: `${s.id || s._id}-${gId}-${dateStr}`,
             guard: guardName,
@@ -160,6 +169,13 @@ const Scheduling = () => {
     }
     return parsed;
   }, [rawEntries, guards, sites]);
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const deletingEntry = useMemo(() => entries.find(e => e.id === deletingId), [entries, deletingId]);
+
+
+
 
   const isNotFound = isErrorEntries && ((errorEntries as any)?.response?.status === 404 || (errorEntries as any)?.message?.includes("404"));
   const showLoader = isLoadingEntries && entries.length > 0;
@@ -204,6 +220,15 @@ const Scheduling = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scheduling"] });
       toast({ title: "Shift Deleted", description: "The shift has been removed." });
+      setDeletingId(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete Failed",
+        description: error.response?.data?.message || "Failed to delete shift.",
+        variant: "destructive",
+      });
+      setDeletingId(null);
     }
   });
 
@@ -223,10 +248,10 @@ const Scheduling = () => {
     const start = new Date(weekStart);
     const end = new Date(weekStart);
     end.setDate(end.getDate() + 6);
-    
+
     const startOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
     const endOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-    
+
     return `Week of ${start.toLocaleDateString('en-US', startOptions)} – ${end.toLocaleDateString('en-US', endOptions)}`;
   };
 
@@ -244,7 +269,7 @@ const Scheduling = () => {
   };
 
   const handleDelete = (id: string) => {
-    deleteMutation.mutate(id);
+    setDeletingId(id);
   };
 
   const filteredEntries = entries;
@@ -280,9 +305,8 @@ const Scheduling = () => {
             <button
               key={tab.id}
               onClick={() => setViewMode(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                viewMode === tab.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === tab.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               {tab.icon}{tab.label}
             </button>
@@ -328,25 +352,25 @@ const Scheduling = () => {
           {viewMode === "week" && (
             <>
               <div className="flex items-center gap-4">
-                <button 
+                <button
                   onClick={handlePrevWeek}
                   className="p-2 bg-secondary rounded-lg hover:bg-muted transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4 text-foreground" />
                 </button>
                 <h2 className="text-base font-semibold text-foreground">{getWeekRangeText()}</h2>
-                <button 
+                <button
                   onClick={handleNextWeek}
                   className="p-2 bg-secondary rounded-lg hover:bg-muted transition-colors"
                 >
                   <ChevronRight className="w-4 h-4 text-foreground" />
                 </button>
               </div>
-              <ScheduleWeekView 
+              <ScheduleWeekView
                 guards={guards}
-                entries={entries} 
-                onEdit={handleEdit} 
-                onDelete={handleDelete} 
+                entries={entries}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
                 filterSite={filterSite}
                 weekStart={weekStart}
               />
@@ -394,8 +418,8 @@ const Scheduling = () => {
                     <td className="px-5 py-3">
                       <span className={
                         entry.status === "in-progress" ? "status-badge-active" :
-                        entry.status === "completed" ? "status-badge-active" :
-                        entry.status === "missed" ? "status-badge-danger" : "status-badge-inactive"
+                          entry.status === "completed" ? "status-badge-active" :
+                            entry.status === "missed" ? "status-badge-danger" : "status-badge-inactive"
                       }>{entry.status}</span>
                     </td>
                     <td className="px-5 py-3 flex gap-2">
@@ -409,7 +433,6 @@ const Scheduling = () => {
           </div>
         )}
       </div>
-
       <ShiftFormDialog
         open={open}
         onOpenChange={(o) => { setOpen(o); if (!o) setEditEntry(null); }}
@@ -417,6 +440,32 @@ const Scheduling = () => {
         editEntry={editEntry}
         existingEntries={entries}
       />
+
+      <AlertDialog open={!!deletingId} onOpenChange={(val) => !val && setDeletingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-destructive" />
+              </div>
+              <AlertDialogTitle>Delete Shift?</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>
+              Are you sure you want to delete the shift for <strong>{deletingEntry?.guard || "this guard"}</strong> at <strong>{deletingEntry?.site || "this site"}</strong> on <strong>{deletingEntry?.date || "this date"}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingId && deleteMutation.mutate(deletingId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete Shift"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -86,18 +86,27 @@ const ScheduleWeekView = ({ entries, guards, onEdit, onDelete, filterSite, weekS
                   <td key={wd.dateStr} className={`px-2 py-3 text-center ${wd.isToday ? "bg-primary/5" : ""}`}>
                     {entry ? (
                       <div className="group relative mx-auto max-w-[100px]">
-                        <div className={`px-2 py-1.5 rounded-lg text-[10px] font-bold shadow-sm border ${entry.status === "completed" ? "bg-success/10 text-success border-success/20" :
-                          entry.status === "in-progress" ? "bg-primary/10 text-primary border-primary/20" :
-                            entry.status === "missed" ? "bg-destructive/10 text-destructive border-destructive/20" :
-                              "bg-secondary text-muted-foreground border-border"
-                          }`}>
+                        <div className={`px-2 py-2 rounded-lg text-[10px] font-bold shadow-sm border transition-all duration-200 ${
+                          entry.status === "completed" ? "bg-success/10 text-success border-success/20 group-hover:opacity-20" :
+                          entry.status === "in-progress" ? "bg-primary/10 text-primary border-primary/20 group-hover:opacity-20" :
+                          entry.status === "missed" ? "bg-destructive/10 text-destructive border-destructive/20 group-hover:opacity-20" :
+                          "bg-secondary text-muted-foreground border-border group-hover:opacity-20"
+                        }`}>
                           {entry.shiftStart}–{entry.shiftEnd}
                         </div>
-                        <div className="hidden group-hover:flex absolute -top-2 -right-2 gap-1 z-20 scale-90">
-                          <button onClick={() => onEdit(entry)} className="p-1.5 bg-card border border-border rounded-full shadow-lg hover:bg-primary hover:text-primary-foreground transition-all">
+                        <div className="opacity-0 group-hover:opacity-100 absolute inset-0 flex items-center justify-center gap-1 z-20 transition-all duration-200">
+                          <button
+                            onClick={() => onEdit(entry)}
+                            className="p-1 bg-card hover:bg-primary hover:text-primary-foreground border border-border rounded-md shadow-sm transition-all"
+                            title="Edit Shift"
+                          >
                             <Pencil className="w-3 h-3" />
                           </button>
-                          <button onClick={() => onDelete(entry.id)} className="p-1.5 bg-card border border-border rounded-full shadow-lg hover:bg-destructive hover:text-destructive-foreground transition-all">
+                          <button
+                            onClick={() => onDelete(entry.id)}
+                            className="p-1 bg-card hover:bg-destructive hover:text-destructive-foreground border border-border rounded-md shadow-sm transition-all"
+                            title="Delete Shift"
+                          >
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>

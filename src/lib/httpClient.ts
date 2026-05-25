@@ -45,6 +45,29 @@ httpClient.interceptors.request.use(
   }
 );
 
+// Flag to track if token is currently being refreshed
+let isRefreshing = false;
+// Queue to store requests that failed with 401 while token was refreshing
+let failedQueue: Array<{
+  resolve: (value: unknown) => void;
+  reject: (reason: unknown) => void;
+}> = [];
+
+/**
+ * Process the queue of pending requests
+ */
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((promise) => {
+    if (error) {
+      promise.reject(error);
+    } else {
+      promise.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
+
 /**
  * Response Interceptor
  * Handles errors and refreshes token if needed
@@ -70,29 +93,51 @@ httpClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      originalRequest._retry = true;
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => {
+            originalRequest._retry = true; // Mark as retried to prevent loops
+            return httpClient(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
 
-      try {
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      return new Promise((resolve, reject) => {
         console.log("Access token expired, attempting to refresh...");
         // Try to refresh token - browser will send the refresh token cookie
         // Using direct axios call to avoid interceptor loop
-        await axios.post(
+        axios.post(
           `${API_BASE_URL}/auth/refresh-token`,
           {}, // No body needed as it's in cookies
           { withCredentials: true }
-        );
-
-        console.log("Token refreshed successfully, retrying original request:", originalRequest.url);
-        // Retry original request
-        return httpClient(originalRequest);
-      } catch (refreshError) {
-        console.error("Token refresh failed, redirecting to login:", refreshError);
-        // Refresh failed, redirect to login or clear auth state
-        localStorage.removeItem("user");
-        localStorage.removeItem("securepro_auth");
-        window.location.href = "/"; // The correct login route in this app
-        return Promise.reject(refreshError);
-      }
+        )
+          .then(() => {
+            console.log("Token refreshed successfully, scheduling retries...");
+            // Yield to browser event loop (50ms) to ensure cookie storage is fully updated
+            setTimeout(() => {
+              processQueue(null);
+              resolve(httpClient(originalRequest));
+              isRefreshing = false;
+            }, 50);
+          })
+          .catch((refreshError) => {
+            console.error("Token refresh failed, redirecting to login:", refreshError);
+            processQueue(refreshError);
+            // Refresh failed, redirect to login or clear auth state
+            localStorage.removeItem("user");
+            localStorage.removeItem("securepro_auth");
+            window.location.href = "/"; // The correct login route in this app
+            reject(refreshError);
+            isRefreshing = false;
+          });
+      });
     }
 
     // Handle other errors
