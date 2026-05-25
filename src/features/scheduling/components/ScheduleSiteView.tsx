@@ -38,9 +38,9 @@ const ScheduleSiteView = ({ entries, selectedDate, sites }: Props) => {
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">{shift.shiftStart}–{shift.shiftEnd}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${shift.status === "completed" ? "bg-success/10 text-success" :
-                          shift.status === "in-progress" ? "bg-primary/10 text-primary" :
-                            shift.status === "missed" ? "bg-destructive/10 text-destructive" :
-                              "bg-muted text-muted-foreground"
+                        shift.status === "in-progress" ? "bg-primary/10 text-primary" :
+                          shift.status === "missed" ? "bg-destructive/10 text-destructive" :
+                            "bg-muted text-muted-foreground"
                         }`}>
                         {shift.status}
                       </span>

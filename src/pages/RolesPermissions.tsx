@@ -1,7 +1,7 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
-import { Shield, Plus, Edit, Check, X, UserCog, Trash2, AlertCircle } from "lucide-react";
+import { Shield, Plus, Edit, Check, X, UserCog, Trash2, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import EntityDialog from "@/components/common/EntityDialog";
 import StateMessage from "@/components/common/StateMessage";
@@ -30,21 +30,134 @@ interface Role {
   permissions?: PermissionRecord[];
 }
 
-const AVAILABLE_PERMISSIONS = [
-  { key: "webLogin", label: "Web Login Access", desc: "Allow users with this role to log in to the web dashboard" },
-  { key: "dashboard", label: "Dashboard", desc: "Access the main analytics dashboard and KPIs" },
-  { key: "guard", label: "Guard Management", desc: "Access guard profiles and duty registration" },
-  { key: "manager", label: "Manager Management", desc: "Configure manager access and notifications" },
-  { key: "site", label: "Site Management", desc: "Manage site geofencing and assignments" },
-  { key: "incident", label: "Incident Management", desc: "View and update security incident logs" },
-  { key: "scheduling", label: "Scheduling", desc: "Manage duty schedules and guard shifts" },
-  { key: "compliance", label: "Compliance", desc: "Verify documentation and certifications" },
-  { key: "hour", label: "Hours Tracking", desc: "Monitor clock-in/out and timesheets" },
-  { key: "report", label: "Reports", desc: "Generate and download analytics reports" },
-  { key: "notification", label: "Notifications", desc: "Send alerts and broadcast updates" },
-  { key: "role", label: "Roles & Permissions", desc: "Configure user permissions and system access" },
-  { key: "setting", label: "System Settings", desc: "System configurations and global settings" },
+const PERMISSION_MODULES = [
+  {
+    title: "General Access",
+    permissions: [
+      { key: "webLogin", label: "Web Login Access", desc: "Allow users with this role to log in to the web dashboard" },
+      { key: "dashboard", label: "Dashboard", desc: "Access the main analytics dashboard and KPIs" },
+    ]
+  },
+  {
+    title: "Guard Management",
+    baseKey: "guard",
+    actions: [
+      { action: "create", label: "Create Guard", desc: "Register new guard accounts" },
+      { action: "view", label: "View Guard", desc: "View lists and profiles of guards" },
+      { action: "edit", label: "Edit Guard", desc: "Update profiles and verify documents" },
+      { action: "delete", label: "Delete Guard", desc: "Remove guard profiles from the system" },
+    ]
+  },
+  {
+    title: "Manager Management",
+    baseKey: "manager",
+    actions: [
+      { action: "create", label: "Create Manager", desc: "Register new manager accounts" },
+      { action: "view", label: "View Manager", desc: "View lists and profiles of managers" },
+      { action: "edit", label: "Edit Manager", desc: "Update manager settings and assignments" },
+      { action: "delete", label: "Delete Manager", desc: "Remove manager profiles from the system" },
+    ]
+  },
+  {
+    title: "Site Management",
+    baseKey: "site",
+    actions: [
+      { action: "create", label: "Create Site", desc: "Register new sites and configure geofences" },
+      { action: "view", label: "View Site", desc: "View site lists and configuration details" },
+      { action: "edit", label: "Edit Site", desc: "Modify site geofences and guard assignments" },
+      { action: "delete", label: "Delete Site", desc: "Decommission and delete sites" },
+    ]
+  },
+  {
+    title: "Incident Management",
+    baseKey: "incident",
+    actions: [
+      { action: "create", label: "Create Incident", desc: "Log new incident reports" },
+      { action: "view", label: "View Incident", desc: "Access security incident logs and details" },
+      { action: "edit", label: "Edit Incident", desc: "Update or resolve incident tickets" },
+      { action: "delete", label: "Delete Incident", desc: "Delete incident records from historical logs" },
+    ]
+  },
+  {
+    title: "Scheduling",
+    baseKey: "scheduling",
+    actions: [
+      { action: "create", label: "Create Schedule", desc: "Schedule new guard shifts" },
+      { action: "view", label: "View Schedule", desc: "View duty calendars and weekly timelines" },
+      { action: "edit", label: "Edit Schedule", desc: "Modify schedules and shift assignments" },
+      { action: "delete", label: "Delete Schedule", desc: "Cancel and remove scheduled shifts" },
+    ]
+  },
+  {
+    title: "Compliance",
+    baseKey: "compliance",
+    actions: [
+      { action: "create", label: "Create Compliance Document", desc: "Upload and add certification files" },
+      { action: "view", label: "View Compliance Documents", desc: "Browse licenses, certifications, and compliance logs" },
+      { action: "edit", label: "Edit Compliance Status", desc: "Update document verification status and details" },
+      { action: "delete", label: "Delete Compliance Document", desc: "Remove compliance records from the database" },
+    ]
+  },
+  {
+    title: "Hours Tracking",
+    baseKey: "hour",
+    actions: [
+      { action: "create", label: "Create Timesheet Record", desc: "Manually log clock-in/out records" },
+      { action: "view", label: "View Timesheets", desc: "Monitor worked hours and weekly summaries" },
+      { action: "edit", label: "Edit Timesheets", desc: "Adjust check-in/out stamps and hours" },
+      { action: "delete", label: "Delete Timesheet Record", desc: "Remove attendance entries" },
+    ]
+  },
+  {
+    title: "Reports & Exports",
+    baseKey: "report",
+    actions: [
+      { action: "create", label: "Generate Report", desc: "Compile and build custom reports" },
+      { action: "view", label: "View Reports", desc: "Read history and preview generated reports" },
+      { action: "edit", label: "Edit Reports", desc: "Configure report templates and parameters" },
+      { action: "delete", label: "Delete Report", desc: "Remove reports from the history list" },
+    ]
+  },
+  {
+    title: "Notifications",
+    baseKey: "notification",
+    actions: [
+      { action: "create", label: "Send Notification", desc: "Broadcast new notifications and alerts" },
+      { action: "view", label: "View Notifications", desc: "Access the sent alerts feed" },
+      { action: "edit", label: "Edit Notification", desc: "Modify scheduled broadcasts" },
+      { action: "delete", label: "Delete Notification", desc: "Clear notification logs" },
+    ]
+  },
+  {
+    title: "Roles & Permissions",
+    baseKey: "role",
+    actions: [
+      { action: "create", label: "Create Role", desc: "Create new user roles" },
+      { action: "view", label: "View Roles", desc: "Browse system roles and matrix" },
+      { action: "edit", label: "Edit Permissions", desc: "Modify permissions assigned to roles" },
+      { action: "delete", label: "Delete Role", desc: "Remove roles from the system database" },
+    ]
+  },
+  {
+    title: "System Settings",
+    baseKey: "setting",
+    actions: [
+      { action: "create", label: "Create Setting Override", desc: "Define custom system variables" },
+      { action: "view", label: "View Settings", desc: "Access global and system parameters" },
+      { action: "edit", label: "Edit Settings", desc: "Modify company details and system settings" },
+      { action: "delete", label: "Reset Settings", desc: "Clear custom settings to default value" },
+    ]
+  }
 ];
+
+const AVAILABLE_PERMISSIONS = PERMISSION_MODULES.flatMap(mod => {
+  if ('permissions' in mod) return mod.permissions;
+  return mod.actions.map(act => ({
+    key: `${act.action}_${mod.baseKey}`,
+    label: act.label,
+    desc: act.desc
+  }));
+});
 
 const normalizeRoles = (resData: any): Role[] => {
   if (!resData) return [];
@@ -62,6 +175,16 @@ const hasPermission = (role: Role, permKey: string): boolean => {
 };
 
 const RolesPermissions = () => {
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+  const isAdmin = user?.role === "admin";
+
+  const hasViewPermission = isAdmin || permissions.includes("view_role") || permissions.includes("role");
+  const hasCreatePermission = isAdmin || permissions.includes("create_role") || permissions.includes("role");
+  const hasEditPermission = isAdmin || permissions.includes("edit_role") || permissions.includes("role");
+  const hasDeletePermission = isAdmin || permissions.includes("delete_role") || permissions.includes("role");
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -75,6 +198,54 @@ const RolesPermissions = () => {
   const [deletingRole, setDeletingRole] = useState<Role | null>(null);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+
+  const getModulePermissions = (mod: any) => {
+    if ('permissions' in mod) return mod.permissions;
+    return mod.actions.map((act: any) => ({
+      key: `${act.action}_${mod.baseKey}`,
+      label: act.label,
+      desc: act.desc
+    }));
+  };
+
+  const getModuleCheckedState = (mod: any) => {
+    const items = getModulePermissions(mod);
+    const checkedCount = items.filter((p: any) => selectedPermissions.includes(p.key)).length;
+    if (checkedCount === 0) return "none";
+    if (checkedCount === items.length) return "all";
+    return "partial";
+  };
+
+  const handleToggleModuleAll = (mod: any) => {
+    const items = getModulePermissions(mod);
+    const keys = items.map((p: any) => p.key);
+    const state = getModuleCheckedState(mod);
+    if (state === "all") {
+      setSelectedPermissions(prev => prev.filter(k => !keys.includes(k)));
+    } else {
+      setSelectedPermissions(prev => {
+        const withoutKeys = prev.filter(k => !keys.includes(k));
+        return [...withoutKeys, ...keys];
+      });
+    }
+  };
+
+  const toggleModuleExpanded = (title: string) => {
+    setExpandedModules(prev => ({
+      ...prev,
+      [title]: !prev[title]
+    }));
+  };
+
+  const handleSelectAll = () => {
+    const allKeys = PERMISSION_MODULES.flatMap(mod => getModulePermissions(mod).map((p: any) => p.key));
+    setSelectedPermissions(allKeys);
+  };
+
+  const handleClearAll = () => {
+    setSelectedPermissions([]);
+  };
 
 
   // Fetch Roles
@@ -209,7 +380,16 @@ const RolesPermissions = () => {
         }
       });
     }
-    setSelectedPermissions(currentPermissions);
+
+    // Get all valid UI permission keys
+    const allValidKeys = PERMISSION_MODULES.flatMap(mod =>
+      getModulePermissions(mod).map((p: any) => p.key)
+    );
+
+    // Filter to only include keys that correspond to UI checkboxes
+    const filteredPermissions = currentPermissions.filter((key) => allValidKeys.includes(key));
+
+    setSelectedPermissions(filteredPermissions);
     setAssignModalOpen(true);
   };
 
@@ -233,6 +413,18 @@ const RolesPermissions = () => {
   const showEmpty = rolesList.length === 0 || isNotFound;
   const showError = isError && !isNotFound;
 
+  if (!hasViewPermission) {
+    return (
+      <div className="p-6">
+        <StateMessage
+          type="error"
+          title="Access Denied"
+          message="You do not have permission to view Roles & Permissions."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="module-page-header">
@@ -240,12 +432,14 @@ const RolesPermissions = () => {
           <h1 className="module-page-title">Roles & Permissions</h1>
           <p className="text-sm text-muted-foreground">Define access levels and module permissions</p>
         </div>
-        <button
-          onClick={() => setCreateModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />Create Role
-        </button>
+        {hasCreatePermission && (
+          <button
+            onClick={() => setCreateModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" />Create Role
+          </button>
+        )}
       </div>
 
       {showLoader && (
@@ -285,47 +479,50 @@ const RolesPermissions = () => {
                       {/* <p className="text-xs text-muted-foreground">ID: {role.id.substring(0, 8)}...</p> */}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleOpenAssignModal(role)}
-                    className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted rounded-md transition-colors"
-                    title="Edit Permissions"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
+                  {hasEditPermission && (
+                    <button
+                      onClick={() => handleOpenAssignModal(role)}
+                      className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted rounded-md transition-colors"
+                      title="Edit Permissions"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {AVAILABLE_PERMISSIONS.map(perm => {
-                    const active = hasPermission(role, perm.key);
-                    return (
-                      <span
-                        key={perm.key}
-                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-all ${active
-                          ? "bg-success/10 text-success border border-success/20"
-                          : "bg-secondary/40 text-muted-foreground/60 border border-transparent"
-                          }`}
-                      >
-                        {perm.label}
-                      </span>
-                    );
-                  })}
+                  {AVAILABLE_PERMISSIONS.filter(perm => hasPermission(role, perm.key)).map(perm => (
+                    <span
+                      key={perm.key}
+                      className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/20"
+                    >
+                      {perm.label}
+                    </span>
+                  ))}
+                  {AVAILABLE_PERMISSIONS.filter(perm => hasPermission(role, perm.key)).length === 0 && (
+                    <span className="text-[10px] text-muted-foreground">No permissions assigned</span>
+                  )}
                 </div>
                 <div className="mt-4 pt-3 border-t border-border flex justify-end gap-2">
-                  <button
-                    onClick={() => handleOpenEditRoleModal(role)}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1.5 hover:bg-primary/5 rounded-md"
-                    title="Edit Role Name"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                    <span>Edit Role Name</span>
-                  </button>
-                  <button
-                    onClick={() => setDeletingRole(role)}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors px-2 py-1.5 hover:bg-destructive/5 rounded-md"
-                    title="Delete Role"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete Role</span>
-                  </button>
+                  {hasEditPermission && (
+                    <button
+                      onClick={() => handleOpenEditRoleModal(role)}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1.5 hover:bg-primary/5 rounded-md"
+                      title="Edit Role Name"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>Edit Role Name</span>
+                    </button>
+                  )}
+                  {hasDeletePermission && (
+                    <button
+                      onClick={() => setDeletingRole(role)}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors px-2 py-1.5 hover:bg-destructive/5 rounded-md"
+                      title="Delete Role"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Role</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -337,35 +534,56 @@ const RolesPermissions = () => {
           <div className="data-table overflow-x-auto bg-card rounded-xl border border-border">
             <div className="p-5 border-b border-border">
               <h2 className="text-lg font-semibold text-foreground">Permission Matrix</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Quick overview of permissions granted to each role</p>
             </div>
             <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="bg-secondary/50">
-                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-3.5">MODULE</th>
+                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-3.5">MODULE / PERMISSION</th>
                   {rolesList.map(r => (
                     <th key={r.id} className="text-center text-xs font-semibold text-muted-foreground px-4 py-3.5 capitalize">{r.name}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {AVAILABLE_PERMISSIONS.map(perm => (
-                  <tr key={perm.key} className="border-b border-border hover:bg-muted/35 transition-colors">
-                    <td className="px-5 py-3.5 text-sm font-medium text-foreground">{perm.label}</td>
-                    {rolesList.map(r => (
-                      <td key={r.id} className="text-center px-4 py-3.5">
-                        {hasPermission(r, perm.key) ? (
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-success/10">
-                            <Check className="w-4 h-4 text-success" />
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-destructive/10">
-                            <X className="w-4 h-4 text-destructive/70" />
-                          </span>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {PERMISSION_MODULES.map(mod => {
+                  const items = getModulePermissions(mod);
+                  return (
+                    <React.Fragment key={mod.title}>
+                      {/* Category Header Row */}
+                      <tr className="bg-secondary/20 border-b border-border/80">
+                        <td colSpan={rolesList.length + 1} className="px-5 py-2 text-xs font-extrabold uppercase tracking-wider text-primary bg-muted/15 select-none">
+                          {mod.title}
+                        </td>
+                      </tr>
+
+                      {/* Permission Rows */}
+                      {items.map(perm => (
+                        <tr key={perm.key} className="border-b border-border hover:bg-muted/30 transition-colors">
+                          <td className="pl-9 pr-5 py-3 text-sm text-foreground">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-foreground/90">{perm.label}</span>
+                              <span className="text-[11px] text-muted-foreground/80 font-normal leading-normal mt-0.5">{perm.desc}</span>
+                            </div>
+                          </td>
+                          {rolesList.map(r => (
+                            <td key={r.id} className="text-center px-4 py-3">
+                              {hasPermission(r, perm.key) ? (
+                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-success/10" title={`${r.name}: Enabled`}>
+                                  <Check className="w-3.5 h-3.5 text-success font-bold" />
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-destructive/5" title={`${r.name}: Disabled`}>
+                                  <X className="w-3.5 h-3.5 text-destructive/40" />
+                                </span>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -410,38 +628,121 @@ const RolesPermissions = () => {
         open={assignModalOpen}
         onOpenChange={(val) => {
           setAssignModalOpen(val);
-          if (!val) setSelectedRole(null);
+          if (!val) {
+            setSelectedRole(null);
+            setExpandedModules({});
+          }
         }}
         title={selectedRole ? `Assign Permissions: ${selectedRole.name}` : "Assign Permissions"}
         onSubmit={handleAssignPermissions}
         submitLabel={assignPermissionsMutation.isPending ? "Saving..." : "Save Permissions"}
         isLoading={assignPermissionsMutation.isPending}
-        maxWidth="sm:max-w-lg"
+        maxWidth="sm:max-w-2xl"
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-2">
-          {AVAILABLE_PERMISSIONS.map((perm) => {
-            const isChecked = selectedPermissions.includes(perm.key);
-            return (
-              <label
-                key={perm.key}
-                className={`flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none ${isChecked
-                  ? "bg-primary/5 border-primary/25 text-foreground font-medium"
-                  : "bg-card border-border hover:bg-muted/30 text-muted-foreground"
-                  }`}
+        <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-2 py-2">
+          {/* Bulk Selection Controls */}
+          <div className="flex items-center justify-between pb-3.5 border-b border-border text-xs">
+            <span className="font-semibold text-muted-foreground">
+              {selectedPermissions.length} / {PERMISSION_MODULES.flatMap(mod => getModulePermissions(mod)).length} permissions selected
+            </span>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="text-primary font-bold hover:underline"
               >
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => handleTogglePermission(perm.key)}
-                  className="w-4 h-4 mt-0.5 text-primary focus:ring-primary border-border rounded cursor-pointer"
-                />
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold">{perm.label}</span>
-                  <span className="text-xs text-muted-foreground/80 font-normal leading-normal">{perm.desc}</span>
+                Select All
+              </button>
+              <span className="text-border">|</span>
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="text-muted-foreground font-semibold hover:underline"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+
+          {/* Module Accordions */}
+          <div className="space-y-3">
+            {PERMISSION_MODULES.map((mod) => {
+              const items = getModulePermissions(mod);
+              const moduleState = getModuleCheckedState(mod);
+              const isExpanded = expandedModules[mod.title] ?? false;
+              const checkedCount = items.filter((p: any) => selectedPermissions.includes(p.key)).length;
+
+              return (
+                <div
+                  key={mod.title}
+                  className={`border rounded-xl bg-card overflow-hidden transition-all duration-200 shadow-sm ${isExpanded ? "border-primary/25 ring-1 ring-primary/5" : "border-border hover:border-border/80"
+                    }`}
+                >
+                  {/* Module Header */}
+                  <div
+                    onClick={() => toggleModuleExpanded(mod.title)}
+                    className="flex items-center justify-between px-4 py-3 bg-secondary/25 hover:bg-secondary/40 cursor-pointer select-none transition-colors"
+                  >
+                    <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={moduleState === "all"}
+                        ref={(el) => {
+                          if (el) el.indeterminate = moduleState === "partial";
+                        }}
+                        onChange={() => handleToggleModuleAll(mod)}
+                        className="w-4 h-4 text-primary focus:ring-primary border-border rounded cursor-pointer transition-colors"
+                      />
+                      <span className="text-sm font-semibold text-foreground">{mod.title}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${moduleState === "all" ? "bg-success/10 text-success border border-success/20" :
+                          moduleState === "partial" ? "bg-warning/10 text-warning border border-warning/20" :
+                            "bg-secondary text-muted-foreground border border-border"
+                        }`}>
+                        {checkedCount} / {items.length}
+                      </span>
+                    </div>
+
+                    <div className="text-muted-foreground">
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Collapsible Content */}
+                  {isExpanded && (
+                    <div className="p-4 bg-background border-t border-border/80 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in duration-200">
+                      {items.map((perm: any) => {
+                        const isChecked = selectedPermissions.includes(perm.key);
+                        return (
+                          <label
+                            key={perm.key}
+                            className={`flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none ${isChecked
+                                ? "bg-primary/5 border-primary/25 text-foreground font-medium shadow-sm"
+                                : "bg-card border-border hover:bg-muted/20 text-muted-foreground"
+                              }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleTogglePermission(perm.key)}
+                              className="w-4 h-4 mt-0.5 text-primary focus:ring-primary border-border rounded cursor-pointer"
+                            />
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-sm font-semibold">{perm.label}</span>
+                              <span className="text-xs text-muted-foreground/80 font-normal leading-normal">{perm.desc}</span>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </label>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </EntityDialog>
 
@@ -456,7 +757,7 @@ const RolesPermissions = () => {
               <AlertDialogTitle>Delete Role?</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Are you sure you want to delete the role <strong>{deletingRole?.name}</strong>? This action cannot be undone and will remove all associated permissions.
+              Are you sure you want to delete the role <strong>{deletingRole?.name}</strong>? This action cannot be undone and will remove all associated permissions. Note that this role cannot be deleted if it is currently assigned to any admins, managers, or guards.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -69,9 +69,31 @@ const reportPreviews: Record<string, { title: string; sections: { heading: strin
   },
 };
 
+import StateMessage from "@/components/common/StateMessage";
+
 const Reports = () => {
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+  const isAdmin = user?.role === "admin";
+
+  const hasViewPermission = isAdmin || permissions.includes("view_report") || permissions.includes("report");
+  const hasCreatePermission = isAdmin || permissions.includes("create_report") || permissions.includes("report");
+
   const [previewReport, setPreviewReport] = useState<string | null>(null);
   const preview = previewReport ? reportPreviews[previewReport] : null;
+
+  if (!hasViewPermission) {
+    return (
+      <div className="p-6">
+        <StateMessage
+          type="error"
+          title="Access Denied"
+          message="You do not have permission to view Reports."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -99,28 +121,30 @@ const Reports = () => {
       </div>
 
       {/* Quick Export */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          { label: "Incident Report", desc: "Export all incidents as PDF", icon: FileText },
-          { label: "Hours Report", desc: "Export hours data as Excel", icon: BarChart3 },
-          { label: "Compliance Report", desc: "Export compliance status as PDF", icon: FileText },
-        ].map((item) => (
-          <div key={item.label} className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
-                <item.icon className="w-5 h-5 text-primary" />
+      {hasCreatePermission && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { label: "Incident Report", desc: "Export all incidents as PDF", icon: FileText },
+            { label: "Hours Report", desc: "Export hours data as Excel", icon: BarChart3 },
+            { label: "Compliance Report", desc: "Export compliance status as PDF", icon: FileText },
+          ].map((item) => (
+            <div key={item.label} className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
+                  <item.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                <p className="text-xs text-muted-foreground">{item.desc}</p>
-              </div>
+              <button className="flex items-center gap-2 text-sm text-primary font-medium hover:underline">
+                <Download className="w-3.5 h-3.5" />Generate & Download
+              </button>
             </div>
-            <button className="flex items-center gap-2 text-sm text-primary font-medium hover:underline">
-              <Download className="w-3.5 h-3.5" />Generate & Download
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Report History with View */}
       <div className="data-table">

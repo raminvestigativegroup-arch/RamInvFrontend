@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { notifications } from "@/data/dummyData";
 import { Bell, AlertTriangle, Calendar, Settings, CheckCircle } from "lucide-react";
+import StateMessage from "@/components/common/StateMessage";
 
 const iconMap = {
   incident: AlertTriangle,
@@ -9,6 +11,26 @@ const iconMap = {
 };
 
 const Notifications = () => {
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+  const isAdmin = user?.role === "admin";
+
+  const hasViewPermission = isAdmin || permissions.includes("view_notification") || permissions.includes("notification");
+  const hasEditPermission = isAdmin || permissions.includes("edit_notification") || permissions.includes("notification");
+
+  if (!hasViewPermission) {
+    return (
+      <div className="p-6">
+        <StateMessage
+          type="error"
+          title="Access Denied"
+          message="You do not have permission to view Notifications."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="module-page-header">
@@ -16,7 +38,9 @@ const Notifications = () => {
           <h1 className="module-page-title">Notifications & Alerts</h1>
           <p className="text-sm text-muted-foreground">{notifications.filter(n => !n.read).length} unread notifications</p>
         </div>
-        <button className="px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted">Mark All Read</button>
+        {hasEditPermission && (
+          <button className="px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted">Mark All Read</button>
+        )}
       </div>
 
       {/* Alert Settings Preview */}

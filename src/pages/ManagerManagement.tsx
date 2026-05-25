@@ -82,6 +82,16 @@ const normalizeManager = (manager: any, index: number): Manager => {
 };
 
 const ManagerManagement = () => {
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+  const isAdmin = user?.role === "admin";
+
+  const hasViewPermission = isAdmin || permissions.includes("view_manager") || permissions.includes("manager");
+  const hasCreatePermission = isAdmin || permissions.includes("create_manager") || permissions.includes("manager");
+  const hasEditPermission = isAdmin || permissions.includes("edit_manager") || permissions.includes("manager");
+  const hasDeletePermission = isAdmin || permissions.includes("delete_manager") || permissions.includes("manager");
+
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
@@ -272,6 +282,18 @@ const ManagerManagement = () => {
     }));
   };
 
+  if (!hasViewPermission) {
+    return (
+      <div className="p-6">
+        <StateMessage
+          type="error"
+          title="Access Denied"
+          message="You do not have permission to view Manager Management."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="module-page-header">
@@ -279,12 +301,14 @@ const ManagerManagement = () => {
           <h1 className="module-page-title">Manager Management</h1>
           <p className="text-sm text-muted-foreground">{managerList.length} managers</p>
         </div>
-        <button
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />Add Manager
-        </button>
+        {hasCreatePermission && (
+          <button
+            onClick={() => setOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" />Add Manager
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
@@ -456,22 +480,26 @@ const ManagerManagement = () => {
                 <span className="text-xs text-muted-foreground">License: {mgr.licenseExpiry}</span>
               }
               menuItems={[
-                {
-                  label: "Profile Update",
-                  icon: User,
-                  onClick: () => handleEditClick(mgr)
-                },
-                {
-                  label: "Document Verify",
-                  icon: ShieldCheck,
-                  onClick: () => setVerifyingManager(mgr)
-                },
-                {
-                  label: "Delete Account",
-                  icon: Trash2,
-                  variant: "destructive",
-                  onClick: () => setDeletingManager(mgr)
-                },
+                ...(hasEditPermission ? [
+                  {
+                    label: "Profile Update",
+                    icon: User,
+                    onClick: () => handleEditClick(mgr)
+                  },
+                  {
+                    label: "Document Verify",
+                    icon: ShieldCheck,
+                    onClick: () => setVerifyingManager(mgr)
+                  }
+                ] : []),
+                ...(hasDeletePermission ? [
+                  {
+                    label: "Delete Account",
+                    icon: Trash2,
+                    variant: "destructive",
+                    onClick: () => setDeletingManager(mgr)
+                  }
+                ] : [])
               ]}
 
             />
@@ -489,7 +517,7 @@ const ManagerManagement = () => {
               <AlertDialogTitle>Delete Manager Account?</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deletingManager?.name}</strong>? This action cannot be undone and will remove all associated data.
+              Are you sure you want to delete <strong>{deletingManager?.name}</strong>? This action cannot be undone and will remove all associated data. Note that this manager cannot be deleted if they are currently assigned to any sites or upcoming/active schedules.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

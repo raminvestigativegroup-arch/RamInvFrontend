@@ -24,6 +24,16 @@ import {
 type ViewMode = "calendar" | "week" | "site";
 
 const Scheduling = () => {
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+  const isAdmin = user?.role === "admin";
+
+  const hasViewPermission = isAdmin || permissions.includes("view_scheduling") || permissions.includes("scheduling");
+  const hasCreatePermission = isAdmin || permissions.includes("create_scheduling") || permissions.includes("scheduling");
+  const hasEditPermission = isAdmin || permissions.includes("edit_scheduling") || permissions.includes("scheduling");
+  const hasDeletePermission = isAdmin || permissions.includes("delete_scheduling") || permissions.includes("scheduling");
+
   const [open, setOpen] = useState(false);
   const [editEntry, setEditEntry] = useState<ScheduleEntry | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
@@ -282,6 +292,18 @@ const Scheduling = () => {
     { id: "site", label: "By Site", icon: <MapPin className="w-4 h-4" /> },
   ];
 
+  if (!hasViewPermission) {
+    return (
+      <div className="p-6">
+        <StateMessage
+          type="error"
+          title="Access Denied"
+          message="You do not have permission to view Scheduling."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -290,12 +312,14 @@ const Scheduling = () => {
           <h1 className="module-page-title">Scheduling</h1>
           <p className="text-sm text-muted-foreground">Create shifts, assign guards, and manage weekly schedules</p>
         </div>
-        <button
-          onClick={() => { setEditEntry(null); setOpen(true); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />Create Shift
-        </button>
+        {hasCreatePermission && (
+          <button
+            onClick={() => { setEditEntry(null); setOpen(true); }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" />Create Shift
+          </button>
+        )}
       </div>
 
       {/* View Toggle & Filters */}
@@ -369,8 +393,8 @@ const Scheduling = () => {
               <ScheduleWeekView
                 guards={guards}
                 entries={entries}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
+                onEdit={hasEditPermission ? handleEdit : undefined}
+                onDelete={hasDeletePermission ? handleDelete : undefined}
                 filterSite={filterSite}
                 weekStart={weekStart}
               />
@@ -423,8 +447,15 @@ const Scheduling = () => {
                       }>{entry.status}</span>
                     </td>
                     <td className="px-5 py-3 flex gap-2">
-                      <button onClick={() => handleEdit(entry)} className="text-sm text-primary hover:underline">Edit</button>
-                      <button onClick={() => handleDelete(entry.id)} className="text-sm text-destructive hover:underline">Delete</button>
+                      {hasEditPermission && (
+                        <button onClick={() => handleEdit(entry)} className="text-sm text-primary hover:underline">Edit</button>
+                      )}
+                      {hasDeletePermission && (
+                        <button onClick={() => handleDelete(entry.id)} className="text-sm text-destructive hover:underline">Delete</button>
+                      )}
+                      {!hasEditPermission && !hasDeletePermission && (
+                        <span className="text-xs text-muted-foreground">None</span>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -60,8 +60,9 @@ export const api = {
     list: (params?: any) => httpClient.get("/guard/incidents", { params }),
     getById: (id: string) => httpClient.get(`/guard/incident/${id}`),
     update: (id: string, data: any) => httpClient.patch(`/guard/incident/${id}`, data),
-    create: (data: any) => httpClient.post("/", data),
-    delete: (id: string) => httpClient.delete(`/${id}`),
+    create: (data: any) => httpClient.post("/guard", data),
+    refine: (id: string) => httpClient.post(`/guard/incident/${id}/refine`),
+    delete: (id: string) => httpClient.delete(`/guard/${id}`),
   },
 
   // Scheduling
@@ -86,6 +87,11 @@ export const api = {
   documents: {
     list: (params?: any) => httpClient.get("/documents", { params }),
     getById: (id: string) => httpClient.get(`/documents/${id}`),
+    create: (data: FormData) => httpClient.post("/documents", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
   },
 
   // Hours Tracking

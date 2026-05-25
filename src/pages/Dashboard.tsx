@@ -19,6 +19,14 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+  const isAdmin = user?.role === "admin";
+
+  const hasGuardCreate = isAdmin || permissions.includes("create_guard") || permissions.includes("guard");
+  const hasSchedulingCreate = isAdmin || permissions.includes("create_scheduling") || permissions.includes("scheduling");
+
   const { data: guardStatusList = [] } = useQuery({
     queryKey: ["dashboard", "guard-status"],
     queryFn: () => dashboardService.getGuardStatus(),
@@ -58,11 +66,15 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Welcome back, Admin · Feb 25, 2026</p>
+          <p className="text-sm text-muted-foreground">Welcome back, {user?.name || user?.role || "User"}</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => navigate("/dashboard/guards")} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">Add Guard</button>
-          <button onClick={() => navigate("/dashboard/scheduling")} className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">Create Schedule</button>
+          {hasGuardCreate && (
+            <button onClick={() => navigate("/dashboard/guards")} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">Add Guard</button>
+          )}
+          {hasSchedulingCreate && (
+            <button onClick={() => navigate("/dashboard/scheduling")} className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">Create Schedule</button>
+          )}
         </div>
       </div>
 

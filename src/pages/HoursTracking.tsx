@@ -1,7 +1,29 @@
+import { useState } from "react";
 import { guards } from "@/data/dummyData";
 import { Download, Filter } from "lucide-react";
+import StateMessage from "@/components/common/StateMessage";
 
 const HoursTracking = () => {
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+  const isAdmin = user?.role === "admin";
+
+  const hasViewPermission = isAdmin || permissions.includes("view_hour") || permissions.includes("hour");
+  const hasEditPermission = isAdmin || permissions.includes("edit_hour") || permissions.includes("hour");
+
+  if (!hasViewPermission) {
+    return (
+      <div className="p-6">
+        <StateMessage
+          type="error"
+          title="Access Denied"
+          message="You do not have permission to view Hours & Attendance."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="module-page-header">
@@ -11,7 +33,9 @@ const HoursTracking = () => {
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted"><Filter className="w-4 h-4" />This Week</button>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90"><Download className="w-4 h-4" />Export Report</button>
+          {hasEditPermission && (
+            <button className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90"><Download className="w-4 h-4" />Export Report</button>
+          )}
         </div>
       </div>
 

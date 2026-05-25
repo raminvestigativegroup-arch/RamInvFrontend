@@ -44,7 +44,10 @@ const DashboardLayout = () => {
 
   const filteredNavItems = navItems.filter((item) => {
     if (user?.role === "admin") return true;
-    return permissions.includes(item.permission);
+    return (
+      permissions.includes(item.permission) ||
+      permissions.includes(`view_${item.permission}`)
+    );
   });
 
   const handleLogout = async () => {

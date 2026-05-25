@@ -39,6 +39,7 @@ interface EntityCardProps {
   actions?: React.ReactNode;
   menuItems?: MenuItem[];
   className?: string;
+  onClick?: () => void;
 }
 
 
@@ -55,9 +56,13 @@ const EntityCard: React.FC<EntityCardProps> = ({
   actions,
   menuItems,
   className = "",
+  onClick,
 }) => {
   return (
-    <div className={`bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow ${className}`}>
+    <div 
+      onClick={onClick}
+      className={`bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''} ${className}`}
+    >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -87,10 +92,10 @@ const EntityCard: React.FC<EntityCardProps> = ({
             {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {badge && <span className={badge.className}>{badge.label}</span>}
           {actions || (
-            menuItems ? (
+            menuItems && menuItems.length > 0 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="p-1 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors">

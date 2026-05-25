@@ -56,6 +56,16 @@ const normalizeManager = (manager: any): any => ({
 });
 
 const SiteManagement = () => {
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+  const isAdmin = user?.role === "admin";
+
+  const hasViewPermission = isAdmin || permissions.includes("view_site") || permissions.includes("site");
+  const hasCreatePermission = isAdmin || permissions.includes("create_site") || permissions.includes("site");
+  const hasEditPermission = isAdmin || permissions.includes("edit_site") || permissions.includes("site");
+  const hasDeletePermission = isAdmin || permissions.includes("delete_site") || permissions.includes("site");
+
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
@@ -290,6 +300,18 @@ const SiteManagement = () => {
     setOpen(true);
   };
 
+  if (!hasViewPermission) {
+    return (
+      <div className="p-6">
+        <StateMessage
+          type="error"
+          title="Access Denied"
+          message="You do not have permission to view Site Management."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="module-page-header">
@@ -297,12 +319,14 @@ const SiteManagement = () => {
           <h1 className="module-page-title">Site Management</h1>
           <p className="text-sm text-muted-foreground">{siteList.length} sites registered</p>
         </div>
-        <button
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />Add Site
-        </button>
+        {hasCreatePermission && (
+          <button
+            onClick={() => setOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" />Add Site
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
@@ -429,17 +453,21 @@ const SiteManagement = () => {
                 <span className="text-xs text-muted-foreground">Manager: {managersList.find(m => m.id === site.manager)?.name || site.manager}</span>
               }
               menuItems={[
-                {
-                  label: "Site Update",
-                  icon: MapPin,
-                  onClick: () => handleEditClick(site)
-                },
-                {
-                  label: "Delete Site",
-                  icon: Trash2,
-                  variant: "destructive",
-                  onClick: () => setDeletingSite(site)
-                },
+                ...(hasEditPermission ? [
+                  {
+                    label: "Site Update",
+                    icon: MapPin,
+                    onClick: () => handleEditClick(site)
+                  }
+                ] : []),
+                ...(hasDeletePermission ? [
+                  {
+                    label: "Delete Site",
+                    icon: Trash2,
+                    variant: "destructive",
+                    onClick: () => setDeletingSite(site)
+                  }
+                ] : [])
               ]}
               footerContent={(siteGuardIdsMap.get(site.id) && siteGuardIdsMap.get(site.id)!.size > 0) ? (
                 <div className="flex -space-x-2">
@@ -477,7 +505,7 @@ const SiteManagement = () => {
               <AlertDialogTitle>Delete Site?</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deletingSite?.name}</strong>? This action cannot be undone and will remove all associated data.
+              Are you sure you want to delete <strong>{deletingSite?.name}</strong>? This action cannot be undone and will remove all associated data. Note that this site cannot be deleted if it is currently associated with any upcoming or active duty schedules.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

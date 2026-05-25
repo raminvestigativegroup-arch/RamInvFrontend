@@ -84,6 +84,16 @@ const aiSummaries: Record<string, string> = {
 };
 
 const IncidentManagement = () => {
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+  const isAdmin = user?.role === "admin";
+
+  const hasViewPermission = isAdmin || permissions.includes("view_incident") || permissions.includes("incident");
+  const hasCreatePermission = isAdmin || permissions.includes("create_incident") || permissions.includes("incident");
+  const hasEditPermission = isAdmin || permissions.includes("edit_incident") || permissions.includes("incident");
+  const hasDeletePermission = isAdmin || permissions.includes("delete_incident") || permissions.includes("incident");
+
   const [search, setSearch] = useState("");
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -91,8 +101,38 @@ const IncidentManagement = () => {
   const [guardFilter, setGuardFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [aiIncidentId, setAiIncidentId] = useState<string | null>(null);
+  const [aiActiveTab, setAiActiveTab] = useState<"refined" | "original">("refined");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: refinedData, isLoading: isRefining, isError: isRefineError } = useQuery({
+    queryKey: ["incidents", aiIncidentId, "refine"],
+    queryFn: async () => {
+      if (!aiIncidentId) return null;
+      const response = await api.incidents.refine(aiIncidentId);
+      return response.data; // expects { success: true, original: string, refined: string }
+    },
+    enabled: !!aiIncidentId,
+    retry: 1
+  });
+
+  const applyRefinedDescriptionMutation = useMutation({
+    mutationFn: (data: { id: string; description: string }) =>
+      api.incidents.update(data.id, { description: data.description }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["incidents"] });
+      queryClient.invalidateQueries({ queryKey: ["incidents", selectedIncidentId] });
+      setAiIncidentId(null);
+      toast({ title: "AI Refinement Saved", description: "Incident description has been updated with the refined report." });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Error saving report",
+        description: err.response?.data?.message || "Failed to update incident.",
+        variant: "destructive"
+      });
+    }
+  });
 
   const { data: incidentList = [], isLoading, isError, error } = useQuery({
     queryKey: ["incidents"],
@@ -184,6 +224,18 @@ const IncidentManagement = () => {
   const siteNames = useMemo(() => [...new Set(incidentList.map((i) => i.site))].sort(), [incidentList]);
 
   const activeFilters = [priorityFilter, siteFilter, guardFilter, dateFilter].filter((f) => f !== "all").length;
+
+  if (!hasViewPermission) {
+    return (
+      <div className="p-6">
+        <StateMessage
+          type="error"
+          title="Access Denied"
+          message="You do not have permission to view Incident Management."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -319,24 +371,28 @@ const IncidentManagement = () => {
                       </td>
                       <td className="px-5 py-3 text-sm text-muted-foreground whitespace-nowrap">{inc.date}<br /><span className="text-xs">{inc.time}</span></td>
                       <td className="px-5 py-3 text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <button className="p-1 hover:bg-secondary rounded-lg transition-colors">
-                              <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'open' }); }}>
-                              <AlertTriangle className="w-4 h-4 mr-2 text-destructive" /> Mark Open
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'in-progress' }); }}>
-                              <Clock className="w-4 h-4 mr-2 text-warning" /> In Progress
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'resolved' }); }}>
-                              <CheckCircle2 className="w-4 h-4 mr-2 text-success" /> Resolved
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        {hasEditPermission ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <button className="p-1 hover:bg-secondary rounded-lg transition-colors">
+                                <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'open' }); }}>
+                                <AlertTriangle className="w-4 h-4 mr-2 text-destructive" /> Mark Open
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'in-progress' }); }}>
+                                <Clock className="w-4 h-4 mr-2 text-warning" /> In Progress
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'resolved' }); }}>
+                                <CheckCircle2 className="w-4 h-4 mr-2 text-success" /> Resolved
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">None</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -372,6 +428,7 @@ const IncidentManagement = () => {
                           { value: "in-progress", label: "In-Progress" },
                           { value: "resolved", label: "Resolved" },
                         ]}
+                        disabled={!hasEditPermission}
                         className={`status-badge-${selectedIncident.status === 'resolved' ? 'active' : selectedIncident.status === 'open' ? 'danger' : 'warning'} h-[28px] py-0 mb-0`}
                       />
                     </div>
@@ -416,7 +473,7 @@ const IncidentManagement = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="w-5 h-5 text-primary" />AI Incident Summary
+              <Sparkles className="w-5 h-5 text-primary" />AI Report Refiner
             </DialogTitle>
           </DialogHeader>
           {aiSelected && (
@@ -425,13 +482,72 @@ const IncidentManagement = () => {
                 <p className="text-sm font-semibold text-foreground">{aiSelected.title}</p>
                 <p className="text-xs text-muted-foreground">{aiSelected.site} · {aiSelected.date} {aiSelected.time}</p>
               </div>
-              <div className="bg-accent rounded-lg p-4">
-                <p className="text-sm text-foreground leading-relaxed">{aiSummaries[aiSelected.id] || "AI summary is being generated..."}</p>
-              </div>
-              <div className="flex gap-2">
-                <span className={`priority-${aiSelected.priority}`}>{aiSelected.priority.toUpperCase()}</span>
-                <span className={aiSelected.status === "resolved" ? "status-badge-active" : "status-badge-danger"}>{aiSelected.status}</span>
-              </div>
+
+              {isRefining ? (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <Loader2 className="w-6 h-6 animate-spin mb-2 text-primary" />
+                  <p className="text-sm">Gemini AI is refining raw notes...</p>
+                </div>
+              ) : isRefineError ? (
+                <div className="bg-destructive/10 text-destructive p-4 rounded-lg text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Failed to refine report with AI.</span>
+                </div>
+              ) : (
+                <>
+                  {/* Tab Selector */}
+                  <div className="flex border-b border-border">
+                    <button
+                      onClick={() => setAiActiveTab("refined")}
+                      className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
+                        aiActiveTab === "refined" ? "border-primary text-primary" : "border-transparent text-muted-foreground"
+                      }`}
+                    >
+                      AI Refined
+                    </button>
+                    <button
+                      onClick={() => setAiActiveTab("original")}
+                      className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
+                        aiActiveTab === "original" ? "border-primary text-primary" : "border-transparent text-muted-foreground"
+                      }`}
+                    >
+                      Original Notes
+                    </button>
+                  </div>
+
+                  <div className="bg-muted/50 rounded-lg p-4 font-mono text-xs whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
+                    {aiActiveTab === "refined" ? refinedData?.refined : refinedData?.original}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <span className={`priority-${aiSelected.priority}`}>{aiSelected.priority.toUpperCase()}</span>
+                    <span className={aiSelected.status === "resolved" ? "status-badge-active" : "status-badge-danger"}>{aiSelected.status}</span>
+                  </div>
+
+                  {aiActiveTab === "refined" && refinedData?.refined && (
+                    <button
+                      onClick={() =>
+                        applyRefinedDescriptionMutation.mutate({
+                          id: aiSelected.id,
+                          description: refinedData.refined,
+                        })
+                      }
+                      disabled={applyRefinedDescriptionMutation.isPending}
+                      className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-primary text-primary-foreground font-medium rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {applyRefinedDescriptionMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" /> Approve & Update Description
+                        </>
+                      )}
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           )}
         </DialogContent>
