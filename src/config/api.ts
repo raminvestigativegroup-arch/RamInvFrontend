@@ -96,11 +96,11 @@ export const api = {
 
   // Hours Tracking
   hoursTracking: {
-    list: (params?: any) => httpClient.get("/hours", { params }),
-    getById: (id: string) => httpClient.get(`/hours/${id}`),
-    getSummary: (params?: any) => httpClient.get("/hours/summary", { params }),
-    clockIn: (data: any) => httpClient.post("/hours/clock-in", data),
-    clockOut: (data: any) => httpClient.post("/hours/clock-out", data),
+    list: (params?: any) => httpClient.get("/attendance/hours", { params }),
+    getById: (id: string) => httpClient.get(`/attendance/hours/${id}`),
+    getSummary: (params?: any) => httpClient.get("/attendance/hours/summary", { params }),
+    clockIn: (data: any) => httpClient.post("/attendance/hours/clock-in", data),
+    clockOut: (data: any) => httpClient.post("/attendance/hours/clock-out", data),
   },
 
   // Reports
@@ -109,7 +109,10 @@ export const api = {
     getById: (id: string) => httpClient.get(`/reports/${id}`),
     generate: (data: any) => httpClient.post("/reports/generate", data),
     download: (id: string) => httpClient.get(`/reports/${id}/download`, { responseType: 'blob' }),
+    getStats: () => httpClient.get("/reports/stats"),
+    getPreview: (id: string) => httpClient.get(`/reports/${id}/preview`),
   },
+
 
   // Notifications
   notifications: {
