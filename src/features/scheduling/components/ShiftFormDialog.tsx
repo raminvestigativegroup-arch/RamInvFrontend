@@ -6,6 +6,7 @@ import { Check, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import SelectDropdown from "@/components/common/SelectDropdown";
+import TimeSelect from "@/components/common/TimeSelect";
 
 interface Props {
   open: boolean;
@@ -33,7 +34,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
       try {
         const response = await api.guards.list({ verified: true });
         const raw = response.data as any;
-        
+
         let list: any[] = [];
         if (Array.isArray(raw)) list = raw;
         else if (Array.isArray(raw?.data)) list = raw.data;
@@ -42,7 +43,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
         } else {
           list = raw?.guards || raw?.items || raw?.results || [];
         }
-        
+
         return (Array.isArray(list) ? list : [])
           .map((g: any) => ({
             id: g.id || g._id,
@@ -66,7 +67,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
       try {
         const response = await api.sites.list({ status: "active" });
         const raw = response.data as any;
-        
+
         let list: any[] = [];
         if (Array.isArray(raw)) list = raw;
         else if (Array.isArray(raw?.data)) list = raw.data;
@@ -75,7 +76,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
         } else {
           list = raw?.site || raw?.sites || raw?.items || raw?.results || [];
         }
-        
+
         return (Array.isArray(list) ? list : [])
           .map((s: any) => ({
             id: s.id || s._id,
@@ -107,13 +108,13 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
           shiftEnd: editEntry.shiftEnd.substring(0, 5),
         });
       } else {
-        setForm({ 
-          selectedGuards: [], 
-          siteId: "", 
-          startDate: new Date().toISOString().split('T')[0], 
+        setForm({
+          selectedGuards: [],
+          siteId: "",
+          startDate: new Date().toISOString().split('T')[0],
           endDate: new Date().toISOString().split('T')[0],
-          shiftStart: "06:00", 
-          shiftEnd: "14:00" 
+          shiftStart: "06:00",
+          shiftEnd: "14:00"
         });
       }
     }
@@ -216,20 +217,20 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Start Date *</label>
-                <input 
-                  type="date" 
-                  value={form.startDate} 
-                  onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))} 
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" 
+                <input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">End Date *</label>
-                <input 
-                  type="date" 
-                  value={form.endDate} 
-                  onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))} 
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" 
+                <input
+                  type="date"
+                  value={form.endDate}
+                  onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
@@ -237,11 +238,11 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Shift Start</label>
-                <input type="time" value={form.shiftStart} onChange={(e) => setForm((f) => ({ ...f, shiftStart: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+                <TimeSelect value={form.shiftStart} onChange={(val) => setForm((f) => ({ ...f, shiftStart: val }))} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Shift End</label>
-                <input type="time" value={form.shiftEnd} onChange={(e) => setForm((f) => ({ ...f, shiftEnd: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+                <TimeSelect value={form.shiftEnd} onChange={(val) => setForm((f) => ({ ...f, shiftEnd: val }))} />
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-2">

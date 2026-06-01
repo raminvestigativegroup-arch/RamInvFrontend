@@ -108,7 +108,24 @@ const SiteManagement = () => {
     },
   });
 
-  const filtered = siteList;
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [managerFilter, setManagerFilter] = useState("all");
+
+  const filtered = useMemo(() => {
+    return siteList.filter((s) => {
+      const matchStatus =
+        statusFilter === "all" ||
+        s.status === statusFilter;
+      
+      const matchManager =
+        managerFilter === "all" ||
+        (managerFilter === "unassigned" && (!s.manager || s.manager === "Unassigned" || s.manager === "Unassigned Manager")) ||
+        String(s.manager).toLowerCase() === managerFilter.toLowerCase();
+      
+      return matchStatus && matchManager;
+    });
+  }, [siteList, statusFilter, managerFilter]);
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
   const showLoader = isLoading && filtered.length > 0;
@@ -329,19 +346,73 @@ const SiteManagement = () => {
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search sites..."
-            className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search sites..."
+              className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${showFilters ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
+          >
+            <Filter className="w-4 h-4" />Filters
+          </button>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">
-          <Filter className="w-4 h-4" />Filters
-        </button>
+
+        {showFilters && (
+          <div className="flex flex-wrap items-center gap-3 p-4 bg-secondary/35 border border-border rounded-xl">
+            {/* Status Filter */}
+            <div className="w-40">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Status</label>
+              <SelectDropdown
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={[
+                  { value: "all", label: "All Statuses" },
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                ]}
+                placeholder="All Statuses"
+                className="h-[32px] text-xs py-0 mb-0"
+              />
+            </div>
+
+            {/* Manager Filter */}
+            <div className="w-48">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Assigned Manager</label>
+              <SelectDropdown
+                value={managerFilter}
+                onChange={setManagerFilter}
+                options={[
+                  { value: "all", label: "All Managers" },
+                  { value: "unassigned", label: "Unassigned" },
+                  ...managersList.map((m: any) => ({ value: m.id, label: m.name })),
+                ]}
+                placeholder="All Managers"
+                className="h-[32px] text-xs py-0 mb-0"
+              />
+            </div>
+
+            {/* Clear Filters Button */}
+            {(statusFilter !== "all" || managerFilter !== "all") && (
+              <button
+                onClick={() => {
+                  setStatusFilter("all");
+                  setManagerFilter("all");
+                }}
+                className="mt-5 px-3 py-1.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold rounded-lg transition-colors border border-border"
+              >
+                Reset Filters
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <EntityDialog
         open={open}

@@ -92,6 +92,8 @@ export const api = {
         "Content-Type": "multipart/form-data",
       },
     }),
+    update: (id: string, data: any) => httpClient.patch(`/documents/${id}`, data),
+    delete: (id: string) => httpClient.delete(`/documents/${id}`),
   },
 
   // Hours Tracking

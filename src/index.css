@@ -234,3 +234,12 @@
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
+/* Hide scrollbars utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+

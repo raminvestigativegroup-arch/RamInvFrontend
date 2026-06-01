@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/config/api";
+import { api, API_BASE_URL } from "@/config/api";
 import { sites, Guard } from "@/data/dummyData";
 import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -97,12 +97,67 @@ const normalizeGuard = (guard: RawRecord, index: number): Guard => {
     lastSeen: String(guard.lastSeen || "Never"),
     lat: Number(guard.lat || 0),
     lng: Number(guard.lng || 0),
-    profilePhoto: String(guard.profilePhoto || guard.avatar || getInitials(name) || "G"),
+    profilePhoto: String(guard.profilePhoto || guard.avatar || ""),
     hoursThisWeek: Number(guard.hoursThisWeek || 0),
     scheduledHours: Number(guard.scheduledHours || 0),
     isVerified: guard.isVerified === true || guard.verified === true || guard.verified === "true" || guard.isVerified === "true",
     roleId: String(guard.roleId || ""),
   };
+};
+
+const resolveImageUrl = (pathOrData: string | undefined | null) => {
+  if (!pathOrData) return undefined;
+  if (pathOrData.startsWith("data:") || pathOrData.startsWith("http:") || pathOrData.startsWith("https:")) {
+    return pathOrData;
+  }
+  if (pathOrData.startsWith("uploads/")) {
+    const cleanPath = pathOrData.replace(/\\/g, "/");
+    const host = API_BASE_URL.replace("/api/v1", "");
+    return `${host}/${cleanPath}`;
+  }
+  return undefined;
+};
+
+const getComplianceDetails = (personId: string, documents: any[]) => {
+  const personDocs = documents.filter((doc: any) => doc.ownerId === personId && doc.ownerType === "Guard");
+  if (personDocs.length === 0) {
+    return { complianceStatus: "N/A", licenseExpiry: "N/A" };
+  }
+
+  let licenseDoc = personDocs.find((doc: any) =>
+    (doc.name || "").toLowerCase().includes("license")
+  );
+  if (!licenseDoc) {
+    licenseDoc = personDocs[0];
+  }
+
+  let status = "valid";
+  let expiryDateStr = "N/A";
+
+  if (licenseDoc) {
+    expiryDateStr = licenseDoc.expiryDate || "N/A";
+    if (licenseDoc.expiryDate) {
+      const expDate = new Date(licenseDoc.expiryDate);
+      if (!isNaN(expDate.getTime())) {
+        expiryDateStr = expDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      } else {
+        expiryDateStr = String(licenseDoc.expiryDate).split("T")[0];
+      }
+
+      const today = new Date();
+      const diffMs = expDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) {
+        status = "expired";
+      } else if (diffDays <= 30) {
+        status = "expiring";
+      } else {
+        status = "valid";
+      }
+    }
+  }
+
+  return { complianceStatus: status, licenseExpiry: expiryDateStr };
 };
 
 const GuardManagement = () => {
@@ -135,6 +190,17 @@ const GuardManagement = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
+  // Fetch compliance documents
+  const { data: rawDocuments = [] } = useQuery({
+    queryKey: ["documents"],
+    queryFn: async () => {
+      const response = await api.documents.list();
+      const data = response.data?.data || response.data || {};
+      const docs = Array.isArray(data) ? data : (Array.isArray(data.documents) ? data.documents : (data.id ? [data] : []));
+      return docs;
+    },
+  });
+
   const {
     data: guardList = [],
     isLoading,
@@ -163,7 +229,7 @@ const GuardManagement = () => {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: (data: { firstName: string; middleName?: string; lastName: string; email: string; phoneNumber: string; roleType: string; image?: string }) =>
+    mutationFn: (data: { firstName: string; middleName?: string; lastName: string; email: string; phoneNumber: string; roleType: string; profilePhoto?: string }) =>
       api.guards.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guards"] });
@@ -181,7 +247,7 @@ const GuardManagement = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { id: string; firstName?: string; middleName?: string; lastName?: string; phoneNumber?: string; roleType?: string; verified?: string; image?: string }) =>
+    mutationFn: (data: { id: string; firstName?: string; middleName?: string; lastName?: string; phoneNumber?: string; roleType?: string; verified?: string; profilePhoto?: string }) =>
       api.guards.update(data.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guards"] });
@@ -216,7 +282,50 @@ const GuardManagement = () => {
   });
 
 
-  const filtered = guardList;
+  const [showFilters, setShowFilters] = useState(false);
+  const [verifiedFilter, setVerifiedFilter] = useState("all");
+  const [siteFilter, setSiteFilter] = useState("all");
+  const [complianceFilter, setComplianceFilter] = useState("all");
+
+  const { data: siteList = [] } = useQuery({
+    queryKey: ["sites"],
+    queryFn: async () => {
+      try {
+        const response = await api.sites.list();
+        const raw = response.data as any;
+        let list: any[] = [];
+        if (Array.isArray(raw)) list = raw;
+        else if (Array.isArray(raw?.data)) list = raw.data;
+        else if (raw?.data && typeof raw.data === 'object') {
+          list = raw.data.site || raw.data.sites || raw.data.items || raw.data.results || [];
+        } else {
+          list = raw?.site || raw?.sites || raw?.items || raw?.results || [];
+        }
+        return (Array.isArray(list) ? list : []).map((s: any) => ({
+          id: s.id || s._id,
+          name: s.name || "Unnamed Site"
+        }));
+      } catch (e) {
+        return [];
+      }
+    }
+  });
+
+  const filtered = useMemo(() => {
+    return guardList.filter((g) => {
+      const matchVerified =
+        verifiedFilter === "all" ||
+        (verifiedFilter === "verified" && g.isVerified) ||
+        (verifiedFilter === "unverified" && !g.isVerified);
+      const matchSite =
+        siteFilter === "all" ||
+        g.site.toLowerCase() === siteFilter.toLowerCase();
+      const matchCompliance =
+        complianceFilter === "all" ||
+        g.complianceStatus === complianceFilter;
+      return matchVerified && matchSite && matchCompliance;
+    });
+  }, [guardList, verifiedFilter, siteFilter, complianceFilter]);
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
   const showLoader = isLoading && filtered.length > 0;
@@ -249,7 +358,7 @@ const GuardManagement = () => {
         lastName: form.lastName,
         phoneNumber: form.phoneNumber,
         roleType: form.roleType,
-        image: form.image,
+        profilePhoto: form.image,
       });
     } else {
       createMutation.mutate({
@@ -259,7 +368,7 @@ const GuardManagement = () => {
         email: form.email,
         phoneNumber: form.phoneNumber,
         roleType: form.roleType || "guard",
-        image: form.image,
+        profilePhoto: form.image,
       });
     }
   };
@@ -274,7 +383,7 @@ const GuardManagement = () => {
       phoneNumber: guard.phoneNumber,
       site: guard.site,
       licenseExpiry: guard.licenseExpiry,
-      image: guard.profilePhoto?.startsWith("data:") ? guard.profilePhoto : "",
+      image: resolveImageUrl(guard.profilePhoto) || "",
       roleType: rolesList.find((r: any) => r.id === guard.roleId)?.name || "",
     });
     setOpen(true);
@@ -296,14 +405,86 @@ const GuardManagement = () => {
         </button>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search guards..." className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search guards..." className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${showFilters ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
+          >
+            <Filter className="w-4 h-4" />Filters
+          </button>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">
-          <Filter className="w-4 h-4" />Filters
-        </button>
+
+        {showFilters && (
+          <div className="flex flex-wrap items-center gap-3 p-4 bg-secondary/35 border border-border rounded-xl">
+            {/* Status / Verification Filter */}
+            <div className="w-40">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Status</label>
+              <SelectDropdown
+                value={verifiedFilter}
+                onChange={setVerifiedFilter}
+                options={[
+                  { value: "all", label: "All Statuses" },
+                  { value: "verified", label: "Verified Only" },
+                  { value: "unverified", label: "Unverified Only" },
+                ]}
+                placeholder="All Statuses"
+                className="h-[32px] text-xs py-0 mb-0"
+              />
+            </div>
+
+            {/* Site Filter */}
+            <div className="w-44">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Assigned Site</label>
+              <SelectDropdown
+                value={siteFilter}
+                onChange={setSiteFilter}
+                options={[
+                  { value: "all", label: "All Sites" },
+                  { value: "unassigned", label: "Unassigned" },
+                  ...siteList.map((s: any) => ({ value: s.name, label: s.name })),
+                ]}
+                placeholder="All Sites"
+                className="h-[32px] text-xs py-0 mb-0"
+              />
+            </div>
+
+            {/* Compliance Status Filter */}
+            <div className="w-40">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Compliance</label>
+              <SelectDropdown
+                value={complianceFilter}
+                onChange={setComplianceFilter}
+                options={[
+                  { value: "all", label: "All Compliance" },
+                  { value: "valid", label: "Valid License" },
+                  { value: "expiring", label: "Expiring Soon" },
+                  { value: "expired", label: "Expired License" },
+                ]}
+                placeholder="All Compliance"
+                className="h-[32px] text-xs py-0 mb-0"
+              />
+            </div>
+
+            {/* Clear Filters Button */}
+            {(verifiedFilter !== "all" || siteFilter !== "all" || complianceFilter !== "all") && (
+              <button
+                onClick={() => {
+                  setVerifiedFilter("all");
+                  setSiteFilter("all");
+                  setComplianceFilter("all");
+                }}
+                className="mt-5 px-3 py-1.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold rounded-lg transition-colors border border-border"
+              >
+                Reset Filters
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {showLoader && (
@@ -329,60 +510,61 @@ const GuardManagement = () => {
 
       {!showLoader && !showError && !showEmpty && filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((guard) => (
-            <EntityCard
-              key={guard.id}
-              title={guard.name}
-              subtitle={rolesList.find((r: any) => r.id === guard.roleId)?.name || "Guard"}
-              avatar={{
-                text: getInitials(guard.name),
-                src: guard.profilePhoto?.startsWith("data:") ? guard.profilePhoto : undefined
-              }}
-              details={[
-                { icon: Mail, content: guard.email },
-                { icon: Phone, content: guard.phoneNumber },
-              ]}
-              footerLeft={guard.site}
-              footerMiddle={
-                <span className={guard.isVerified ? "status-badge-active" : "status-badge-inactive"}>
-                  {guard.isVerified ? "Verified" : "Not Verified"}
-                </span>
-              }
-              footerRight={
-                <span className={guard.status === "on-duty" ? "status-badge-active" : guard.status === "break" ? "status-badge-warning" : "status-badge-inactive"}>
-                  {guard.status === "on-duty" ? "On Duty" : guard.status === "break" ? "Break" : "Off Duty"}
-                </span>
-              }
-              menuItems={[
-                {
-                  label: "Profile Update",
-                  icon: User,
-                  onClick: () => handleEditClick(guard)
-                },
-                {
-                  label: "Document Verify",
-                  icon: ShieldCheck,
-                  onClick: () => setVerifyingGuard(guard)
-                },
-                {
-                  label: "Delete Account",
-                  icon: Trash2,
-                  variant: "destructive",
-                  onClick: () => setDeletingGuard(guard)
-                },
-              ]}
-
-
-              footerContent={
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-medium ${guard.complianceStatus === "valid" ? "text-success" : guard.complianceStatus === "expiring" ? "text-warning" : "text-destructive"}`}>
-                    License: {guard.complianceStatus}
+          {filtered.map((guard) => {
+            const { complianceStatus, licenseExpiry } = getComplianceDetails(guard.id, rawDocuments);
+            return (
+              <EntityCard
+                key={guard.id}
+                title={guard.name}
+                subtitle={rolesList.find((r: any) => r.id === guard.roleId)?.name || "Guard"}
+                avatar={{
+                  text: getInitials(guard.name),
+                  src: resolveImageUrl(guard.profilePhoto)
+                }}
+                details={[
+                  { icon: Mail, content: guard.email },
+                  { icon: Phone, content: guard.phoneNumber },
+                ]}
+                footerLeft={guard.site}
+                footerMiddle={
+                  <span className={guard.isVerified ? "status-badge-active" : "status-badge-inactive"}>
+                    {guard.isVerified ? "Verified" : "Not Verified"}
                   </span>
-                  <span className="text-xs text-muted-foreground">Exp: {guard.licenseExpiry}</span>
-                </div>
-              }
-            />
-          ))}
+                }
+                footerRight={
+                  <span className={guard.status === "on-duty" ? "status-badge-active" : guard.status === "break" ? "status-badge-warning" : "status-badge-inactive"}>
+                    {guard.status === "on-duty" ? "On Duty" : guard.status === "break" ? "Break" : "Off Duty"}
+                  </span>
+                }
+                menuItems={[
+                  {
+                    label: "Profile Update",
+                    icon: User,
+                    onClick: () => handleEditClick(guard)
+                  },
+                  {
+                    label: "Document Verify",
+                    icon: ShieldCheck,
+                    onClick: () => setVerifyingGuard(guard)
+                  },
+                  {
+                    label: "Delete Account",
+                    icon: Trash2,
+                    variant: "destructive",
+                    onClick: () => setDeletingGuard(guard)
+                  },
+                ]}
+                footerContent={
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-medium ${complianceStatus === "valid" ? "text-success" : complianceStatus === "expiring" ? "text-warning" : complianceStatus === "expired" ? "text-destructive" : "text-muted-foreground"}`}>
+                      License: {complianceStatus}
+                    </span>
+                    <span className="text-xs text-muted-foreground">Exp: {licenseExpiry}</span>
+                  </div>
+                }
+              />
+            );
+          })}
         </div>
       )}
 

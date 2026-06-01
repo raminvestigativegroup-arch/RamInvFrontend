@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
+import DateSelect from "@/components/common/DateSelect";
 
 interface Incident {
   id: string;
@@ -157,6 +158,26 @@ const IncidentManagement = () => {
     }
   });
 
+  const { data: siteList = [] } = useQuery({
+    queryKey: ["sites"],
+    queryFn: async () => {
+      const response = await api.sites.list();
+      const raw = response.data as any;
+      let list: any[] = [];
+      if (Array.isArray(raw)) list = raw;
+      else if (Array.isArray(raw?.data)) list = raw.data;
+      else if (raw?.data && typeof raw.data === 'object') {
+        list = raw.data.site || raw.data.sites || raw.data.items || raw.data.results || [];
+      } else {
+        list = raw?.site || raw?.sites || raw?.items || raw?.results || [];
+      }
+      return (Array.isArray(list) ? list : []).map(s => ({
+        id: String(s.id || s._id),
+        name: String(s.name || "Unknown Site")
+      }));
+    }
+  });
+
   const guardMap = useMemo(() => {
     return guardList.reduce((acc, g) => {
       acc[g.id] = g.name;
@@ -279,13 +300,12 @@ const IncidentManagement = () => {
           </div>
 
           {/* Date */}
-          <div className="w-36">
-            <SelectDropdown
-              value={dateFilter}
-              onChange={setDateFilter}
-              options={[{ value: "all", label: "All Dates" }, ...uniqueDates.map((d) => ({ value: d, label: d }))]}
+          <div className="w-[180px]">
+            <DateSelect
+              value={dateFilter === "all" ? "" : dateFilter}
+              onChange={(val) => setDateFilter(val || "all")}
               placeholder="All Dates"
-              className="h-[32px] mb-0 text-xs"
+              className="h-[32px] text-xs font-semibold"
             />
           </div>
 
@@ -294,7 +314,7 @@ const IncidentManagement = () => {
             <SelectDropdown
               value={siteFilter}
               onChange={setSiteFilter}
-              options={[{ value: "all", label: "All Sites" }, ...siteNames.map((s) => ({ value: s, label: s }))]}
+              options={[{ value: "all", label: "All Sites" }, ...siteList.map((s) => ({ value: s.name, label: s.name }))] || []}
               placeholder="All Sites"
               className="h-[32px] mb-0 text-xs"
             />
@@ -305,7 +325,7 @@ const IncidentManagement = () => {
             <SelectDropdown
               value={guardFilter}
               onChange={setGuardFilter}
-              options={[{ value: "all", label: "All Guards" }, ...guardIds.map((id) => ({ value: id, label: guardMap[id] || id }))]}
+              options={[{ value: "all", label: "All Guards" }, ...guardList.map((g) => ({ value: g.id, label: g.name }))] || []}
               placeholder="All Guards"
               className="h-[32px] mb-0 text-xs"
             />

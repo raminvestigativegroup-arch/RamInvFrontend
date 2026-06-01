@@ -3,6 +3,7 @@ import { Download, Filter, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import StateMessage from "@/components/common/StateMessage";
+import SelectDropdown from "@/components/common/SelectDropdown";
 
 const HoursTracking = () => {
   const userStr = localStorage.getItem("user");
@@ -94,6 +95,12 @@ const HoursTracking = () => {
   const summary = response?.summary || { totalScheduled: 0, totalWorked: 0, totalOvertime: 0, totalShortage: 0 };
   const guardRecords = response?.guards || [];
 
+  const periodOptions = [
+    { value: "this-week", label: "This Week" },
+    { value: "last-week", label: "Last Week" },
+    { value: "all", label: "All Time" }
+  ];
+
   return (
     <div className="p-6 space-y-6">
       <div className="module-page-header">
@@ -102,20 +109,13 @@ const HoursTracking = () => {
           <p className="text-sm text-muted-foreground">Track worked hours, overtime, and attendance</p>
         </div>
         <div className="flex gap-3">
-          <div className="relative inline-block text-left">
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value as any)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted outline-none border border-border appearance-none cursor-pointer pr-10"
-            >
-              <option value="this-week">This Week</option>
-              <option value="last-week">Last Week</option>
-              <option value="all">All Time</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
-              <Filter className="w-4 h-4 mr-2" />
-            </div>
-          </div>
+          <SelectDropdown
+            value={period}
+            onChange={(val) => setPeriod(val as any)}
+            options={periodOptions}
+            placeholder="Select period"
+            className="w-[140px]"
+          />
 
           {hasEditPermission && (
             <button

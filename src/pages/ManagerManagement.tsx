@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/config/api";
+import { api, API_BASE_URL } from "@/config/api";
 import { sites, Manager } from "@/data/dummyData";
 import { Plus, MoreVertical, Mail, Phone, MapPin, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, UserCog, Search, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -81,6 +81,61 @@ const normalizeManager = (manager: any, index: number): Manager => {
   };
 };
 
+const resolveImageUrl = (pathOrData: string | undefined | null) => {
+  if (!pathOrData) return undefined;
+  if (pathOrData.startsWith("data:") || pathOrData.startsWith("http:") || pathOrData.startsWith("https:")) {
+    return pathOrData;
+  }
+  if (pathOrData.startsWith("uploads/")) {
+    const cleanPath = pathOrData.replace(/\\/g, "/");
+    const host = API_BASE_URL.replace("/api/v1", "");
+    return `${host}/${cleanPath}`;
+  }
+  return undefined;
+};
+
+const getComplianceDetails = (personId: string, documents: any[]) => {
+  const personDocs = documents.filter((doc: any) => doc.ownerId === personId && doc.ownerType === "Manager");
+  if (personDocs.length === 0) {
+    return { complianceStatus: "N/A", licenseExpiry: "N/A" };
+  }
+
+  let licenseDoc = personDocs.find((doc: any) => 
+    (doc.name || "").toLowerCase().includes("license")
+  );
+  if (!licenseDoc) {
+    licenseDoc = personDocs[0];
+  }
+
+  let status = "valid";
+  let expiryDateStr = "N/A";
+
+  if (licenseDoc) {
+    expiryDateStr = licenseDoc.expiryDate || "N/A";
+    if (licenseDoc.expiryDate) {
+      const expDate = new Date(licenseDoc.expiryDate);
+      if (!isNaN(expDate.getTime())) {
+        expiryDateStr = expDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      } else {
+        expiryDateStr = String(licenseDoc.expiryDate).split("T")[0];
+      }
+      
+      const today = new Date();
+      const diffMs = expDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) {
+        status = "expired";
+      } else if (diffDays <= 30) {
+        status = "expiring";
+      } else {
+        status = "valid";
+      }
+    }
+  }
+
+  return { complianceStatus: status, licenseExpiry: expiryDateStr };
+};
+
 const ManagerManagement = () => {
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
@@ -113,6 +168,17 @@ const ManagerManagement = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
+  // Fetch compliance documents
+  const { data: rawDocuments = [] } = useQuery({
+    queryKey: ["documents"],
+    queryFn: async () => {
+      const response = await api.documents.list();
+      const data = response.data?.data || response.data || {};
+      const docs = Array.isArray(data) ? data : (Array.isArray(data.documents) ? data.documents : (data.id ? [data] : []));
+      return docs;
+    },
+  });
+
   const {
     data: managerList = [],
     isLoading,
@@ -130,7 +196,46 @@ const ManagerManagement = () => {
     },
   });
 
-  const filtered = managerList;
+  const [showFilters, setShowFilters] = useState(false);
+  const [verifiedFilter, setVerifiedFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const { data: siteList = [] } = useQuery({
+    queryKey: ["sites"],
+    queryFn: async () => {
+      try {
+        const response = await api.sites.list();
+        const raw = response.data as any;
+        let list: any[] = [];
+        if (Array.isArray(raw)) list = raw;
+        else if (Array.isArray(raw?.data)) list = raw.data;
+        else if (raw?.data && typeof raw.data === 'object') {
+          list = raw.data.site || raw.data.sites || raw.data.items || raw.data.results || [];
+        } else {
+          list = raw?.site || raw?.sites || raw?.items || raw?.results || [];
+        }
+        return (Array.isArray(list) ? list : []).map((s: any) => ({
+          id: s.id || s._id,
+          name: s.name || "Unnamed Site"
+        }));
+      } catch (e) {
+        return [];
+      }
+    }
+  });
+
+  const filtered = useMemo(() => {
+    return managerList.filter((m) => {
+      const matchVerified =
+        verifiedFilter === "all" ||
+        (verifiedFilter === "verified" && m.isVerified) ||
+        (verifiedFilter === "unverified" && !m.isVerified);
+      const matchStatus =
+        statusFilter === "all" ||
+        m.status === statusFilter;
+      return matchVerified && matchStatus;
+    });
+  }, [managerList, verifiedFilter, statusFilter]);
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
   const showLoader = isLoading && filtered.length > 0;
@@ -267,7 +372,7 @@ const ManagerManagement = () => {
       selectedSites: mgr.sites,
       status: mgr.status as "active" | "inactive",
       licenseExpiry: mgr.licenseExpiry,
-      image: "" // Managers usually don't have avatar strings in this mockup
+      image: resolveImageUrl(mgr.avatar) || ""
     });
     setOpen(true);
   };
@@ -311,19 +416,73 @@ const ManagerManagement = () => {
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search managers..."
-            className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          />
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search managers..."
+              className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${showFilters ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
+          >
+            <Filter className="w-4 h-4" />Filters
+          </button>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">
-          <Filter className="w-4 h-4" />Filters
-        </button>
+
+        {showFilters && (
+          <div className="flex flex-wrap items-center gap-3 p-4 bg-secondary/35 border border-border rounded-xl">
+            {/* Status / Verification Filter */}
+            <div className="w-40">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Status</label>
+              <SelectDropdown
+                value={verifiedFilter}
+                onChange={setVerifiedFilter}
+                options={[
+                  { value: "all", label: "All Statuses" },
+                  { value: "verified", label: "Verified Only" },
+                  { value: "unverified", label: "Unverified Only" },
+                ]}
+                placeholder="All Statuses"
+                className="h-[32px] text-xs py-0 mb-0"
+              />
+            </div>
+
+            {/* Account Status Filter */}
+            <div className="w-40">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Account State</label>
+              <SelectDropdown
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={[
+                  { value: "all", label: "All Accounts" },
+                  { value: "active", label: "Active Only" },
+                  { value: "inactive", label: "Inactive Only" },
+                ]}
+                placeholder="All Accounts"
+                className="h-[32px] text-xs py-0 mb-0"
+              />
+            </div>
+
+            {/* Clear Filters Button */}
+            {(verifiedFilter !== "all" || statusFilter !== "all") && (
+              <button
+                onClick={() => {
+                  setVerifiedFilter("all");
+                  setStatusFilter("all");
+                }}
+                className="mt-5 px-3 py-1.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold rounded-lg transition-colors border border-border"
+              >
+                Reset Filters
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <EntityDialog
         open={open}
@@ -454,56 +613,63 @@ const ManagerManagement = () => {
 
       {!showLoader && !showError && !showEmpty && filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(mgr => (
-            <EntityCard
-              key={mgr.id}
-              title={mgr.name}
-              subtitle={mgr.role}
-              avatar={{
-                text: mgr.name.split(" ").map(n => n[0]).join(""),
-                src: mgr.avatar?.startsWith("data:") ? mgr.avatar : undefined
-              }}
-              details={[
-                { icon: Mail, content: mgr.email },
-                { icon: Phone, content: mgr.phoneNumber },
-                ...mgr.sites.map(site => ({ icon: MapPin, content: site }))
-              ]}
-              footerLeft={
-                <span className={mgr.status === "active" ? "status-badge-active" : "status-badge-inactive"}>{mgr.status}</span>
-              }
-              footerMiddle={
-                <span className={mgr.isVerified ? "status-badge-active" : "status-badge-inactive"}>
-                  {mgr.isVerified ? "Verified" : "Not Verified"}
-                </span>
-              }
-              footerRight={
-                <span className="text-xs text-muted-foreground">License: {mgr.licenseExpiry}</span>
-              }
-              menuItems={[
-                ...(hasEditPermission ? [
-                  {
-                    label: "Profile Update",
-                    icon: User,
-                    onClick: () => handleEditClick(mgr)
-                  },
-                  {
-                    label: "Document Verify",
-                    icon: ShieldCheck,
-                    onClick: () => setVerifyingManager(mgr)
-                  }
-                ] : []),
-                ...(hasDeletePermission ? [
-                  {
-                    label: "Delete Account",
-                    icon: Trash2,
-                    variant: "destructive",
-                    onClick: () => setDeletingManager(mgr)
-                  }
-                ] : [])
-              ]}
-
-            />
-          ))}
+          {filtered.map(mgr => {
+            const { complianceStatus, licenseExpiry } = getComplianceDetails(mgr.id, rawDocuments);
+            return (
+              <EntityCard
+                key={mgr.id}
+                title={mgr.name}
+                subtitle={mgr.role}
+                avatar={{
+                  text: mgr.name.split(" ").map(n => n[0]).join(""),
+                  src: resolveImageUrl(mgr.avatar)
+                }}
+                details={[
+                  { icon: Mail, content: mgr.email },
+                  { icon: Phone, content: mgr.phoneNumber },
+                  ...mgr.sites.map(site => ({ icon: MapPin, content: site }))
+                ]}
+                footerLeft={
+                  <span className={mgr.status === "active" ? "status-badge-active" : "status-badge-inactive"}>{mgr.status}</span>
+                }
+                footerMiddle={
+                  <span className={mgr.isVerified ? "status-badge-active" : "status-badge-inactive"}>
+                    {mgr.isVerified ? "Verified" : "Not Verified"}
+                  </span>
+                }
+                menuItems={[
+                  ...(hasEditPermission ? [
+                    {
+                      label: "Profile Update",
+                      icon: User,
+                      onClick: () => handleEditClick(mgr)
+                    },
+                    {
+                      label: "Document Verify",
+                      icon: ShieldCheck,
+                      onClick: () => setVerifyingManager(mgr)
+                    }
+                  ] : []),
+                  ...(hasDeletePermission ? [
+                    {
+                      label: "Delete Account",
+                      icon: Trash2,
+                      variant: "destructive",
+                      onClick: () => setDeletingManager(mgr)
+                    }
+                  ] : [])
+                ]}
+                footerContent={
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-medium ${complianceStatus === "valid" ? "text-success" : complianceStatus === "expiring" ? "text-warning" : complianceStatus === "expired" ? "text-destructive" : "text-muted-foreground"}`}>
+                      License: {complianceStatus}
+                    </span>
+                    <span className="text-xs text-muted-foreground">Exp: {licenseExpiry}</span>
+                  </div>
+                }
+              />
+            );
+          })}
         </div>
       )}
       {/* Delete Confirmation Dialog */}

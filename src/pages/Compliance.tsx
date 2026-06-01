@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import StateMessage from "@/components/common/StateMessage";
+import SelectDropdown from "@/components/common/SelectDropdown";
+import DateSelect from "@/components/common/DateSelect";
 
 const normalizeImageUrl = (url?: string) => {
   if (!url) return undefined;
@@ -43,6 +45,15 @@ const Compliance = () => {
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
   const [imageError, setImageError] = useState(false);
   const [currentImgUrl, setCurrentImgUrl] = useState<string | undefined>(undefined);
+
+  const hasEditPermission = isAdmin || permissions.includes("edit_compliance") || permissions.includes("compliance") || (selectedDoc && selectedDoc.ownerId === user?.id);
+  const hasDeletePermission = isAdmin || permissions.includes("delete_compliance") || permissions.includes("compliance") || (selectedDoc && selectedDoc.ownerId === user?.id);
+
+  // Edit Form State
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editDocType, setEditDocType] = useState("State ID");
+  const [editCustomDocType, setEditCustomDocType] = useState("");
+  const [editExpiryDate, setEditExpiryDate] = useState("");
 
   // Upload Form State
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -144,6 +155,55 @@ const Compliance = () => {
     },
   });
 
+  // Document edit/update mutation
+  const editMutation = useMutation({
+    mutationFn: async ({ id, name, expiryDate }: { id: string; name?: string; expiryDate?: string }) => {
+      const response = await api.documents.update(id, { name, expiryDate });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Document updated successfully.",
+      });
+      setIsEditOpen(false);
+      setSelectedDoc(null);
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+    onError: (err: any) => {
+      const errMsg = err?.response?.data?.message || err?.message || "Failed to update document.";
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: errMsg,
+      });
+    },
+  });
+
+  // Document delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await api.documents.delete(id);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Document deleted successfully.",
+      });
+      setSelectedDoc(null);
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+    onError: (err: any) => {
+      const errMsg = err?.response?.data?.message || err?.message || "Failed to delete document.";
+      toast({
+        variant: "destructive",
+        title: "Delete Failed",
+        description: errMsg,
+      });
+    },
+  });
+
   const handleUploadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadOwnerId) {
@@ -171,6 +231,26 @@ const Compliance = () => {
     formData.append("documentImage", uploadFile);
 
     uploadMutation.mutate(formData);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDoc) return;
+    if (editDocType === "Other" && !editCustomDocType.trim()) {
+      toast({ variant: "destructive", title: "Validation Error", description: "Please specify the custom document name." });
+      return;
+    }
+    if (!editExpiryDate) {
+      toast({ variant: "destructive", title: "Validation Error", description: "Please select an expiry date." });
+      return;
+    }
+
+    const finalName = editDocType === "Other" ? editCustomDocType : editDocType;
+    editMutation.mutate({
+      id: selectedDoc.id,
+      name: finalName,
+      expiryDate: editExpiryDate
+    });
   };
 
   // Normalize documents for UI rendering
@@ -324,6 +404,26 @@ const Compliance = () => {
 
   // Filter guard/manager selections based on userType in form
   const uploadOptions = uploadUserType === "Guard" ? guards : managers;
+  const personOptions = uploadOptions.map((person: any) => {
+    const labelName = [person.firstName, person.middleName, person.lastName].filter(Boolean).join(" ") || person.name || "User";
+    return {
+      value: person.id,
+      label: `${labelName} (${person.email || "No email"})`
+    };
+  });
+
+  const docTypeOptions = [
+    { value: "State ID", label: "State ID" },
+    { value: "Security License", label: "Security License" },
+    { value: "Pistol License", label: "Pistol License" },
+    { value: "Other", label: "Other Government ID" }
+  ];
+
+  const ownerTypeOptions = [
+    { value: "all", label: "All Roles" },
+    { value: "guard", label: "Guards" },
+    { value: "manager", label: "Managers" }
+  ];
 
   return (
     <div className="p-6 space-y-6">
@@ -416,15 +516,13 @@ const Compliance = () => {
         </div>
 
         <div className="flex gap-2 w-full sm:w-auto">
-          <select
+          <SelectDropdown
             value={ownerTypeFilter}
-            onChange={(e) => setOwnerTypeFilter(e.target.value)}
-            className="px-3 py-2 bg-secondary border border-border rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary w-[120px]"
-          >
-            <option value="all">All Roles</option>
-            <option value="guard">Guards</option>
-            <option value="manager">Managers</option>
-          </select>
+            onChange={setOwnerTypeFilter}
+            options={ownerTypeOptions}
+            placeholder="All Roles"
+            className="w-[120px]"
+          />
 
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -657,13 +755,44 @@ const Compliance = () => {
                 </div>
               </div>
 
-              <div className="p-6 bg-secondary/10 border-t border-border/50 flex justify-end">
-                <button
-                  onClick={() => setSelectedDoc(null)}
-                  className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95"
-                >
-                  Close Document
-                </button>
+              <div className="p-6 bg-secondary/10 border-t border-border/50 flex justify-between items-center">
+                <div>
+                  {hasDeletePermission && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to delete this compliance document?")) {
+                          deleteMutation.mutate(selectedDoc.id);
+                        }
+                      }}
+                      disabled={deleteMutation.isPending}
+                      className="px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {hasEditPermission && (
+                    <button
+                      onClick={() => {
+                        const isCustom = !["State ID", "Security License", "Pistol License"].includes(selectedDoc.docType);
+                        setEditDocType(isCustom ? "Other" : selectedDoc.docType);
+                        setEditCustomDocType(isCustom ? selectedDoc.docType : "");
+                        setEditExpiryDate(selectedDoc.expiryDate || "");
+                        setIsEditOpen(true);
+                      }}
+                      className="px-4 py-2 bg-secondary text-secondary-foreground border border-border rounded-xl text-xs font-bold hover:bg-muted transition-all active:scale-95"
+                    >
+                      Edit Details
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSelectedDoc(null)}
+                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95"
+                  >
+                    Close Document
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -707,37 +836,22 @@ const Compliance = () => {
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-muted-foreground uppercase">Select Person</label>
-              <select
+              <SelectDropdown
                 value={uploadOwnerId}
-                onChange={(e) => setUploadOwnerId(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">Select individual...</option>
-                {uploadOptions.map((person: any) => {
-                  const labelName = [person.firstName, person.middleName, person.lastName].filter(Boolean).join(" ") || person.name || "User";
-                  return (
-                    <option key={person.id} value={person.id}>
-                      {labelName} ({person.email || "No email"})
-                    </option>
-                  );
-                })}
-              </select>
+                onChange={setUploadOwnerId}
+                options={personOptions}
+                placeholder="Select individual..."
+              />
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-muted-foreground uppercase">Document Name</label>
-              <select
+              <SelectDropdown
                 value={uploadDocType}
-                onChange={(e) => setUploadDocType(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="State ID">State ID</option>
-                <option value="Security License">Security License</option>
-                <option value="Pistol License">Pistol License</option>
-                <option value="Other">Other Government ID</option>
-              </select>
+                onChange={setUploadDocType}
+                options={docTypeOptions}
+                placeholder="Select document name..."
+              />
             </div>
 
             {uploadDocType === "Other" && (
@@ -756,12 +870,10 @@ const Compliance = () => {
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-muted-foreground uppercase">Expiry Date</label>
-              <input
-                type="date"
+              <DateSelect
                 value={uploadExpiryDate}
-                onChange={(e) => setUploadExpiryDate(e.target.value)}
-                required
-                className="w-full px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary font-medium"
+                onChange={setUploadExpiryDate}
+                placeholder="Select expiry date"
               />
             </div>
 
@@ -805,6 +917,73 @@ const Compliance = () => {
                   </>
                 ) : (
                   "Upload & Verify"
+                )}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Document Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-md p-6 border-none shadow-2xl rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Edit Compliance Document</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Document Name</label>
+              <SelectDropdown
+                value={editDocType}
+                onChange={setEditDocType}
+                options={docTypeOptions}
+                placeholder="Select document name..."
+              />
+            </div>
+
+            {editDocType === "Other" && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase">Specify ID Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Drivers License"
+                  value={editCustomDocType}
+                  onChange={(e) => setEditCustomDocType(e.target.value)}
+                  required
+                  className="w-full px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Expiry Date</label>
+              <DateSelect
+                value={editExpiryDate}
+                onChange={setEditExpiryDate}
+                placeholder="Select expiry date"
+              />
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditOpen(false)}
+                className="px-4 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-secondary transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={editMutation.isPending}
+                className="px-5 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-all flex items-center gap-1.5"
+              >
+                {editMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Save Changes"
                 )}
               </button>
             </div>
