@@ -72,7 +72,7 @@ const SiteManagement = () => {
   const [form, setForm] = useState({ name: "", address: "", manager: "", status: "active" as "active" | "inactive", lat: "", lng: "" });
   const [editingSite, setEditingSite] = useState<Site | null>(null);
   const [deletingSite, setDeletingSite] = useState<Site | null>(null);
-  const [isGeocoding, setIsGeocoding] = useState(false);
+  
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -253,29 +253,7 @@ const SiteManagement = () => {
     }
   });
 
-  const handleAddressBlur = async () => {
-    if (!form.address || editingSite) return;
-
-    setIsGeocoding(true);
-    try {
-      const response = await api.sites.geocode(form.address);
-      if (response.data && response.data.success) {
-        const { latitude, longitude } = response.data.data;
-        setForm(f => ({
-          ...f,
-          lat: String(latitude),
-          lng: String(longitude)
-        }));
-        toast({ title: "Coordinates Updated", description: "Latitude and Longitude fetched from address." });
-      }
-    } catch (error) {
-      console.error("Geocoding failed", error);
-      // Don't show toast for every blur failure to avoid annoyance,
-      // but maybe log it or show a subtle hint.
-    } finally {
-      setIsGeocoding(false);
-    }
-  };
+  // Note: Automatic geocoding has been removed. Users should enter latitude and longitude manually.
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -438,13 +416,12 @@ const SiteManagement = () => {
           <input
             value={form.address}
             onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-            onBlur={handleAddressBlur}
-            disabled={!!editingSite || isGeocoding}
+            disabled={!!editingSite}
             className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            placeholder={isGeocoding ? "Fetching coordinates..." : "e.g. 100 Park Ave, New York, NY"}
+            placeholder="e.g. 100 Park Ave, New York, NY"
           />
         </FormField>
-        <FormField label="Manager">
+        <FormField label="Manager" required>
           <SelectDropdown
             value={form.manager}
             onChange={val => setForm(f => ({ ...f, manager: val }))}
@@ -468,18 +445,16 @@ const SiteManagement = () => {
             <input
               value={form.lat}
               onChange={e => setForm(f => ({ ...f, lat: e.target.value }))}
-              disabled={!!editingSite}
-              className="w-full px-3 mb-1 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              placeholder="Auto-fetched if empty"
+              className="w-full px-3 mb-1 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="0.00"
             />
           </FormField>
           <FormField label="Longitude (Optional)">
             <input
               value={form.lng}
               onChange={e => setForm(f => ({ ...f, lng: e.target.value }))}
-              disabled={!!editingSite}
-              className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              placeholder="Auto-fetched if empty"
+              className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="0.00"
             />
           </FormField>
         </div>
@@ -523,7 +498,7 @@ const SiteManagement = () => {
               footerRight={
                 <span className="text-xs text-muted-foreground">Manager: {managersList.find(m => m.id === site.manager)?.name || site.manager}</span>
               }
-              menuItems={[
+              menuItems={([
                 ...(hasEditPermission ? [
                   {
                     label: "Site Update",
@@ -535,11 +510,11 @@ const SiteManagement = () => {
                   {
                     label: "Delete Site",
                     icon: Trash2,
-                    variant: "destructive",
+                    variant: "destructive" as const,
                     onClick: () => setDeletingSite(site)
                   }
                 ] : [])
-              ]}
+              ] as any)}
               footerContent={(siteGuardIdsMap.get(site.id) && siteGuardIdsMap.get(site.id)!.size > 0) ? (
                 <div className="flex -space-x-2">
                   {Array.from(siteGuardIdsMap.get(site.id)!).slice(0, 5).map(gId => {

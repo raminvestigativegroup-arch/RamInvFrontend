@@ -516,19 +516,19 @@ const IncidentManagement = () => {
               ) : (
                 <>
                   {/* Tab Selector */}
-                  <div className="flex border-b border-border">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setAiActiveTab("refined")}
-                      className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
-                        aiActiveTab === "refined" ? "border-primary text-primary" : "border-transparent text-muted-foreground"
+                      className={`inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+                        aiActiveTab === "refined" ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
                       }`}
                     >
                       AI Refined
                     </button>
                     <button
                       onClick={() => setAiActiveTab("original")}
-                      className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
-                        aiActiveTab === "original" ? "border-primary text-primary" : "border-transparent text-muted-foreground"
+                      className={`inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+                        aiActiveTab === "original" ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
                       }`}
                     >
                       Original Notes

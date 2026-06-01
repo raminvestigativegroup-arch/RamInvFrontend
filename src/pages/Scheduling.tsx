@@ -329,7 +329,7 @@ const Scheduling = () => {
             <button
               key={tab.id}
               onClick={() => setViewMode(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === tab.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all ${viewMode === tab.id ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground"
                 }`}
             >
               {tab.icon}{tab.label}

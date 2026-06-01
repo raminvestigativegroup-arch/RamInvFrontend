@@ -98,7 +98,7 @@ const ScheduleCalendarView = ({ entries, onSelectDate, selectedDate }: Props) =>
                   {day}
                 </span>
                 {shifts.length > 0 && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-success" />
                 )}
               </div>
               <div className="space-y-1">

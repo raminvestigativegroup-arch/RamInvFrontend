@@ -471,7 +471,7 @@ const RolesPermissions = () => {
               <div key={role.id} className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                       <Shield className="w-5 h-5 text-primary" />
                     </div>
                     <div>
@@ -532,7 +532,7 @@ const RolesPermissions = () => {
 
           {/* Permission Matrix */}
           <div className="data-table overflow-x-auto bg-card rounded-xl border border-border">
-            <div className="p-5 border-b border-border">
+            <div className="p-5 border-b border-border bg-muted">
               <h2 className="text-lg font-semibold text-foreground">Permission Matrix</h2>
               <p className="text-xs text-muted-foreground mt-0.5">Quick overview of permissions granted to each role</p>
             </div>
@@ -552,7 +552,7 @@ const RolesPermissions = () => {
                     <React.Fragment key={mod.title}>
                       {/* Category Header Row */}
                       <tr className="bg-secondary/20 border-b border-border/80">
-                        <td colSpan={rolesList.length + 1} className="px-5 py-2 text-xs font-extrabold uppercase tracking-wider text-primary bg-muted/15 select-none">
+                        <td colSpan={rolesList.length + 1} className="px-5 py-2 text-xs font-extrabold uppercase tracking-wider text-primary bg-muted select-none">
                           {mod.title}
                         </td>
                       </tr>

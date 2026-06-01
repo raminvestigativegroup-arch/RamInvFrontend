@@ -61,11 +61,11 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="p-5 space-y-5 max-w-full">
+    <div className="p-6 space-y-6 max-w-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="module-page-header">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="module-page-title">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Welcome back, {user?.name || user?.role || "User"}</p>
         </div>
         <div className="flex gap-2">

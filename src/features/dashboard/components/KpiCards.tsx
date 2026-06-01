@@ -17,7 +17,7 @@ const KpiCards = ({ kpis, loading }: KpiCardsProps) => {
       subtitle: loading ? "Loading..." : `of ${kpis?.totalGuards ?? 0} total`,
       icon: Users,
       color: "text-primary",
-      bg: "bg-accent",
+      bg: "bg-accent/10",
       link: "/dashboard/guards",
     },
     {
