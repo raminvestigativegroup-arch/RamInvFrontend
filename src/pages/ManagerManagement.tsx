@@ -21,6 +21,7 @@ import EntityDialog from "@/components/common/EntityDialog";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
+import { Button } from "@/components/ui/button";
 
 type ManagerApiResponse =
   | Manager[]
@@ -407,12 +408,11 @@ const ManagerManagement = () => {
           <p className="text-sm text-muted-foreground">{managerList.length} managers</p>
         </div>
         {hasCreatePermission && (
-          <button
+          <Button
             onClick={() => setOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />Add Manager
-          </button>
+          </Button>
         )}
       </div>
 
@@ -427,12 +427,12 @@ const ManagerManagement = () => {
               className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-          <button
+          <Button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${showFilters ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
+            variant={showFilters ? "default" : "secondary"}
           >
             <Filter className="w-4 h-4" />Filters
-          </button>
+          </Button>
         </div>
 
         {showFilters && (
@@ -470,17 +470,17 @@ const ManagerManagement = () => {
             </div>
 
             {/* Clear Filters Button */}
-            {(verifiedFilter !== "all" || statusFilter !== "all") && (
-              <button
+              <Button
                 onClick={() => {
                   setVerifiedFilter("all");
                   setStatusFilter("all");
                 }}
-                className="mt-5 px-3 py-1.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold rounded-lg transition-colors border border-border"
+                variant="outline"
+                size="sm"
+                className="mt-5"
               >
                 Reset Filters
-              </button>
-            )}
+              </Button>
           </div>
         )}
       </div>
@@ -525,13 +525,15 @@ const ManagerManagement = () => {
             />
           </div>
           {form.image && (
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
               onClick={(e) => { e.stopPropagation(); setForm(f => ({ ...f, image: "" })); }}
-              className="mt-2 text-xs text-destructive hover:underline font-medium"
+              className="mt-2 text-xs text-destructive hover:underline font-medium p-0 h-auto shadow-none"
             >
               Remove photo
-            </button>
+            </Button>
           )}
         </FormField>
 
@@ -570,18 +572,16 @@ const ManagerManagement = () => {
         {/* <FormField label="Assigned Sites">
           <div className="flex flex-wrap gap-2">
             {sites.filter(s => s.status === "active").map(s => (
-              <button
+              <Button
                 key={s.id}
                 type="button"
                 onClick={() => toggleSite(s.name)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  form.selectedSites.includes(s.name)
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-secondary text-secondary-foreground border-border hover:bg-muted"
-                }`}
+                variant={form.selectedSites.includes(s.name) ? "default" : "outline"}
+                size="sm"
+                className="h-7 px-2.5 rounded-full text-xs"
               >
                 {s.name}
-              </button>
+              </Button>
             ))}
           </div>
         </FormField>

@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import EntityDialog from "@/components/common/EntityDialog";
 import StateMessage from "@/components/common/StateMessage";
 import FormField from "@/components/common/FormField";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -433,12 +434,11 @@ const RolesPermissions = () => {
           <p className="text-sm text-muted-foreground">Define access levels and module permissions</p>
         </div>
         {hasCreatePermission && (
-          <button
+          <Button
             onClick={() => setCreateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />Create Role
-          </button>
+          </Button>
         )}
       </div>
 
@@ -480,13 +480,15 @@ const RolesPermissions = () => {
                     </div>
                   </div>
                   {hasEditPermission && (
-                    <button
+                    <Button
                       onClick={() => handleOpenAssignModal(role)}
-                      className="text-muted-foreground hover:text-foreground p-1 hover:bg-muted rounded-md transition-colors"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
                       title="Edit Permissions"
                     >
                       <Edit className="w-4 h-4" />
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-1.5">
@@ -504,24 +506,28 @@ const RolesPermissions = () => {
                 </div>
                 <div className="mt-4 pt-3 border-t border-border flex justify-end gap-2">
                   {hasEditPermission && (
-                    <button
+                    <Button
                       onClick={() => handleOpenEditRoleModal(role)}
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1.5 hover:bg-primary/5 rounded-md"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors hover:bg-primary/5 rounded-md px-2"
                       title="Edit Role Name"
                     >
                       <Edit className="w-3.5 h-3.5" />
                       <span>Edit Role Name</span>
-                    </button>
+                    </Button>
                   )}
                   {hasDeletePermission && (
-                    <button
+                    <Button
                       onClick={() => setDeletingRole(role)}
-                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors px-2 py-1.5 hover:bg-destructive/5 rounded-md"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground hover:text-destructive transition-colors hover:bg-destructive/5 rounded-md px-2"
                       title="Delete Role"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Delete Role</span>
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -646,21 +652,25 @@ const RolesPermissions = () => {
               {selectedPermissions.length} / {PERMISSION_MODULES.flatMap(mod => getModulePermissions(mod)).length} permissions selected
             </span>
             <div className="flex gap-3">
-              <button
+              <Button
                 type="button"
+                variant="link"
+                size="sm"
                 onClick={handleSelectAll}
-                className="text-primary font-bold hover:underline"
+                className="text-primary font-bold hover:underline p-0 h-auto shadow-none"
               >
                 Select All
-              </button>
+              </Button>
               <span className="text-border">|</span>
-              <button
+              <Button
                 type="button"
+                variant="link"
+                size="sm"
                 onClick={handleClearAll}
-                className="text-muted-foreground font-semibold hover:underline"
+                className="text-muted-foreground font-semibold hover:underline p-0 h-auto shadow-none"
               >
                 Clear All
-              </button>
+              </Button>
             </div>
           </div>
 

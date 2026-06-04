@@ -10,6 +10,7 @@ import ScheduleWeekView from "@/features/scheduling/components/ScheduleWeekView"
 import ScheduleSiteView from "@/features/scheduling/components/ScheduleSiteView";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -313,12 +314,11 @@ const Scheduling = () => {
           <p className="text-sm text-muted-foreground">Create shifts, assign guards, and manage weekly schedules</p>
         </div>
         {hasCreatePermission && (
-          <button
+          <Button
             onClick={() => { setEditEntry(null); setOpen(true); }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />Create Shift
-          </button>
+          </Button>
         )}
       </div>
 
@@ -326,14 +326,15 @@ const Scheduling = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between" >
         <div className="flex bg-secondary rounded-lg p-1">
           {viewTabs.map((tab) => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => setViewMode(tab.id)}
-              className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all ${viewMode === tab.id ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
+              variant={viewMode === tab.id ? "default" : "ghost"}
+              size="sm"
+              className="rounded"
             >
               {tab.icon}{tab.label}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex items-center gap-3 w-48">
@@ -376,19 +377,23 @@ const Scheduling = () => {
           {viewMode === "week" && (
             <>
               <div className="flex items-center gap-4">
-                <button
+                <Button
                   onClick={handlePrevWeek}
-                  className="p-2 bg-secondary rounded-lg hover:bg-muted transition-colors"
+                  variant="secondary"
+                  size="icon"
+                  className="h-8 w-8"
                 >
                   <ChevronLeft className="w-4 h-4 text-foreground" />
-                </button>
+                </Button>
                 <h2 className="text-base font-semibold text-foreground">{getWeekRangeText()}</h2>
-                <button
+                <Button
                   onClick={handleNextWeek}
-                  className="p-2 bg-secondary rounded-lg hover:bg-muted transition-colors"
+                  variant="secondary"
+                  size="icon"
+                  className="h-8 w-8"
                 >
                   <ChevronRight className="w-4 h-4 text-foreground" />
-                </button>
+                </Button>
               </div>
               <ScheduleWeekView
                 guards={guards}
@@ -448,10 +453,24 @@ const Scheduling = () => {
                     </td>
                     <td className="px-5 py-3 flex gap-2">
                       {hasEditPermission && (
-                        <button onClick={() => handleEdit(entry)} className="text-sm text-primary hover:underline">Edit</button>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => handleEdit(entry)}
+                          className="h-auto p-0 hover:underline"
+                        >
+                          Edit
+                        </Button>
                       )}
                       {hasDeletePermission && (
-                        <button onClick={() => handleDelete(entry.id)} className="text-sm text-destructive hover:underline">Delete</button>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => handleDelete(entry.id)}
+                          className="h-auto p-0 hover:underline text-destructive"
+                        >
+                          Delete
+                        </Button>
                       )}
                       {!hasEditPermission && !hasDeletePermission && (
                         <span className="text-xs text-muted-foreground">None</span>

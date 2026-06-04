@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
+import { Button } from "@/components/ui/button";
 
 const HoursTracking = () => {
   const userStr = localStorage.getItem("user");
@@ -118,13 +119,12 @@ const HoursTracking = () => {
           />
 
           {hasEditPermission && (
-            <button
+            <Button
               onClick={exportToCSV}
               disabled={isLoading || guardRecords.length === 0}
-              className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               <Download className="w-4 h-4" />Export Report
-            </button>
+            </Button>
           )}
         </div>
       </div>

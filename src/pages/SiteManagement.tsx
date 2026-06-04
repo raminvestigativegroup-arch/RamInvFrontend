@@ -19,6 +19,7 @@ import EntityDialog from "@/components/common/EntityDialog";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
+import { Button } from "@/components/ui/button";
 
 const normalizeSitesResponse = (response: any): any[] => {
   if (Array.isArray(response)) return response;
@@ -315,12 +316,11 @@ const SiteManagement = () => {
           <p className="text-sm text-muted-foreground">{siteList.length} sites registered</p>
         </div>
         {hasCreatePermission && (
-          <button
+          <Button
             onClick={() => setOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" />Add Site
-          </button>
+          </Button>
         )}
       </div>
 
@@ -335,12 +335,12 @@ const SiteManagement = () => {
               className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
-          <button
+          <Button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${showFilters ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
+            variant={showFilters ? "default" : "secondary"}
           >
             <Filter className="w-4 h-4" />Filters
-          </button>
+          </Button>
         </div>
 
         {showFilters && (
@@ -378,17 +378,17 @@ const SiteManagement = () => {
             </div>
 
             {/* Clear Filters Button */}
-            {(statusFilter !== "all" || managerFilter !== "all") && (
-              <button
+              <Button
                 onClick={() => {
                   setStatusFilter("all");
                   setManagerFilter("all");
                 }}
-                className="mt-5 px-3 py-1.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold rounded-lg transition-colors border border-border"
+                variant="outline"
+                size="sm"
+                className="mt-5"
               >
                 Reset Filters
-              </button>
-            )}
+              </Button>
           </div>
         )}
       </div>

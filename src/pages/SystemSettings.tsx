@@ -5,6 +5,7 @@ import authService from "@/services/authService";
 import settingsService from "@/services/settingsService";
 import logo from "@/assets/logo.png";
 import FormField from "@/components/common/FormField";
+import { Button } from "@/components/ui/button";
 
 import StateMessage from "@/components/common/StateMessage";
 
@@ -218,14 +219,13 @@ const SystemSettings = () => {
 
             <div className="flex justify-end pt-4 border-t border-border">
               {hasEditPermission && (
-                <button
+                <Button
                   type="submit"
                   disabled={isSavingSettings}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {isSavingSettings ? "Saving..." : "Save Changes"}
-                </button>
+                </Button>
               )}
             </div>
           </>
@@ -297,14 +297,13 @@ const SystemSettings = () => {
           </FormField>
 
           <div className="pt-2">
-            <button
+            <Button
               type="submit"
               disabled={isSavingPassword}
-              className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-all disabled:opacity-50"
             >
               <Save className="w-4 h-4" />
               {isSavingPassword ? "Changing Password..." : "Change Password"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

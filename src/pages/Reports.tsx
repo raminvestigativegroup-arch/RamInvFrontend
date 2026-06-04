@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import StateMessage from "@/components/common/StateMessage";
+import { Button } from "@/components/ui/button";
 
 const Reports = () => {
   const userStr = localStorage.getItem("user");
@@ -152,10 +153,12 @@ const Reports = () => {
                   <p className="text-xs text-muted-foreground">{item.desc}</p>
                 </div>
               </div>
-              <button
+              <Button
+                variant="link"
+                size="sm"
                 disabled={downloadingId === item.id}
                 onClick={() => handleDownload(item.id)}
-                className="flex items-center gap-2 text-sm text-primary font-medium hover:underline disabled:opacity-50"
+                className="flex items-center gap-2 text-primary font-medium hover:underline p-0 h-auto shadow-none"
               >
                 {downloadingId === item.id ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -163,7 +166,7 @@ const Reports = () => {
                   <Download className="w-3.5 h-3.5" />
                 )}
                 Generate & Download
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -212,16 +215,20 @@ const Reports = () => {
                   </td>
                   <td className="px-5 py-3 text-sm text-muted-foreground">{r.lastGenerated}</td>
                   <td className="px-5 py-3 flex gap-3">
-                    <button
+                    <Button
+                      variant="link"
+                      size="sm"
                       onClick={() => setPreviewReport(r.id)}
-                      className="flex items-center gap-1 text-sm text-primary hover:underline"
+                      className="flex items-center gap-1 text-primary hover:underline p-0 h-auto shadow-none"
                     >
                       <Eye className="w-3.5 h-3.5" />View
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="link"
+                      size="sm"
                       disabled={downloadingId === r.id}
                       onClick={() => handleDownload(r.id)}
-                      className="flex items-center gap-1 text-sm text-primary hover:underline disabled:opacity-50"
+                      className="flex items-center gap-1 text-primary hover:underline disabled:opacity-50 p-0 h-auto shadow-none"
                     >
                       {downloadingId === r.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -229,7 +236,7 @@ const Reports = () => {
                         <Download className="w-3.5 h-3.5" />
                       )}
                       Download
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))
@@ -268,21 +275,22 @@ const Reports = () => {
                 </div>
               ))}
               <div className="flex justify-end gap-3 pt-3 border-t border-border">
-                <button
+                <Button
                   onClick={() => setPreviewReport(null)}
-                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+                  variant="secondary"
+                  size="sm"
                 >
                   Close
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => {
                     downloadReport(previewResponse.title, previewResponse.sections);
                     setPreviewReport(null);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                  size="sm"
                 >
                   <Download className="w-4 h-4" />Download Report
-                </button>
+                </Button>
               </div>
             </div>
           ) : (

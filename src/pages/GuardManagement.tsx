@@ -21,6 +21,7 @@ import EntityDialog from "@/components/common/EntityDialog";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
+import { Button } from "@/components/ui/button";
 
 type GuardApiResponse =
   | Guard[]
@@ -161,6 +162,16 @@ const getComplianceDetails = (personId: string, documents: any[]) => {
 };
 
 const GuardManagement = () => {
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const permissions = user?.permissions || [];
+  const isAdmin = user?.role === "admin";
+
+  const hasViewPermission = isAdmin || permissions.includes("view_guard") || permissions.includes("guard");
+  const hasCreatePermission = isAdmin || permissions.includes("create_guard") || permissions.includes("guard");
+  const hasEditPermission = isAdmin || permissions.includes("edit_guard") || permissions.includes("guard");
+  const hasDeletePermission = isAdmin || permissions.includes("delete_guard") || permissions.includes("guard");
+
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
@@ -216,6 +227,7 @@ const GuardManagement = () => {
       const response = await api.guards.list(params);
       return normalizeGuardsResponse(response.data as GuardApiResponse).map(normalizeGuard);
     },
+    enabled: hasViewPermission,
   });
 
   const { data: rolesList = [] } = useQuery({
@@ -224,6 +236,7 @@ const GuardManagement = () => {
       const response = await api.roles.list();
       return normalizeRolesResponse(response.data).map(normalizeRole);
     },
+    enabled: hasViewPermission,
   });
 
   const queryClient = useQueryClient();
@@ -390,6 +403,18 @@ const GuardManagement = () => {
   };
 
 
+  if (!hasViewPermission) {
+    return (
+      <div className="p-6">
+        <StateMessage
+          type="error"
+          title="Access Denied"
+          message="You do not have permission to view Guard Management."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="module-page-header">
@@ -397,12 +422,13 @@ const GuardManagement = () => {
           <h1 className="module-page-title">Guard Management</h1>
           <p className="text-sm text-muted-foreground">{guardList.length} guards registered</p>
         </div>
-        <button
-          onClick={() => setOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />Add Guard
-        </button>
+        {hasCreatePermission && (
+          <Button
+            onClick={() => setOpen(true)}
+          >
+            <Plus className="w-4 h-4" />Add Guard
+          </Button>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -411,12 +437,12 @@ const GuardManagement = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search guards..." className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
           </div>
-          <button
+          <Button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${showFilters ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}
+            variant={showFilters ? "default" : "secondary"}
           >
             <Filter className="w-4 h-4" />Filters
-          </button>
+          </Button>
         </div>
 
         {showFilters && (
@@ -471,18 +497,18 @@ const GuardManagement = () => {
             </div>
 
             {/* Clear Filters Button */}
-            {(verifiedFilter !== "all" || siteFilter !== "all" || complianceFilter !== "all") && (
-              <button
-                onClick={() => {
-                  setVerifiedFilter("all");
-                  setSiteFilter("all");
-                  setComplianceFilter("all");
-                }}
-                className="mt-5 px-3 py-1.5 bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground text-xs font-semibold rounded-lg transition-colors border border-border"
-              >
-                Reset Filters
-              </button>
-            )}
+            <Button
+              onClick={() => {
+                setVerifiedFilter("all");
+                setSiteFilter("all");
+                setComplianceFilter("all");
+              }}
+              variant="outline"
+              size="sm"
+              className="mt-5"
+            >
+              Reset Filters
+            </Button>
           </div>
         )}
       </div>
@@ -537,23 +563,23 @@ const GuardManagement = () => {
                   </span>
                 }
                 menuItems={[
-                  {
+                  hasEditPermission && {
                     label: "Profile Update",
                     icon: User,
                     onClick: () => handleEditClick(guard)
                   },
-                  {
+                  hasEditPermission && {
                     label: "Document Verify",
                     icon: ShieldCheck,
                     onClick: () => setVerifyingGuard(guard)
                   },
-                  {
+                  hasDeletePermission && {
                     label: "Delete Account",
                     icon: Trash2,
                     variant: "destructive",
                     onClick: () => setDeletingGuard(guard)
                   },
-                ]}
+                ].filter(Boolean) as any}
                 footerContent={
                   <div className="flex items-center justify-between">
                     <span className={`text-xs font-medium ${complianceStatus === "valid" ? "text-success" : complianceStatus === "expiring" ? "text-warning" : complianceStatus === "expired" ? "text-destructive" : "text-muted-foreground"}`}>
@@ -609,13 +635,15 @@ const GuardManagement = () => {
             />
           </div>
           {form.image && (
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
               onClick={(e) => { e.stopPropagation(); setForm(f => ({ ...f, image: "" })); }}
-              className="mt-2 text-xs text-destructive hover:underline font-medium"
+              className="mt-2 text-xs text-destructive hover:underline font-medium p-0 h-auto shadow-none"
             >
               Remove photo
-            </button>
+            </Button>
           )}
         </FormField>
 

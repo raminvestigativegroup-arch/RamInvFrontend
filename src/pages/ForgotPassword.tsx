@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff, Shield, ArrowLeft, KeyRound } from "lucide-rea
 import { useToast } from "@/hooks/use-toast";
 import authService from "@/services/authService";
 import logo from "@/assets/logo.png";
+import { Button } from "@/components/ui/button";
 
 const ForgotPassword = () => {
   const [step, setStep] = useState<1 | 2>(1);
@@ -136,13 +137,13 @@ const ForgotPassword = () => {
                 </div>
               </div>
 
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold text-base hover:opacity-90 transition-all disabled:opacity-50 shadow-md flex items-center justify-center gap-2"
+                className="w-full h-12"
               >
                 {isLoading ? "Sending Code..." : "Send Reset Code"}
-              </button>
+              </Button>
             </form>
           ) : (
             <form onSubmit={handleResetPassword} className="space-y-5">
@@ -203,13 +204,13 @@ const ForgotPassword = () => {
                 </div>
               </div>
 
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold text-base hover:opacity-90 transition-all disabled:opacity-50 shadow-md flex items-center justify-center gap-2"
+                className="w-full h-12"
               >
                 {isLoading ? "Resetting Password..." : "Reset Password"}
-              </button>
+              </Button>
             </form>
           )}
         </div>

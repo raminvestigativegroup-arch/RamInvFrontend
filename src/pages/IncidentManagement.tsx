@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import DateSelect from "@/components/common/DateSelect";
-
+import { Button } from "@/components/ui/button";
 interface Incident {
   id: string;
   title: string;
@@ -265,9 +265,9 @@ const IncidentManagement = () => {
           <h1 className="module-page-title">Incident Management</h1>
           <p className="text-sm text-muted-foreground">{incidentList.length} total incidents · {filtered.length} shown</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">
+        <Button variant="secondary">
           <Download className="w-4 h-4" />Export PDF
-        </button>
+        </Button>
       </div>
 
       {/* Search & Filters */}
@@ -278,12 +278,14 @@ const IncidentManagement = () => {
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search incidents..." className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
           </div>
           {activeFilters > 0 && (
-            <button
+            <Button
+              variant="link"
+              size="sm"
               onClick={() => { setPriorityFilter("all"); setSiteFilter("all"); setGuardFilter("all"); setDateFilter("all"); }}
-              className="text-xs text-destructive hover:underline"
+              className="text-xs text-destructive hover:underline shadow-none p-0 h-auto"
             >
               Clear {activeFilters} filter(s)
-            </button>
+            </Button>
           )}
         </div>
 
@@ -292,10 +294,15 @@ const IncidentManagement = () => {
           <div className="flex items-center gap-1">
             <span className="text-xs text-muted-foreground mr-1">Priority:</span>
             {["all", "high", "medium", "low"].map((p) => (
-              <button key={p} onClick={() => setPriorityFilter(p)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${priorityFilter === p ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-muted"}`}>
+              <Button
+                key={p}
+                onClick={() => setPriorityFilter(p)}
+                variant={priorityFilter === p ? "default" : "secondary"}
+                size="sm"
+                className="h-7 px-2.5 rounded-lg text-xs"
+              >
                 {p === "all" ? "All" : p.charAt(0).toUpperCase() + p.slice(1)}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -394,9 +401,9 @@ const IncidentManagement = () => {
                         {hasEditPermission ? (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <button className="p-1 hover:bg-secondary rounded-lg transition-colors">
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                              </button>
+                              </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40">
                               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'open' }); }}>
@@ -434,7 +441,7 @@ const IncidentManagement = () => {
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-foreground">{selectedIncident.title}</h3>
-                  <button onClick={() => setSelectedIncidentId(null)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedIncidentId(null)} className="text-muted-foreground hover:text-foreground h-8 w-8"><X className="w-5 h-5" /></Button>
                 </div>
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-3">
@@ -469,12 +476,12 @@ const IncidentManagement = () => {
                     </div>
                   )}
                   <div className="pt-4 border-t border-border flex gap-3 mt-auto">
-                    <button onClick={() => setAiIncidentId(selectedIncident.id)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90">
+                    <Button onClick={() => setAiIncidentId(selectedIncident.id)} size="sm">
                       <Sparkles className="w-4 h-4" />AI Summary
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted">
+                    </Button>
+                    <Button variant="secondary" size="sm">
                       <Download className="w-4 h-4" />Export PDF
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </>
@@ -517,22 +524,22 @@ const IncidentManagement = () => {
                 <>
                   {/* Tab Selector */}
                   <div className="flex gap-2">
-                    <button
+                    <Button
                       onClick={() => setAiActiveTab("refined")}
-                      className={`inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
-                        aiActiveTab === "refined" ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
-                      }`}
+                      variant={aiActiveTab === "refined" ? "default" : "secondary"}
+                      size="sm"
+                      className="rounded-full"
                     >
                       AI Refined
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => setAiActiveTab("original")}
-                      className={`inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
-                        aiActiveTab === "original" ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
-                      }`}
+                      variant={aiActiveTab === "original" ? "default" : "secondary"}
+                      size="sm"
+                      className="rounded-full"
                     >
                       Original Notes
-                    </button>
+                    </Button>
                   </div>
 
                   <div className="bg-muted/50 rounded-lg p-4 font-mono text-xs whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
@@ -545,7 +552,7 @@ const IncidentManagement = () => {
                   </div>
 
                   {aiActiveTab === "refined" && refinedData?.refined && (
-                    <button
+                    <Button
                       onClick={() =>
                         applyRefinedDescriptionMutation.mutate({
                           id: aiSelected.id,
@@ -553,7 +560,7 @@ const IncidentManagement = () => {
                         })
                       }
                       disabled={applyRefinedDescriptionMutation.isPending}
-                      className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-primary text-primary-foreground font-medium rounded-lg text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                      className="w-full"
                     >
                       {applyRefinedDescriptionMutation.isPending ? (
                         <>
@@ -564,7 +571,7 @@ const IncidentManagement = () => {
                           <CheckCircle2 className="w-4 h-4" /> Approve & Update Description
                         </>
                       )}
-                    </button>
+                    </Button>
                   )}
                 </>
               )}

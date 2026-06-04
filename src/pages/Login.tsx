@@ -4,6 +4,7 @@ import { Shield, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import authService from "@/services/authService";
 import logo from "@/assets/logo.png";
+import { Button } from "@/components/ui/button";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -98,13 +99,13 @@ const Login = () => {
               </Link>
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold text-base hover:opacity-90 transition-all disabled:opacity-50 shadow-md"
+              className="w-full h-12 mt-2"
             >
               {isLoading ? "Signing in..." : "Sign In"}
-            </button>
+            </Button>
           </form>
 
           {/* <div className="mt-6 py-3 bg-secondary rounded-xl text-center">

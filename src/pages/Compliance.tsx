@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
@@ -433,13 +434,12 @@ const Compliance = () => {
           <p className="text-sm text-muted-foreground font-medium">Track licenses, certifications, and required documents</p>
         </div>
         {hasCreatePermission && (
-          <button
+          <Button
             onClick={() => setIsUploadOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-all shadow-md active:scale-95"
           >
             <Plus className="w-4 h-4" />
             Upload Document
-          </button>
+          </Button>
         )}
       </div>
 
@@ -476,20 +476,22 @@ const Compliance = () => {
 
       {/* Tab Switcher */}
       <div className="flex gap-2">
-        <button
+        <Button
           onClick={() => setActiveTab("list")}
-          className={`inline-flex items-center justify-center rounded-full px-4 py-1.5 text-sm font-semibold transition-all ${activeTab === "list" ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
-            }`}
+          variant={activeTab === "list" ? "default" : "secondary"}
+          size="sm"
+          className="rounded-full"
         >
           All Uploads ({counts.all})
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => setActiveTab("summary")}
-          className={`inline-flex items-center justify-center rounded-full px-4 py-1.5 text-sm font-semibold transition-all ${activeTab === "summary" ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
-            }`}
+          variant={activeTab === "summary" ? "default" : "secondary"}
+          size="sm"
+          className="rounded-full"
         >
           Compliance Summary Matrix
-        </button>
+        </Button>
       </div>
 
       {/* Filters & Search - Active for both tabs */}
@@ -498,14 +500,15 @@ const Compliance = () => {
           {activeTab === "list" && (
             <div className="flex gap-1.5 bg-secondary/50 p-1 rounded-xl border border-border">
               {(["all", "valid", "expiring", "expired"] as const).map(f => (
-                <button
+                <Button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${filter === f ? "bg-primary text-primary-foreground shadow" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
+                  variant={filter === f ? "default" : "ghost"}
+                  size="sm"
+                  className="rounded-lg text-xs"
                 >
                   {f.charAt(0).toUpperCase() + f.slice(1)}
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -599,9 +602,9 @@ const Compliance = () => {
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        <button className="text-xs font-semibold text-primary hover:underline">
+                        <Button variant="link" size="sm" className="h-auto p-0 hover:underline">
                           View details
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -754,22 +757,23 @@ const Compliance = () => {
               <div className="p-6 bg-secondary/10 border-t border-border/50 flex justify-between items-center">
                 <div>
                   {hasDeletePermission && (
-                    <button
+                    <Button
                       onClick={() => {
                         if (window.confirm("Are you sure you want to delete this compliance document?")) {
                           deleteMutation.mutate(selectedDoc.id);
                         }
                       }}
                       disabled={deleteMutation.isPending}
-                      className="px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-all active:scale-95 disabled:opacity-50"
+                      variant="destructive"
+                      size="sm"
                     >
                       {deleteMutation.isPending ? "Deleting..." : "Delete"}
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <div className="flex gap-2">
                   {hasEditPermission && (
-                    <button
+                    <Button
                       onClick={() => {
                         const isCustom = !["State ID", "Security License", "Pistol License"].includes(selectedDoc.docType);
                         setEditDocType(isCustom ? "Other" : selectedDoc.docType);
@@ -777,17 +781,18 @@ const Compliance = () => {
                         setEditExpiryDate(selectedDoc.expiryDate || "");
                         setIsEditOpen(true);
                       }}
-                      className="px-4 py-2 bg-secondary text-secondary-foreground border border-border rounded-xl text-xs font-bold hover:bg-muted transition-all active:scale-95"
+                      variant="secondary"
+                      size="sm"
                     >
                       Edit Details
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
                     onClick={() => setSelectedDoc(null)}
-                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95"
+                    size="sm"
                   >
                     Close Document
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -805,28 +810,30 @@ const Compliance = () => {
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-muted-foreground uppercase">Upload For</label>
               <div className="flex gap-2 p-1 bg-secondary/50 rounded-xl border border-border">
-                <button
+                <Button
                   type="button"
                   onClick={() => {
                     setUploadUserType("Guard");
                     setUploadOwnerId("");
                   }}
-                  className={`flex-1 inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${uploadUserType === "Guard" ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
+                  variant={uploadUserType === "Guard" ? "default" : "ghost"}
+                  size="sm"
+                  className="flex-1 rounded-full"
                 >
                   Guard
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => {
                     setUploadUserType("Manager");
                     setUploadOwnerId("");
                   }}
-                  className={`flex-1 inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${uploadUserType === "Manager" ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
+                  variant={uploadUserType === "Manager" ? "default" : "ghost"}
+                  size="sm"
+                  className="flex-1 rounded-full"
                 >
                   Manager
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -894,17 +901,18 @@ const Compliance = () => {
             </div>
 
             <div className="pt-2 flex justify-end gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={() => setIsUploadOpen(false)}
-                className="px-4 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-secondary transition-all"
+                variant="outline"
+                size="sm"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={uploadMutation.isPending}
-                className="px-5 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-all flex items-center gap-1.5"
+                size="sm"
               >
                 {uploadMutation.isPending ? (
                   <>
@@ -914,7 +922,7 @@ const Compliance = () => {
                 ) : (
                   "Upload & Verify"
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -961,17 +969,18 @@ const Compliance = () => {
             </div>
 
             <div className="pt-2 flex justify-end gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={() => setIsEditOpen(false)}
-                className="px-4 py-2 border border-border rounded-xl text-xs font-semibold hover:bg-secondary transition-all"
+                variant="outline"
+                size="sm"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={editMutation.isPending}
-                className="px-5 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-all flex items-center gap-1.5"
+                size="sm"
               >
                 {editMutation.isPending ? (
                   <>
@@ -981,7 +990,7 @@ const Compliance = () => {
                 ) : (
                   "Save Changes"
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         </DialogContent>

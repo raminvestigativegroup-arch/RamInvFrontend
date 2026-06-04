@@ -10,6 +10,7 @@ import ComplianceAlerts from "@/features/dashboard/components/ComplianceAlerts";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Maximize2 } from "lucide-react";
 import { dashboardService, DashboardKpis } from "@/services/dashboardService";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -70,10 +71,10 @@ const Dashboard = () => {
         </div>
         <div className="flex gap-2">
           {hasGuardCreate && (
-            <button onClick={() => navigate("/dashboard/guards")} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">Add Guard</button>
+            <Button onClick={() => navigate("/dashboard/guards")} size="sm">Add Guard</Button>
           )}
           {hasSchedulingCreate && (
-            <button onClick={() => navigate("/dashboard/scheduling")} className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">Create Schedule</button>
+            <Button onClick={() => navigate("/dashboard/scheduling")} size="sm" variant="secondary">Create Schedule</Button>
           )}
         </div>
       </div>

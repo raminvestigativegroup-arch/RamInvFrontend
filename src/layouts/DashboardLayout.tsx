@@ -30,7 +30,6 @@ const navItems = [
   { path: "/dashboard/reports", label: "Reports & Export", icon: FileText, permission: "report" },
   { path: "/dashboard/notifications", label: "Notifications", icon: Bell, permission: "notification" },
   { path: "/dashboard/roles", label: "Roles & Permissions", icon: Shield, permission: "role" },
-  { path: "/dashboard/settings", label: "Settings", icon: Settings, permission: "setting" },
 ];
 
 const DashboardLayout = () => {
@@ -50,6 +49,9 @@ const DashboardLayout = () => {
     );
   });
 
+  const hasSettingsPermission = user?.role === "admin" || permissions.includes("setting") || permissions.includes("view_setting");
+  const canCreateSchedule = user?.role === "admin" || permissions.includes("create_scheduling") || permissions.includes("scheduling");
+
   const handleLogout = async () => {
     await authService.logout();
     localStorage.removeItem("securepro_auth");
@@ -65,35 +67,37 @@ const DashboardLayout = () => {
         {/* Logo */}
         {/* Header */}
         {/* Floating Toggle Button */}
+        {/* Floating Toggle Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute top-5 -right-3 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 focus:outline-none"
+          className="absolute top-[22px] -right-3.5 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-white text-muted-foreground shadow-sm hover:text-primary hover:bg-secondary transition-all duration-200 focus:outline-none"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
 
         <div className="border-b border-sidebar-border shrink-0">
-          {/* Logo + Title + Toggle beside text */}
+          {/* Logo + Title */}
           <div
-            className={`flex items-center h-16 ${collapsed ? "justify-center px-2" : "px-4"
+            className={`flex items-center h-[72px] ${collapsed ? "justify-center px-2" : "px-5"
               }`}
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex items-center justify-center bg-white rounded-lg p-1.5 w-10 h-10 shrink-0 shadow-sm border border-sidebar-border/30">
-                <img
-                  src={logo}
-                  alt="SecurePro Logo"
-                  className="w-full h-full object-contain"
-                />
-              </div>
+            <div className="flex items-center gap-3.5 min-w-0">
+              {collapsed && (
+                <div className="flex items-center justify-center w-10 h-10 shrink-0">
+                  <img
+                    src={logo}
+                    alt="RAM Group Logo"
+                    className="w-10 h-10 object-contain"
+                  />
+                </div>)}
               {!collapsed && (
                 <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-bold text-sidebar-foreground tracking-wide truncate">
-                    Ram Investigative
+                  <span className="text-[20px] font-extrabold text-[#0C3F91] tracking-tight leading-none">
+                    RAM Group
                   </span>
-                  <span className="text-sm font-bold text-sidebar-foreground tracking-wide truncate">
-                    Group Inc.
+                  <span className="text-[10px] font-bold text-[#5C7290] uppercase tracking-wider leading-none mt-1">
+                    Investigative Services
                   </span>
                 </div>
               )}
@@ -120,10 +124,26 @@ const DashboardLayout = () => {
               {!collapsed && <span>{item.label}</span>}
             </NavLink>
           ))}
+
         </nav>
 
         {/* Bottom Actions */}
         <div className="px-2 py-3 border-t border-sidebar-border space-y-1">
+          {hasSettingsPermission && (
+            <NavLink
+              to="/dashboard/settings"
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                } ${collapsed ? "justify-center" : ""}`
+              }
+              title={collapsed ? "Settings" : undefined}
+            >
+              <Settings className="w-5 h-5 shrink-0" />
+              {!collapsed && <span>Settings</span>}
+            </NavLink>
+          )}
           <button
             onClick={() => setShowLogoutDialog(true)}
             className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors ${collapsed ? "justify-center" : ""
@@ -132,7 +152,6 @@ const DashboardLayout = () => {
             <LogOut className="w-5 h-5 shrink-0" />
             {!collapsed && <span>Logout</span>}
           </button>
-
         </div>
       </aside>
 

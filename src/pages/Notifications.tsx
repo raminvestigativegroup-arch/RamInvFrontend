@@ -3,6 +3,7 @@ import { Bell, AlertTriangle, Calendar, Settings, CheckCircle, Loader2 } from "l
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import StateMessage from "@/components/common/StateMessage";
+import { Button } from "@/components/ui/button";
 
 const iconMap = {
   incident: AlertTriangle,
@@ -77,13 +78,13 @@ const Notifications = () => {
           </p>
         </div>
         {hasEditPermission && (
-          <button
+          <Button
             onClick={() => markAllReadMutation.mutate()}
             disabled={isLoading || unreadCount === 0}
-            className="px-4 py-2.5 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted disabled:opacity-50 transition-opacity"
+            variant="secondary"
           >
             Mark All Read
-          </button>
+          </Button>
         )}
       </div>
 
