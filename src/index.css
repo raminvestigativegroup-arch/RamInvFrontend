@@ -19,8 +19,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47.4% 11.2%;
 
-    /* Premium royal/dark blue primary brand color #1442B0 */
-    --primary: 224 76% 33%;
+    /* Synced with sidebar gradient dark navy */
+    --primary: 228 50% 22%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 20% 96%;
@@ -48,7 +48,7 @@
     --border: 214.3 31.8% 91.4%;
     /* slate-200 #E2E8F0 */
     --input: 214.3 31.8% 91.4%;
-    --ring: 224 76% 33%;
+    --ring: 228 50% 22%;
 
     --radius: 0.75rem;
 
@@ -70,7 +70,7 @@
     --sidebar-ring: 220 90% 56%;
     --sidebar-muted: 228 20% 50%;
 
-    --chart-1: 224 76% 33%;
+    --chart-1: 228 50% 22%;
     --chart-2: 142.1 70.6% 45.3%;
     --chart-3: 38 92% 50%;
     --chart-4: 0 84.2% 60.2%;
@@ -121,6 +121,46 @@
 .bg-sidebar-accent:hover {
   background-color: hsl(var(--sidebar-accent)) !important;
   color: hsl(var(--sidebar-accent-foreground)) !important;
+}
+
+/* ── Tabs: flicker-free gradient via pseudo-element opacity ─────────────
+   CSS gradients cannot be transitioned — background flickers on change.
+   Fix: always-present ::before pseudo-element fades its opacity 0→1.
+   Opacity IS animatable → perfectly smooth gradient appearance.
+──────────────────────────────────────────────────────────────────────── */
+[role="tablist"] {
+  background: hsl(210 20% 96%);
+}
+
+[role="tablist"] button {
+  position: relative;
+  z-index: 0;
+  background: transparent !important;
+  transition: color 200ms ease !important;
+}
+
+/* Gradient layer — always rendered, fades in on active */
+[role="tablist"] button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, hsl(228 45% 20%) 0%, hsl(233 72% 11%) 100%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+  z-index: -1;
+}
+
+[role="tablist"] button[data-state="active"]::before {
+  opacity: 1;
+}
+
+[role="tablist"] button[data-state="active"] {
+  color: #fff !important;
+}
+
+[role="tablist"] button[data-state="inactive"] {
+  color: hsl(var(--muted-foreground)) !important;
 }
 
 
@@ -230,7 +270,7 @@
 
   .module-page-title {
     @apply text-2xl font-bold;
-    color: #05193E;
+    color: hsl(228 50% 22%);
   }
 
   .bg-card {

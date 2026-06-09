@@ -3,9 +3,10 @@ import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import {
   LayoutDashboard, Users, MapPin, FileWarning, Calendar,
   Clock, Bell, Settings, Shield, FileText, ChevronLeft,
-  ChevronRight, LogOut, ShieldCheck, UserCog, Briefcase
+  ChevronRight, LogOut, ShieldCheck, UserCog,
 } from "lucide-react";
 import authService from "@/services/authService";
+import logoImg from "@/assets/logo.png";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,8 +49,10 @@ const DashboardLayout = () => {
     );
   });
 
-  const hasSettingsPermission = user?.role === "admin" || permissions.includes("setting") || permissions.includes("view_setting");
-  const canCreateSchedule = user?.role === "admin" || permissions.includes("create_scheduling") || permissions.includes("scheduling");
+  const hasSettingsPermission =
+    user?.role === "admin" ||
+    permissions.includes("setting") ||
+    permissions.includes("view_setting");
 
   const handleLogout = async () => {
     await authService.logout();
@@ -60,94 +63,110 @@ const DashboardLayout = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <aside
-        className={`relative flex flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ${collapsed ? "w-[72px]" : "w-64"
+        className={`relative flex flex-col text-sidebar-foreground transition-all duration-300 ${collapsed ? "w-[72px]" : "w-64"
           }`}
+        style={{
+          background:
+            "linear-gradient(180deg, hsl(228 45% 16%) 0%, hsl(233 75% 8%) 35%, hsl(233 75% 7%) 100%)",
+        }}
       >
-        {/* Logo */}
-        {/* Header */}
-        {/* Floating Toggle Button */}
         {/* Floating Toggle Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute top-[22px] -right-3.5 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-white text-muted-foreground shadow-sm hover:text-primary hover:bg-secondary transition-all duration-200 focus:outline-none"
+          className="absolute top-5 -right-3.5 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-white text-muted-foreground shadow-sm hover:text-primary hover:bg-secondary transition-all duration-200 focus:outline-none"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
         </button>
 
-        <div className="border-b border-sidebar-border shrink-0">
-          {/* Logo + Title */}
-          <div className="flex items-center h-[72px] px-5">
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="flex flex-col min-w-0">
-                <div className="flex items-baseline text-white">
-                  <span className={`font-extrabold tracking-tight leading-none transition-all duration-300 ${collapsed ? "text-[16px]" : "text-[22px]"}`}>
-                    RAM
-                  </span>
-                  <span className={`font-extrabold tracking-tight leading-none transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${collapsed ? "text-[16px] max-w-0 opacity-0 ml-0" : "text-[22px] max-w-[120px] opacity-100 ml-1.5"}`}>
-                    Group
-                  </span>
-                </div>
-                <span className={`font-bold text-[#7d85b2] uppercase tracking-wider leading-none transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${collapsed ? "text-[8px] max-h-0 opacity-0 mt-0" : "text-[11px] max-h-5 opacity-100 mt-2"}`}>
-                  Investigative Services
-                </span>
-              </div>
-            </div>
-          </div>
+        {/* Logo Header — centered */}
+        <div
+          className="shrink-0 flex flex-col items-center justify-center py-5 px-3"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+        >
+          <img
+            src={logoImg}
+            alt="RAM Investigative Group Inc."
+            style={{ filter: "brightness(0) invert(1)" }}
+            className={`object-contain transition-all duration-300 ${
+              collapsed ? "h-9 w-9" : "h-[72px] w-auto max-w-[155px]"
+            }`}
+          />
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-          <div className={`px-3 text-[10px] font-bold tracking-wider text-[#55689e] uppercase select-none transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${collapsed ? "max-h-0 py-0 opacity-0" : "max-h-8 py-2 opacity-100"}`}>
+        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5">
+          {/* NAVIGATION label */}
+          <div
+            className={`px-3 text-[10px] font-bold tracking-widest uppercase select-none mb-2 transition-all duration-300 overflow-hidden whitespace-nowrap ${collapsed ? "max-h-0 opacity-0 py-0" : "max-h-8 opacity-100 py-1"
+              }`}
+            style={{ color: "rgba(180,190,230,0.5)" }}
+          >
             Navigation
           </div>
+
           {filteredNavItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.path === "/dashboard"}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${isActive
+                  ? "bg-white/10 text-white"
+                  : "text-[hsl(228,30%,72%)] hover:bg-white/[0.07] hover:text-white"
                 }`
               }
               title={collapsed ? item.label : undefined}
             >
               <item.icon className="w-5 h-5 shrink-0" />
-              <span className={`transition-all duration-300 ease-in-out origin-left whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100 ml-1"}`}>
+              <span
+                className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100"
+                  }`}
+              >
                 {item.label}
               </span>
             </NavLink>
           ))}
-
         </nav>
 
         {/* Bottom Actions */}
-        <div className="px-2 py-3 border-t border-sidebar-border space-y-1">
+        <div
+          className="px-2 py-3 space-y-0.5"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
+        >
           {hasSettingsPermission && (
             <NavLink
               to="/dashboard/settings"
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${isActive
+                  ? "bg-white/10 text-white"
+                  : "text-[hsl(228,30%,72%)] hover:bg-white/[0.07] hover:text-white"
                 }`
               }
               title={collapsed ? "Settings" : undefined}
             >
               <Settings className="w-5 h-5 shrink-0" />
-              <span className={`transition-all duration-300 ease-in-out origin-left whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100 ml-1"}`}>
+              <span
+                className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100"
+                  }`}
+              >
                 Settings
               </span>
             </NavLink>
           )}
           <button
             onClick={() => setShowLogoutDialog(true)}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-[hsl(228,30%,72%)] hover:bg-white/[0.07] hover:text-white"
           >
             <LogOut className="w-5 h-5 shrink-0" />
-            <span className={`transition-all duration-300 ease-in-out origin-left whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100 ml-1"}`}>
+            <span
+              className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100"
+                }`}
+            >
               Logout
             </span>
           </button>
@@ -165,7 +184,8 @@ const DashboardLayout = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will end your current session and you will need to sign in again to access the dashboard.
+              This will end your current session and you will need to sign in again to access the
+              dashboard.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
