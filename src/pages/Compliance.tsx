@@ -103,7 +103,7 @@ const Compliance = () => {
   };
 
   // Fetch documents from backend with live search and filtering parameters
-  const { data: rawResponse, isLoading: isLoadingDocs, isError: isErrorDocs, error: errorDocs } = useQuery({
+  const { data: rawResponse, isLoading: isLoadingDocs, isFetching: isFetchingDocs, isError: isErrorDocs, error: errorDocs } = useQuery({
     queryKey: ["documents", search, ownerTypeFilter, filter],
     queryFn: async () => {
       const params: any = {};
@@ -114,6 +114,7 @@ const Compliance = () => {
       const response = await api.documents.list(params);
       return response.data?.data || response.data || { documents: [], counts: { all: 0, valid: 0, expiring: 0, expired: 0 } };
     },
+    staleTime: 0,
   });
 
   // Extract documents and counts from query response
@@ -384,7 +385,7 @@ const Compliance = () => {
     switch (status) {
       case "valid":
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success bg-success/10 px-2.5 py-1 rounded-full border border-success/20">
+          <span className="inline-flex items-center mt-2 gap-1 text-[11px] font-semibold text-success bg-success/10 px-2.5 py-1 rounded-full border border-success/20">
             <CheckCircle className="w-3.5 h-3.5" /> Verified
           </span>
         );
@@ -410,9 +411,13 @@ const Compliance = () => {
   };
 
   const isNotFound = isErrorDocs && ((errorDocs as any)?.response?.status === 404 || (errorDocs as any)?.message?.includes("404"));
-  const showLoader = isLoadingDocs && documents.length === 0;
-  const showEmpty = documents.length === 0 || isNotFound;
+  // Only show full loading skeleton on INITIAL fetch (no cached data yet). On background re-fetches
+  // (e.g. after upload/delete), keep showing existing data so there's no flash of empty state.
+  const showLoader = isLoadingDocs && !rawResponse;
+  const showEmpty = !isLoadingDocs && (documents.length === 0 || isNotFound);
   const showError = isErrorDocs && !isNotFound;
+  // Subtle background-refetch indicator (used in the header)
+  const isBackgroundRefetching = isFetchingDocs && !!rawResponse;
 
   const counts = useMemo(() => ({
     all: apiCounts.all || 0,
@@ -468,7 +473,12 @@ const Compliance = () => {
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="module-page-title">Compliance & Documents</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="module-page-title">Compliance &amp; Documents</h1>
+            {isBackgroundRefetching && (
+              <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+            )}
+          </div>
           <p className="text-sm text-muted-foreground font-medium">Track licenses, certifications, and required documents</p>
         </div>
         {hasCreatePermission && (
@@ -561,7 +571,7 @@ const Compliance = () => {
             className="w-[120px]"
           />
 
-          <div className="relative flex-1 sm:w-64">
+          <div className="relative flex-1 sm:w-64 mb-1.5">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
@@ -632,7 +642,7 @@ const Compliance = () => {
                       <td className="px-5 py-4 text-sm text-foreground font-medium">{doc.docType}</td>
                       <td className="px-5 py-4 text-sm text-muted-foreground font-semibold">{doc.expiryDate}</td>
                       <td className="px-5 py-4">
-                        <span className={`status-badge ${doc.status === "valid" ? "status-badge-active" :
+                        <span className={`status-badge ${doc.status === "valid" ? "status-badge-active mt-2" :
                           doc.status === "expiring" ? "status-badge-warning" :
                             "status-badge-danger"
                           }`}>
@@ -719,7 +729,7 @@ const Compliance = () => {
                   <DialogTitle className="text-lg font-bold text-foreground">Document Details</DialogTitle>
                   <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record</p>
                 </div>
-                <span className={`status-badge ${selectedDoc.status === "valid" ? "status-badge-active" :
+                <span className={`status-badge ${selectedDoc.status === "valid" ? " mb-2 " :
                   selectedDoc.status === "expiring" ? "status-badge-warning" :
                     "status-badge-danger"
                   }`}>
