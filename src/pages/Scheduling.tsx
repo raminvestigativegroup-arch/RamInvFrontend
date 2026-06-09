@@ -199,13 +199,6 @@ const Scheduling = () => {
       queryClient.invalidateQueries({ queryKey: ["scheduling"] });
       toast({ title: "Schedule Created", description: "The shifts have been successfully scheduled." });
       setOpen(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Creation Failed",
-        description: error.response?.data?.message || "Failed to create schedule. Please try again.",
-        variant: "destructive",
-      });
     }
   });
 
@@ -216,13 +209,6 @@ const Scheduling = () => {
       toast({ title: "Shift Updated", description: "The shift information has been updated." });
       setOpen(false);
       setEditEntry(null);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Update Failed",
-        description: error.response?.data?.message || "Failed to update shift.",
-        variant: "destructive",
-      });
     }
   });
 
@@ -274,7 +260,16 @@ const Scheduling = () => {
     }
   };
 
+  const handleOpenDialog = () => {
+    createMutation.reset();
+    updateMutation.reset();
+    setEditEntry(null);
+    setOpen(true);
+  };
+
   const handleEdit = (entry: ScheduleEntry) => {
+    createMutation.reset();
+    updateMutation.reset();
     setEditEntry(entry);
     setOpen(true);
   };
@@ -315,7 +310,7 @@ const Scheduling = () => {
         </div>
         {hasCreatePermission && (
           <Button
-            onClick={() => { setEditEntry(null); setOpen(true); }}
+            onClick={handleOpenDialog}
           >
             <Plus className="w-4 h-4" />Create Shift
           </Button>
@@ -489,6 +484,8 @@ const Scheduling = () => {
         onSave={handleSave}
         editEntry={editEntry}
         existingEntries={entries}
+        isLoading={createMutation.isPending || updateMutation.isPending}
+        error={createMutation.error?.response?.data?.message || createMutation.error?.message || updateMutation.error?.response?.data?.message || updateMutation.error?.message}
       />
 
       <AlertDialog open={!!deletingId} onOpenChange={(val) => !val && setDeletingId(null)}>

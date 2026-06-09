@@ -2,8 +2,9 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { guards, Site } from "@/data/dummyData";
-import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, Locate, Search, Filter } from "lucide-react";
+import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, Locate, Search, Filter, Mail, Phone, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,9 +72,12 @@ const SiteManagement = () => {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [form, setForm] = useState({ name: "", address: "", manager: "", status: "active" as "active" | "inactive", lat: "", lng: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingSite, setEditingSite] = useState<Site | null>(null);
   const [deletingSite, setDeletingSite] = useState<Site | null>(null);
-  
+  const [viewingGuardsSite, setViewingGuardsSite] = useState<Site | null>(null);
+  const [guardSearch, setGuardSearch] = useState("");
+
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -118,12 +122,12 @@ const SiteManagement = () => {
       const matchStatus =
         statusFilter === "all" ||
         s.status === statusFilter;
-      
+
       const matchManager =
         managerFilter === "all" ||
         (managerFilter === "unassigned" && (!s.manager || s.manager === "Unassigned" || s.manager === "Unassigned Manager")) ||
         String(s.manager).toLowerCase() === managerFilter.toLowerCase();
-      
+
       return matchStatus && matchManager;
     });
   }, [siteList, statusFilter, managerFilter]);
@@ -205,11 +209,8 @@ const SiteManagement = () => {
       setForm({ name: "", address: "", manager: "", status: "active", lat: "", lng: "" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to create site.",
-        variant: "destructive"
-      });
+      const errMsg = error.response?.data?.message || "Failed to create site.";
+      setErrors(prev => ({ ...prev, form: errMsg }));
     }
   });
 
@@ -227,11 +228,8 @@ const SiteManagement = () => {
       setForm({ name: "", address: "", manager: "", status: "active", lat: "", lng: "" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to update site.",
-        variant: "destructive"
-      });
+      const errMsg = error.response?.data?.message || "Failed to update site.";
+      setErrors(prev => ({ ...prev, form: errMsg }));
     }
   });
 
@@ -256,12 +254,37 @@ const SiteManagement = () => {
 
   // Note: Automatic geocoding has been removed. Users should enter latitude and longitude manually.
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!form.name.trim()) {
+      newErrors.name = "Site name is required";
+    }
+    if (!form.address.trim()) {
+      newErrors.address = "Address is required";
+    }
+    if (!form.manager.trim()) {
+      newErrors.manager = "Manager selection is required";
+    }
+    if (form.lat.trim()) {
+      const latNum = Number(form.lat);
+      if (isNaN(latNum) || latNum < -90 || latNum > 90) {
+        newErrors.lat = "Latitude must be between -90 and 90";
+      }
+    }
+    if (form.lng.trim()) {
+      const lngNum = Number(form.lng);
+      if (isNaN(lngNum) || lngNum < -180 || lngNum > 180) {
+        newErrors.lng = "Longitude must be between -180 and 180";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.address || !form.manager) {
-      toast({ title: "Validation Error", description: "Name, address, and manager are required.", variant: "destructive" });
-      return;
-    }
+    if (!validateForm()) return;
 
     const payload = {
       name: form.name,
@@ -378,17 +401,17 @@ const SiteManagement = () => {
             </div>
 
             {/* Clear Filters Button */}
-              <Button
-                onClick={() => {
-                  setStatusFilter("all");
-                  setManagerFilter("all");
-                }}
-                variant="outline"
-                size="sm"
-                className="mt-5"
-              >
-                Reset Filters
-              </Button>
+            <Button
+              onClick={() => {
+                setStatusFilter("all");
+                setManagerFilter("all");
+              }}
+              variant="outline"
+              size="sm"
+              className="mt-5"
+            >
+              Reset Filters
+            </Button>
           </div>
         )}
       </div>
@@ -396,35 +419,55 @@ const SiteManagement = () => {
         open={open}
         onOpenChange={(val) => {
           setOpen(val);
-          if (!val) setEditingSite(null);
+          if (!val) {
+            setEditingSite(null);
+            setForm({ name: "", address: "", manager: "", status: "active", lat: "", lng: "" });
+          }
+          setErrors({});
         }}
         title={editingSite ? "Update Site Profile" : "Add New Site"}
         onSubmit={handleSubmit}
         isLoading={createSiteMutation.isPending || updateSiteMutation.isPending}
         submitLabel={editingSite ? (updateSiteMutation.isPending ? "Updating..." : "Update Profile") : (createSiteMutation.isPending ? "Creating..." : "Add Site")}
       >
-        <FormField label="Site Name" required>
+        {errors.form && (
+          <div className="p-3 mb-4 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+            {errors.form}
+          </div>
+        )}
+        <FormField label="Site Name" required error={errors.name}>
           <input
             value={form.name}
-            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            onChange={e => {
+              setForm(f => ({ ...f, name: e.target.value }));
+              if (errors.name) setErrors(prev => ({ ...prev, name: undefined }));
+            }}
             disabled={!!editingSite}
-            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${errors.name ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+              }`}
             placeholder="e.g. Corporate Tower B"
           />
         </FormField>
-        <FormField label="Address" required>
+        <FormField label="Address" required error={errors.address}>
           <input
             value={form.address}
-            onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+            onChange={e => {
+              setForm(f => ({ ...f, address: e.target.value }));
+              if (errors.address) setErrors(prev => ({ ...prev, address: undefined }));
+            }}
             disabled={!!editingSite}
-            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${errors.address ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+              }`}
             placeholder="e.g. 100 Park Ave, New York, NY"
           />
         </FormField>
-        <FormField label="Manager" required>
+        <FormField label="Manager" required error={errors.manager}>
           <SelectDropdown
             value={form.manager}
-            onChange={val => setForm(f => ({ ...f, manager: val }))}
+            onChange={val => {
+              setForm(f => ({ ...f, manager: val }));
+              if (errors.manager) setErrors(prev => ({ ...prev, manager: undefined }));
+            }}
             options={managersList.map(m => ({ value: m.id, label: m.name }))}
             placeholder="Select a manager"
           />
@@ -441,19 +484,27 @@ const SiteManagement = () => {
           />
         </FormField>
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Latitude (Optional)">
+          <FormField label="Latitude (Optional)" error={errors.lat}>
             <input
               value={form.lat}
-              onChange={e => setForm(f => ({ ...f, lat: e.target.value }))}
-              className="w-full px-3 mb-1 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              onChange={e => {
+                setForm(f => ({ ...f, lat: e.target.value }));
+                if (errors.lat) setErrors(prev => ({ ...prev, lat: undefined }));
+              }}
+              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground mb-2 focus:outline-none focus:ring-2 ${errors.lat ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                }`}
               placeholder="0.00"
             />
           </FormField>
-          <FormField label="Longitude (Optional)">
+          <FormField label="Longitude (Optional)" error={errors.lng}>
             <input
               value={form.lng}
-              onChange={e => setForm(f => ({ ...f, lng: e.target.value }))}
-              className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              onChange={e => {
+                setForm(f => ({ ...f, lng: e.target.value }));
+                if (errors.lng) setErrors(prev => ({ ...prev, lng: undefined }));
+              }}
+              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground mb-2 focus:outline-none focus:ring-2 ${errors.lng ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                }`}
               placeholder="0.00"
             />
           </FormField>
@@ -516,23 +567,31 @@ const SiteManagement = () => {
                 ] : [])
               ] as any)}
               footerContent={(siteGuardIdsMap.get(site.id) && siteGuardIdsMap.get(site.id)!.size > 0) ? (
-                <div className="flex -space-x-2">
-                  {Array.from(siteGuardIdsMap.get(site.id)!).slice(0, 5).map(gId => {
-                    const g = guardList.find(gu => String(gu.id) === String(gId));
+                <div
+                  onClick={() => setViewingGuardsSite(site)}
+                  className="flex items-center gap-2 cursor-pointer group"
+                >
+                  <div className="flex -space-x-2 transition-transform group-hover:scale-105 duration-200">
+                    {Array.from(siteGuardIdsMap.get(site.id)!).slice(0, 5).map(gId => {
+                      const g = guardList.find(gu => String(gu.id) === String(gId));
 
-                    let avatarContent: React.ReactNode;
-                    if (g?.profilePhoto) {
-                      avatarContent = <img src={g.profilePhoto} alt={g.name || "Guard"} className="w-full h-full object-cover rounded-full" />;
-                    } else {
-                      avatarContent = g ? (g.name ? g.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : "") : String(gId).slice(0, 2).toUpperCase();
-                    }
+                      let avatarContent: React.ReactNode;
+                      if (g?.profilePhoto) {
+                        avatarContent = <img src={g.profilePhoto} alt={g.name || "Guard"} className="w-full h-full object-cover rounded-full" />;
+                      } else {
+                        avatarContent = g ? (g.name ? g.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : "") : String(gId).slice(0, 2).toUpperCase();
+                      }
 
-                    return (
-                      <div key={gId} className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden">
-                        {avatarContent}
-                      </div>
-                    );
-                  })}
+                      return (
+                        <div key={gId} className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shadow-sm">
+                          {avatarContent}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <span className="text-[10px] font-semibold text-muted-foreground group-hover:text-primary transition-colors duration-200 underline decoration-dotted underline-offset-2">
+                    Click to view guards
+                  </span>
                 </div>
               ) : null}
             />
@@ -565,6 +624,171 @@ const SiteManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Viewing Assigned Guards Dialog */}
+      <Dialog open={!!viewingGuardsSite} onOpenChange={(val) => {
+        if (!val) {
+          setViewingGuardsSite(null);
+          setGuardSearch("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-background">
+          {viewingGuardsSite && (() => {
+            const assignedIds = Array.from(siteGuardIdsMap.get(viewingGuardsSite.id) || []);
+            const assignedGuards = assignedIds
+              .map(gId => guardList.find(gu => String(gu.id) === String(gId)))
+              .filter(Boolean);
+
+            const filteredGuards = assignedGuards.filter((g: any) => {
+              const term = guardSearch.toLowerCase();
+              return (
+                g.name?.toLowerCase().includes(term) ||
+                g.email?.toLowerCase().includes(term) ||
+                g.phoneNumber?.toLowerCase().includes(term) ||
+                g.id?.toLowerCase().includes(term)
+              );
+            });
+
+            return (
+              <div className="flex flex-col">
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-4 border-b border-border/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <DialogTitle className="text-lg font-bold text-foreground">Assigned Guards</DialogTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Active Guard Roster for {viewingGuardsSite.name}</p>
+                  </div>
+
+                  {/* Search Bar on top */}
+                  <div className="relative w-full md:w-72 mr-6">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground mr-6" />
+                    <input
+                      value={guardSearch}
+                      onChange={(e) => setGuardSearch(e.target.value)}
+                      placeholder="Search assigned guards..."
+                      className="w-full pl-9 pr-3 py-1.5 bg-secondary border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-6 max-h-[450px] overflow-y-auto">
+                  {filteredGuards.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-muted-foreground">
+                      {assignedGuards.length === 0
+                        ? "No guards are currently assigned to this site."
+                        : "No guards match your search criteria."}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {filteredGuards.map((g: any, index) => {
+                        let avatarContent: React.ReactNode;
+                        if (g.profilePhoto) {
+                          avatarContent = <img src={g.profilePhoto} alt={g.name || "Guard"} className="w-full h-full object-cover rounded-full" />;
+                        } else {
+                          avatarContent = g.name ? g.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : String(g.id).slice(0, 2).toUpperCase();
+                        }
+
+                        // Status styling
+                        const statusColors = {
+                          "on-duty": "bg-success text-success-foreground border-success/30",
+                          "break": "bg-warning text-warning-foreground border-warning/30",
+                          "off-duty": "bg-muted text-muted-foreground border-muted-foreground/10",
+                        };
+
+                        // Compliance styling
+                        const complianceColors = {
+                          "valid": "bg-success/10 text-success border-success/20",
+                          "expiring": "bg-warning/10 text-warning border-warning/20",
+                          "expired": "bg-destructive/10 text-destructive border-destructive/20",
+                        };
+
+                        // Find shift times for this guard at this site
+                        const getShiftTimeText = () => {
+                          const sch = scheduleRaw.find((s: any) => {
+                            const isSiteMatch = String(s.siteId || s.site) === String(viewingGuardsSite.id);
+                            const guardIds = Array.isArray(s.guardIds) ? s.guardIds : (s.guardId ? [s.guardId] : []);
+                            return isSiteMatch && guardIds.map(String).includes(String(g.id));
+                          });
+                          if (!sch) return "No Shift Today";
+                          return `${sch.shiftStart?.substring(0, 5) || "N/A"} - ${sch.shiftEnd?.substring(0, 5) || "N/A"}`;
+                        };
+
+                        return (
+                          <div key={g.id || index} className="p-4 rounded-xl border border-border bg-card hover:bg-secondary/20 transition-all flex flex-col justify-between gap-4">
+                            <div className="flex items-start justify-between gap-3">
+                              {/* Avatar & Name */}
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shrink-0">
+                                  {avatarContent}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-foreground truncate">{g.name}</p>
+                                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">ID: {g.id}</p>
+                                </div>
+                              </div>
+
+                              {/* Duty Status Badge */}
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColors[g.status as keyof typeof statusColors] || statusColors["off-duty"]}`}>
+                                {g.status || "off-duty"}
+                              </span>
+                            </div>
+
+                            {/* Contact & Shift Info */}
+                            <div className="space-y-1.5 text-xs text-muted-foreground border-t border-b border-border/50 py-3">
+                              <div className="flex items-center gap-2">
+                                <Phone className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+                                <span className="truncate">{g.phoneNumber || "No Phone"}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Mail className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+                                <span className="truncate">{g.email || "No Email"}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-foreground font-semibold">
+                                <Users className="w-3.5 h-3.5 text-primary shrink-0" />
+                                <span>Shift: {getShiftTimeText()}</span>
+                              </div>
+                            </div>
+
+                            {/* Additional Guard Info: Compliance & Hours */}
+                            <div className="flex items-center justify-between text-[11px] gap-2">
+                              {/* Compliance Status Badge */}
+                              <div className="flex items-center gap-1.5">
+                                <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                                <span className={`px-1.5 py-0.5 rounded border text-[10px] font-medium capitalize ${complianceColors[g.complianceStatus as keyof typeof complianceColors] || complianceColors["valid"]}`}>
+                                  {g.complianceStatus || "valid"} Compliance
+                                </span>
+                              </div>
+
+                              {/* Hours Tracked */}
+                              <div className="text-right">
+                                <span className="text-muted-foreground">Hours: </span>
+                                <span className="font-bold text-foreground">{g.hoursThisWeek || 0}h</span>
+                                <span className="text-muted-foreground text-[10px]"> / {g.scheduledHours || 0}h scheduled</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="px-6 py-4 bg-secondary/20 border-t border-border/50 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setViewingGuardsSite(null);
+                      setGuardSearch("");
+                    }}
+                    size="sm"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

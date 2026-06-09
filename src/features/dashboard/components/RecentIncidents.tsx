@@ -137,18 +137,18 @@ const RecentIncidents = () => {
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="bg-secondary">
-                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Time</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Guard</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Location</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Type</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Priority</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2.5">Action</th>
+                <tr className="bg-muted/30 border-b border-border/80">
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 px-4 py-3">Time</th>
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 px-4 py-3">Guard</th>
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 px-4 py-3">Location</th>
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 px-4 py-3">Type</th>
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 px-4 py-3">Priority</th>
+                  <th className="text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 px-4 py-3 text-right pr-6">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {incidentList.slice(0, 5).map((inc) => (
-                  <tr key={inc.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
+                  <tr key={inc.id} className="border-b border-border hover:bg-primary/[0.015] transition-colors">
                     <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">
                       {inc.date} · {inc.time}
                     </td>
@@ -158,8 +158,8 @@ const RecentIncidents = () => {
                     <td className="px-4 py-3">
                       <span className={`priority-${inc.priority}`}>{inc.priority.charAt(0).toUpperCase() + inc.priority.slice(1)}</span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
+                    <td className="px-4 py-3 text-right pr-6">
+                      <div className="flex gap-2 justify-end">
                         <button
                           onClick={() => setViewIncident(inc.id)}
                           className="flex items-center gap-1.5 px-2.5 py-1 bg-primary text-primary-foreground rounded text-xs font-medium hover:opacity-90 transition-opacity"

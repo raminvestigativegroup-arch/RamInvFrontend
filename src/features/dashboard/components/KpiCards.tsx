@@ -15,25 +15,20 @@ const KpiCards = ({ kpis, loading }: KpiCardsProps) => {
     return val < 10 ? `0${val}` : String(val);
   };
 
-  const formatPercentage = (val: number | undefined) => {
-    if (loading || val === undefined || val === null) return "...";
-    // If it is 0, make it 98% like the screenshot (mock compliance alert percentage)
-    const percentage = val === 0 ? 98 : val;
-    return `${percentage}%`;
-  };
-
   const kpiCards = [
     {
       label: "Active Guards",
       value: formatValue(kpis?.activeGuards),
       subtitle: (
-        <span className="text-[11px] text-blue-600 font-semibold tracking-wide">
-          {kpis && kpis.totalGuards > 0 ? Math.round((kpis.activeGuards / kpis.totalGuards) * 100) : 92}% Capacity
+        <span className="text-[11px] text-primary font-semibold tracking-wide">
+          {kpis && kpis.totalGuards > 0 
+            ? `${Math.round((kpis.activeGuards / kpis.totalGuards) * 100)}% Capacity` 
+            : "0% Capacity"}
         </span>
       ),
       icon: Users,
-      color: "text-blue-600",
-      bg: "bg-blue-50/80 border border-blue-100/50",
+      color: "text-primary",
+      bg: "bg-primary/5 border border-primary/10",
       trendIcon: ArrowUpRight,
       trendColor: "text-muted-foreground/60",
       link: "/dashboard/guards",
@@ -43,12 +38,14 @@ const KpiCards = ({ kpis, loading }: KpiCardsProps) => {
       value: formatValue(kpis?.activeSites),
       subtitle: (
         <span className="text-[11px] text-muted-foreground font-medium tracking-wide">
-          2 Pending Activation
+          {kpis && (kpis.totalSites - kpis.activeSites) > 0 
+            ? `${kpis.totalSites - kpis.activeSites} Pending Activation` 
+            : "All Sites Active"}
         </span>
       ),
       icon: MapPin,
-      color: "text-blue-600",
-      bg: "bg-blue-50/80 border border-blue-100/50",
+      color: "text-primary",
+      bg: "bg-primary/5 border border-primary/10",
       trendIcon: ArrowUpRight,
       trendColor: "text-muted-foreground/60",
       link: "/dashboard/sites",
@@ -57,8 +54,10 @@ const KpiCards = ({ kpis, loading }: KpiCardsProps) => {
       label: "Incidents Today",
       value: formatValue(kpis?.incidentsToday),
       subtitle: (
-        <span className="text-[11px] text-red-500 font-semibold tracking-wide">
-          {kpis && kpis.incidentsToday > 0 ? `${kpis.openIncidents || 1} High Priority` : "1 High Priority"}
+        <span className={`text-[11px] font-semibold tracking-wide ${kpis && kpis.openIncidents > 0 ? "text-red-500" : "text-success"}`}>
+          {kpis && kpis.openIncidents > 0 
+            ? `${kpis.openIncidents} Open Incidents` 
+            : "No Open Incidents"}
         </span>
       ),
       icon: FileWarning,
@@ -70,15 +69,17 @@ const KpiCards = ({ kpis, loading }: KpiCardsProps) => {
     },
     {
       label: "Compliance Alerts",
-      value: formatPercentage(kpis?.complianceAlerts),
+      value: formatValue(kpis?.complianceAlerts),
       subtitle: (
-        <span className="text-[11px] text-muted-foreground font-medium tracking-wide">
-          Above Target
+        <span className={`text-[11px] font-semibold tracking-wide ${kpis && kpis.complianceAlerts > 0 ? "text-warning" : "text-success"}`}>
+          {kpis && kpis.complianceAlerts > 0 
+            ? `${kpis.complianceAlerts} Actions Required` 
+            : "All Compliant"}
         </span>
       ),
       icon: ShieldAlert,
-      color: "text-blue-600",
-      bg: "bg-blue-50/80 border border-blue-100/50",
+      color: kpis && kpis.complianceAlerts > 0 ? "text-warning" : "text-primary",
+      bg: kpis && kpis.complianceAlerts > 0 ? "bg-warning/5 border border-warning/10" : "bg-primary/5 border border-primary/10",
       trendIcon: ArrowUpRight,
       trendColor: "text-muted-foreground/60",
       link: "/dashboard/compliance",

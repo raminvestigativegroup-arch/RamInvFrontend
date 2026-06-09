@@ -34,6 +34,8 @@ const SystemSettings = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [settingsErrors, setSettingsErrors] = useState<Record<string, string>>({});
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
 
   const { toast } = useToast();
 
@@ -61,19 +63,53 @@ const SystemSettings = () => {
     fetchSettings();
   }, []);
 
-  const handleSettingsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!companyName || !email || !phone || !address) {
-      toast({
-        title: "Validation Error",
-        description: "All company fields are required.",
-        variant: "destructive",
-      });
-      return;
+  const validateSettingsForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!companyName.trim()) {
+      newErrors.companyName = "Company name is required";
+    }
+    if (!phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else {
+      const phoneRegex = /^[+\d\s\-()]+$/;
+      if (!phoneRegex.test(phone)) {
+        newErrors.phone = "Invalid format";
+      }
+    }
+    if (!address.trim()) {
+      newErrors.address = "Address is required";
     }
 
+    setSettingsErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validatePasswordForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!oldPassword) {
+      newErrors.oldPassword = "Current password is required";
+    }
+    if (!newPassword) {
+      newErrors.newPassword = "New password is required";
+    } else if (newPassword.length < 6) {
+      newErrors.newPassword = "Password must be at least 6 characters";
+    }
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Confirmation is required";
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    setPasswordErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSettingsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateSettingsForm()) return;
+
     setIsSavingSettings(true);
+    setSettingsErrors({});
     try {
       await settingsService.updateSettings({
         companyName,
@@ -88,11 +124,7 @@ const SystemSettings = () => {
       });
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Failed to update company settings.";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      setSettingsErrors(prev => ({ ...prev, form: message }));
     } finally {
       setIsSavingSettings(false);
     }
@@ -100,26 +132,10 @@ const SystemSettings = () => {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      toast({
-        title: "Validation Error",
-        description: "All password fields are required.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Validation Error",
-        description: "New passwords do not match.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!validatePasswordForm()) return;
 
     setIsSavingPassword(true);
+    setPasswordErrors({});
     try {
       await authService.changePassword({
         oldPassword,
@@ -135,13 +151,10 @@ const SystemSettings = () => {
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setPasswordErrors({});
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Failed to change password. Please check your credentials.";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      setPasswordErrors(prev => ({ ...prev, form: message }));
     } finally {
       setIsSavingPassword(false);
     }
@@ -169,8 +182,13 @@ const SystemSettings = () => {
       </div>
 
       {/* Company Info */}
-      <form onSubmit={handleSettingsSubmit} className="bg-card rounded-xl border border-border p-6">
+      <form onSubmit={handleSettingsSubmit} className="bg-card rounded-xl border border-border p-6" noValidate>
         <h2 className="text-lg font-semibold text-foreground mb-5">Company Information</h2>
+        {settingsErrors.form && (
+          <div className="p-3 mb-5 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg max-w-xl">
+            {settingsErrors.form}
+          </div>
+        )}
 
         {isLoadingSettings ? (
           <div className="flex justify-center items-center py-10">
@@ -179,12 +197,17 @@ const SystemSettings = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-              <FormField label="Company Name" required>
+              <FormField label="Company Name" required error={settingsErrors.companyName}>
                 <input
                   value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
+                  onChange={(e) => {
+                    setCompanyName(e.target.value);
+                    if (settingsErrors.companyName) setSettingsErrors(prev => ({ ...prev, companyName: undefined }));
+                  }}
                   disabled={!hasEditPermission}
-                  className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  className={`w-full px-4 py-2.5 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
+                    settingsErrors.companyName ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                  }`}
                   placeholder="Company Name"
                 />
               </FormField>
@@ -197,21 +220,31 @@ const SystemSettings = () => {
                   placeholder="Email"
                 />
               </FormField>
-              <FormField label="Phone" required>
+              <FormField label="Phone" required error={settingsErrors.phone}>
                 <input
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    if (settingsErrors.phone) setSettingsErrors(prev => ({ ...prev, phone: undefined }));
+                  }}
                   disabled={!hasEditPermission}
-                  className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  className={`w-full px-4 py-2.5 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
+                    settingsErrors.phone ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                  }`}
                   placeholder="Phone"
                 />
               </FormField>
-              <FormField label="Address" required>
+              <FormField label="Address" required error={settingsErrors.address}>
                 <input
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => {
+                    setAddress(e.target.value);
+                    if (settingsErrors.address) setSettingsErrors(prev => ({ ...prev, address: undefined }));
+                  }}
                   disabled={!hasEditPermission}
-                  className="w-full px-4 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  className={`w-full px-4 py-2.5 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
+                    settingsErrors.address ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                  }`}
                   placeholder="Address"
                 />
               </FormField>
@@ -235,15 +268,25 @@ const SystemSettings = () => {
       {/* Security Info Card */}
       <div className="bg-card rounded-xl border border-border p-6">
         <h2 className="text-lg font-semibold text-foreground mb-5">Change Password</h2>
-        <form onSubmit={handlePasswordChange} className="space-y-5 max-w-xl">
-          <FormField label="Current Password" required>
+        <form onSubmit={handlePasswordChange} className="space-y-5 max-w-xl" noValidate>
+          {passwordErrors.form && (
+            <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+              {passwordErrors.form}
+            </div>
+          )}
+          <FormField label="Current Password" required error={passwordErrors.oldPassword}>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type={showOldPassword ? "text" : "password"}
                 value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                onChange={(e) => {
+                  setOldPassword(e.target.value);
+                  if (passwordErrors.oldPassword) setPasswordErrors(prev => ({ ...prev, oldPassword: undefined }));
+                }}
+                className={`w-full pl-10 pr-10 py-2.5 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                  passwordErrors.oldPassword ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                }`}
                 placeholder="Enter current password"
               />
               <button
@@ -256,14 +299,19 @@ const SystemSettings = () => {
             </div>
           </FormField>
 
-          <FormField label="New Password" required>
+          <FormField label="New Password" required error={passwordErrors.newPassword}>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type={showNewPassword ? "text" : "password"}
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  if (passwordErrors.newPassword) setPasswordErrors(prev => ({ ...prev, newPassword: undefined }));
+                }}
+                className={`w-full pl-10 pr-10 py-2.5 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                  passwordErrors.newPassword ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                }`}
                 placeholder="Enter new password"
               />
               <button
@@ -276,14 +324,19 @@ const SystemSettings = () => {
             </div>
           </FormField>
 
-          <FormField label="Confirm New Password" required>
+          <FormField label="Confirm New Password" required error={passwordErrors.confirmPassword}>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (passwordErrors.confirmPassword) setPasswordErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                }}
+                className={`w-full pl-10 pr-10 py-2.5 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                  passwordErrors.confirmPassword ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                }`}
                 placeholder="Confirm new password"
               />
               <button

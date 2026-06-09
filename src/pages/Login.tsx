@@ -11,11 +11,34 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const validateForm = () => {
+    const newErrors: { email?: string; password?: string } = {};
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        newErrors.email = "Invalid email format";
+      }
+    }
+
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
     setIsLoading(true);
 
     try {
@@ -31,25 +54,21 @@ const Login = () => {
       navigate("/dashboard");
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Invalid email or password.";
-      toast({
-        title: "Login Failed",
-        description: message,
-        variant: "destructive",
-      });
+      setErrors(prev => ({ ...prev, form: message }));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 bg-white">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-40 h-30  mb-4 ">
             <img src={logo} alt="SecurePro Logo" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Ram Investigative Group</h1>
+          <h1 className="text-3xl font-bold text-foreground">RAM Investigative Group Inc.</h1>
           <p className="text-muted-foreground mt-1">Professional Investigation Services</p>
         </div>
 
@@ -57,7 +76,12 @@ const Login = () => {
         <div className="bg-card rounded-2xl p-8 shadow-lg border border-border">
           <h2 className="text-xl font-semibold text-foreground mb-6">Sign in to continue</h2>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-5" noValidate>
+            {errors.form && (
+              <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                {errors.form}
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Email</label>
               <div className="relative">
@@ -65,11 +89,19 @@ const Login = () => {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-secondary rounded-xl border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
+                  }}
+                  className={`w-full pl-12 pr-4 py-3.5 bg-secondary rounded-xl border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                    errors.email ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                  }`}
                   placeholder="Enter your email"
                 />
               </div>
+              {errors.email && (
+                <p className="text-destructive text-[11px] font-semibold mt-1.5 ml-1 animate-fade-in">{errors.email}</p>
+              )}
             </div>
 
             <div>
@@ -79,8 +111,13 @@ const Login = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-12 py-3.5 bg-secondary rounded-xl border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setErrors(prev => ({ ...prev, password: undefined, form: undefined }));
+                  }}
+                  className={`w-full pl-12 pr-12 py-3.5 bg-secondary rounded-xl border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                    errors.password ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                  }`}
                   placeholder="Enter your password"
                 />
                 <button
@@ -91,6 +128,9 @@ const Login = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              {errors.password && (
+                <p className="text-destructive text-[11px] font-semibold mt-1.5 ml-1 animate-fade-in">{errors.password}</p>
+              )}
             </div>
 
             <div className="flex justify-end">

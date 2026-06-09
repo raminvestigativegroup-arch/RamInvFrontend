@@ -14,36 +14,66 @@ const ForgotPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; otp?: string; newPassword?: string; confirmPassword?: string }>({});
 
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateStep1 = () => {
+    const newErrors: { email?: string } = {};
     if (!email) {
-      toast({
-        title: "Validation Error",
-        description: "Please enter your email address.",
-        variant: "destructive",
-      });
-      return;
+      newErrors.email = "Email is required";
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        newErrors.email = "Invalid email format";
+      }
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const newErrors: { otp?: string; newPassword?: string; confirmPassword?: string } = {};
+    if (!otp) {
+      newErrors.otp = "Verification code is required";
+    } else if (otp.length !== 6 || !/^\d+$/.test(otp)) {
+      newErrors.otp = "Verification code must be exactly 6 digits";
     }
 
+    if (!newPassword) {
+      newErrors.newPassword = "New password is required";
+    } else if (newPassword.length < 6) {
+      newErrors.newPassword = "Password must be at least 6 characters";
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Confirm password is required";
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateStep1()) return;
+
     setIsLoading(true);
+    setErrors({});
     try {
       await authService.forgotPassword(email);
       toast({
         title: "OTP Sent",
         description: "A password reset code has been sent to your email.",
       });
+      setErrors({});
       setStep(2);
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Failed to send OTP. Please check your email.";
-      toast({
-        title: "Request Failed",
-        description: message,
-        variant: "destructive",
-      });
+      setErrors(prev => ({ ...prev, form: message }));
     } finally {
       setIsLoading(false);
     }
@@ -51,25 +81,10 @@ const ForgotPassword = () => {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp || !newPassword || !confirmPassword) {
-      toast({
-        title: "Validation Error",
-        description: "All fields are required.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Validation Error",
-        description: "Passwords do not match.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!validateStep2()) return;
 
     setIsLoading(true);
+    setErrors({});
     try {
       await authService.resetPassword({
         email,
@@ -83,25 +98,21 @@ const ForgotPassword = () => {
       navigate("/");
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Failed to reset password. Please check your OTP.";
-      toast({
-        title: "Reset Failed",
-        description: message,
-        variant: "destructive",
-      });
+      setErrors(prev => ({ ...prev, form: message }));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 bg-white">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-40 h-30 mb-4">
             <img src={logo} alt="SecurePro Logo" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Ram Investigative Group</h1>
+          <h1 className="text-3xl font-bold text-foreground">RAM Investigative Group Inc.</h1>
           <p className="text-muted-foreground mt-1">Professional Investigation Services</p>
         </div>
 
@@ -117,7 +128,12 @@ const ForgotPassword = () => {
           </div>
 
           {step === 1 ? (
-            <form onSubmit={handleSendOtp} className="space-y-5">
+            <form onSubmit={handleSendOtp} className="space-y-5" noValidate>
+              {errors.form && (
+                <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                  {errors.form}
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
                 Enter your email address and we'll send you a 6-digit verification code to reset your password.
               </p>
@@ -129,12 +145,19 @@ const ForgotPassword = () => {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-secondary rounded-xl border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setErrors(prev => ({ ...prev, email: undefined, form: undefined }));
+                    }}
+                    className={`w-full pl-12 pr-4 py-3.5 bg-secondary rounded-xl border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                      errors.email ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                    }`}
                     placeholder="Enter your email"
-                    required
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-destructive text-[11px] font-semibold mt-1.5 ml-1 animate-fade-in">{errors.email}</p>
+                )}
               </div>
 
               <Button
@@ -146,7 +169,12 @@ const ForgotPassword = () => {
               </Button>
             </form>
           ) : (
-            <form onSubmit={handleResetPassword} className="space-y-5">
+            <form onSubmit={handleResetPassword} className="space-y-5" noValidate>
+              {errors.form && (
+                <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                  {errors.form}
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
                 We've sent a 6-digit verification code to <span className="font-semibold text-foreground">{email}</span>.
               </p>
@@ -159,12 +187,19 @@ const ForgotPassword = () => {
                     type="text"
                     maxLength={6}
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 bg-secondary rounded-xl border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-center tracking-widest font-mono text-lg"
+                    onChange={(e) => {
+                      setOtp(e.target.value);
+                      setErrors(prev => ({ ...prev, otp: undefined, form: undefined }));
+                    }}
+                    className={`w-full pl-12 pr-4 py-3.5 bg-secondary rounded-xl border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all text-center tracking-widest font-mono text-lg ${
+                      errors.otp ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                    }`}
                     placeholder="123456"
-                    required
                   />
                 </div>
+                {errors.otp && (
+                  <p className="text-destructive text-[11px] font-semibold mt-1.5 ml-1 animate-fade-in">{errors.otp}</p>
+                )}
               </div>
 
               <div>
@@ -174,10 +209,14 @@ const ForgotPassword = () => {
                   <input
                     type={showPassword ? "text" : "password"}
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full pl-12 pr-12 py-3.5 bg-secondary rounded-xl border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      setErrors(prev => ({ ...prev, newPassword: undefined, form: undefined }));
+                    }}
+                    className={`w-full pl-12 pr-12 py-3.5 bg-secondary rounded-xl border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                      errors.newPassword ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                    }`}
                     placeholder="Enter new password"
-                    required
                   />
                   <button
                     type="button"
@@ -187,6 +226,9 @@ const ForgotPassword = () => {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {errors.newPassword && (
+                  <p className="text-destructive text-[11px] font-semibold mt-1.5 ml-1 animate-fade-in">{errors.newPassword}</p>
+                )}
               </div>
 
               <div>
@@ -196,12 +238,19 @@ const ForgotPassword = () => {
                   <input
                     type={showPassword ? "text" : "password"}
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-12 pr-12 py-3.5 bg-secondary rounded-xl border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                    }}
+                    className={`w-full pl-12 pr-12 py-3.5 bg-secondary rounded-xl border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                      errors.confirmPassword ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                    }`}
                     placeholder="Confirm new password"
-                    required
                   />
                 </div>
+                {errors.confirmPassword && (
+                  <p className="text-destructive text-[11px] font-semibold mt-1.5 ml-1 animate-fade-in">{errors.confirmPassword}</p>
+                )}
               </div>
 
               <Button

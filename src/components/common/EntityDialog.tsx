@@ -35,7 +35,7 @@ const EntityDialog: React.FC<EntityDialogProps> = ({
         <DialogHeader className="border-b pb-4">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4 mt-2">
+        <form onSubmit={onSubmit} className="space-y-4 mt-2" noValidate>
           <div className="max-h-[75vh] overflow-y-auto px-1 -mx-1 space-y-4">
             {children}
           </div>

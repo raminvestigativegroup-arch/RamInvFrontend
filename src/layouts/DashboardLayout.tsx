@@ -63,12 +63,8 @@ const DashboardLayout = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <aside
-        className={`relative flex flex-col text-sidebar-foreground transition-all duration-300 ${collapsed ? "w-[72px]" : "w-64"
+        className={`relative flex flex-col bg-sidebar border-r border-sidebar-border text-sidebar-foreground transition-all duration-300 ${collapsed ? "w-[72px]" : "w-64"
           }`}
-        style={{
-          background:
-            "linear-gradient(180deg, hsl(228 45% 16%) 0%, hsl(233 75% 8%) 35%, hsl(233 75% 7%) 100%)",
-        }}
       >
         {/* Floating Toggle Button */}
         <button
@@ -85,29 +81,26 @@ const DashboardLayout = () => {
 
         {/* Logo Header — centered */}
         <div
-          className="shrink-0 flex flex-col items-center justify-center py-5 px-3"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+          className={`shrink-0 flex flex-col items-center justify-center py-1.5 border-b border-sidebar-border ${collapsed ? "px-0 w-full" : "px-3"}`}
         >
           <img
             src={logoImg}
             alt="RAM Investigative Group Inc."
-            style={{ filter: "brightness(0) invert(1)" }}
-            className={`object-contain transition-all duration-300 ${
-              collapsed ? "h-9 w-9" : "h-[72px] w-auto max-w-[155px]"
-            }`}
+            className={`object-contain transition-all duration-300 ${collapsed ? "h-9 w-9" : "h-[72px] w-auto max-w-[155px]"
+              }`}
           />
         </div>
 
         {/* Nav Items */}
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5">
           {/* NAVIGATION label */}
-          <div
+          {/* <div
             className={`px-3 text-[10px] font-bold tracking-widest uppercase select-none mb-2 transition-all duration-300 overflow-hidden whitespace-nowrap ${collapsed ? "max-h-0 opacity-0 py-0" : "max-h-8 opacity-100 py-1"
               }`}
-            style={{ color: "rgba(180,190,230,0.5)" }}
+            style={{ color: "rgba(100, 116, 139, 0.6)" }}
           >
             Navigation
-          </div>
+          </div> */}
 
           {filteredNavItems.map((item) => (
             <NavLink
@@ -115,16 +108,18 @@ const DashboardLayout = () => {
               to={item.path}
               end={item.path === "/dashboard"}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${isActive
-                  ? "bg-white/10 text-white"
-                  : "text-[hsl(228,30%,72%)] hover:bg-white/[0.07] hover:text-white"
+                `flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${
+                  collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5"
+                } ${isActive
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }`
               }
               title={collapsed ? item.label : undefined}
             >
               <item.icon className="w-5 h-5 shrink-0" />
               <span
-                className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100"
+                className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0 w-0" : "max-w-[200px] opacity-100"
                   }`}
               >
                 {item.label}
@@ -135,23 +130,24 @@ const DashboardLayout = () => {
 
         {/* Bottom Actions */}
         <div
-          className="px-2 py-3 space-y-0.5"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
+          className="px-2 py-3 space-y-0.5 border-t border-sidebar-border"
         >
           {hasSettingsPermission && (
             <NavLink
               to="/dashboard/settings"
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${isActive
-                  ? "bg-white/10 text-white"
-                  : "text-[hsl(228,30%,72%)] hover:bg-white/[0.07] hover:text-white"
+                `flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${
+                  collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5"
+                } ${isActive
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }`
               }
               title={collapsed ? "Settings" : undefined}
             >
               <Settings className="w-5 h-5 shrink-0" />
               <span
-                className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100"
+                className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0 w-0" : "max-w-[200px] opacity-100"
                   }`}
               >
                 Settings
@@ -160,11 +156,13 @@ const DashboardLayout = () => {
           )}
           <button
             onClick={() => setShowLogoutDialog(true)}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 text-[hsl(228,30%,72%)] hover:bg-white/[0.07] hover:text-white"
+            className={`flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${
+              collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5 w-full"
+            } text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground`}
           >
             <LogOut className="w-5 h-5 shrink-0" />
             <span
-              className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-[200px] opacity-100"
+              className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0 w-0" : "max-w-[200px] opacity-100"
                 }`}
             >
               Logout

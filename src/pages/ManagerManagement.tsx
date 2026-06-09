@@ -152,6 +152,7 @@ const ManagerManagement = () => {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [form, setForm] = useState({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", roleId: "", selectedSites: [] as string[], status: "active" as "active" | "inactive", licenseExpiry: "2027-01-01", image: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingManager, setEditingManager] = useState<Manager | null>(null);
   const [deletingManager, setDeletingManager] = useState<Manager | null>(null);
   const [verifyingManager, setVerifyingManager] = useState<Manager | null>(null);
@@ -263,11 +264,8 @@ const ManagerManagement = () => {
       setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", roleId: "", selectedSites: [], status: "active", licenseExpiry: "2027-01-01", image: "" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to create manager.",
-        variant: "destructive"
-      });
+      const errMsg = error.response?.data?.message || "Failed to create manager.";
+      setErrors(prev => ({ ...prev, form: errMsg }));
     }
   });
 
@@ -285,11 +283,8 @@ const ManagerManagement = () => {
       setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", roleId: "", selectedSites: [], status: "active", licenseExpiry: "2027-01-01", image: "" });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to update manager.",
-        variant: "destructive"
-      });
+      const errMsg = error.response?.data?.message || "Failed to update manager.";
+      setErrors(prev => ({ ...prev, form: errMsg }));
     }
   });
 
@@ -324,12 +319,43 @@ const ManagerManagement = () => {
     }
   };
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!form.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    }
+    if (!form.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+    }
+    if (!editingManager) {
+      if (!form.email.trim()) {
+        newErrors.email = "Email is required";
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(form.email)) {
+          newErrors.email = "Invalid email format";
+        }
+      }
+    }
+    if (!form.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required";
+    } else {
+      const phoneRegex = /^[+\d\s\-()]+$/;
+      if (!phoneRegex.test(form.phoneNumber)) {
+        newErrors.phoneNumber = "Invalid format";
+      }
+    }
+    if (!form.roleId.trim()) {
+      newErrors.roleId = "Role is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.firstName || !form.lastName || !form.email) {
-      toast({ title: "Validation Error", description: "First name, last name, and email are required.", variant: "destructive" });
-      return;
-    }
+    if (!validateForm()) return;
 
     const payload: any = {
       firstName: form.firstName,
@@ -488,7 +514,11 @@ const ManagerManagement = () => {
         open={open}
         onOpenChange={(val) => {
           setOpen(val);
-          if (!val) setEditingManager(null);
+          if (!val) {
+            setEditingManager(null);
+            setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", roleId: "", selectedSites: [], status: "active", licenseExpiry: "2027-01-01", image: "" });
+          }
+          setErrors({});
         }}
         title={editingManager ? "Update Manager Profile" : "Add New Manager"}
         onSubmit={handleSubmit}
@@ -496,6 +526,11 @@ const ManagerManagement = () => {
         submitLabel={editingManager ? (updateManagerMutation.isPending ? "Updating..." : "Update Profile") : (createManagerMutation.isPending ? "Creating..." : "Add Manager")}
       >
 
+        {errors.form && (
+          <div className="p-3 mb-4 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+            {errors.form}
+          </div>
+        )}
         <FormField label="Profile Photo">
           <div
             onClick={() => document.getElementById('manager-image-upload')?.click()}
@@ -538,35 +573,79 @@ const ManagerManagement = () => {
         </FormField>
 
         <div className="grid grid-cols-3 gap-3">
-          <FormField label="First Name" required>
-            <input value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} placeholder="e.g. John" className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          <FormField label="First Name" required error={errors.firstName}>
+            <input
+              value={form.firstName}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, firstName: e.target.value }));
+                if (errors.firstName) setErrors(prev => ({ ...prev, firstName: undefined }));
+              }}
+              placeholder="e.g. John"
+              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${
+                errors.firstName ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+              }`}
+            />
           </FormField>
           <FormField label="Middle Name">
-            <input value={form.middleName} onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))} placeholder="e.g. M." className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+            <input
+              value={form.middleName}
+              onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))}
+              placeholder="e.g. M."
+              className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
           </FormField>
-          <FormField label="Last Name" required>
-            <input value={form.lastName} onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))} placeholder="e.g. Smith" className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          <FormField label="Last Name" required error={errors.lastName}>
+            <input
+              value={form.lastName}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, lastName: e.target.value }));
+                if (errors.lastName) setErrors(prev => ({ ...prev, lastName: undefined }));
+              }}
+              placeholder="e.g. Smith"
+              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${
+                errors.lastName ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+              }`}
+            />
           </FormField>
         </div>
-        <FormField label="Email" required>
+        <FormField label="Email" required error={errors.email}>
           <input
             type="email"
             value={form.email}
-            onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+            onChange={e => {
+              setForm(f => ({ ...f, email: e.target.value }));
+              if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+            }}
             disabled={!!editingManager}
-            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+              errors.email ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+            }`}
             placeholder="e.g. john@securepro.com"
           />
         </FormField>
-        <FormField label="Phone">
-          <input value={form.phoneNumber} onChange={e => setForm(f => ({ ...f, phoneNumber: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. +1 555-0300" />
+        <FormField label="Phone" required error={errors.phoneNumber}>
+          <input
+            value={form.phoneNumber}
+            onChange={e => {
+              setForm(f => ({ ...f, phoneNumber: e.target.value }));
+              if (errors.phoneNumber) setErrors(prev => ({ ...prev, phoneNumber: undefined }));
+            }}
+            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${
+              errors.phoneNumber ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+            }`}
+            placeholder="e.g. +1 555-0300"
+          />
         </FormField>
-        <FormField label="Role">
+        <FormField label="Role" required error={errors.roleId}>
           <SelectDropdown
             value={form.roleId}
-            onChange={val => setForm(f => ({ ...f, roleId: val }))}
+            onChange={val => {
+              setForm(f => ({ ...f, roleId: val }));
+              if (errors.roleId) setErrors(prev => ({ ...prev, roleId: undefined }));
+            }}
             options={rolesList.map(role => ({ value: role.id, label: role.name }))}
             placeholder="Select a role"
+            className={errors.roleId ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
           />
         </FormField>
         {/* <FormField label="Assigned Sites">

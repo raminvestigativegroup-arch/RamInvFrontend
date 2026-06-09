@@ -23,13 +23,13 @@ const GuardStatusPanel = ({ selectedGuardId, onSelectGuard, guards: dynamicGuard
       <div className="p-4 border-b border-border">
         <h2 className="text-base font-bold text-foreground mb-3">Guard Status</h2>
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/85" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Quick find personnel..."
-            className="w-full pl-8 pr-3 py-1.5 bg-secondary border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 transition-shadow"
+            className="w-full pl-9 pr-3 py-2 bg-secondary/80 border border-border/80 rounded-xl text-xs text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           />
         </div>
       </div>
@@ -45,13 +45,12 @@ const GuardStatusPanel = ({ selectedGuardId, onSelectGuard, guards: dynamicGuard
           return (
             <div
               key={guard.id}
-              className={`px-4 py-3 border-b border-border cursor-pointer transition-colors flex items-center gap-3 ${
-                selectedGuardId === guard.id ? "bg-primary/5" : "hover:bg-secondary/40"
-              }`}
+              className={`px-4 py-3.5 border-b border-border cursor-pointer transition-all duration-200 flex items-center gap-3 ${selectedGuardId === guard.id ? "bg-primary/[0.03] border-l-4 border-l-primary pl-3" : "hover:bg-secondary/40 border-l-4 border-l-transparent"
+                }`}
               onClick={() => onSelectGuard?.(guard.id)}
             >
               {/* Avatar circle */}
-              <div className="w-8 h-8 rounded-full bg-blue-50/80 border border-blue-100/50 flex items-center justify-center shrink-0 text-[11px] font-bold text-primary">
+              <div className="w-9 h-9 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center shrink-0 text-xs font-bold text-primary shadow-sm">
                 {initials}
               </div>
 
@@ -61,31 +60,31 @@ const GuardStatusPanel = ({ selectedGuardId, onSelectGuard, guards: dynamicGuard
                   <p className="text-xs font-bold text-foreground truncate">{guard.name}</p>
                   <div className="shrink-0">
                     {guard.geofenceAlert ? (
-                      <span className="bg-red-50 text-red-600 border border-red-100/40 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">Alert</span>
+                      <span className="status-badge-danger uppercase tracking-wider text-[9px] font-bold">Alert</span>
                     ) : guard.status === "on-duty" ? (
-                      <span className="bg-blue-50 text-blue-600 border border-blue-100/40 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">On Duty</span>
+                      <span className="status-badge-active uppercase tracking-wider text-[9px] font-bold">On Duty</span>
                     ) : guard.status === "break" ? (
-                      <span className="bg-yellow-50 text-yellow-600 border border-yellow-100/40 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">Break</span>
+                      <span className="status-badge-warning uppercase tracking-wider text-[9px] font-bold">Break</span>
                     ) : (
-                      <span className="bg-slate-50 text-slate-500 border border-slate-200/60 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">Off Duty</span>
+                      <span className="status-badge-inactive uppercase tracking-wider text-[9px] font-bold">Off Duty</span>
                     )}
                   </div>
                 </div>
-                
+
                 <p className="text-[10px] text-muted-foreground truncate mt-0.5">Site: {guard.site}</p>
-                
+
                 {guard.geofenceAlert ? (
-                  <div className="flex items-center gap-1 mt-0.5 text-red-500">
-                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                  <div className="flex items-center gap-1 mt-1 text-red-500">
+                    <AlertTriangle className="w-3 h-3 shrink-0 animate-bounce" />
                     <span className="text-[10px] font-semibold">Outside area</span>
                   </div>
                 ) : guard.status !== "off-duty" ? (
-                  <div className="flex items-center gap-1 mt-0.5 text-muted-foreground">
+                  <div className="flex items-center gap-1 mt-1 text-muted-foreground">
                     <MapPinned className="w-3 h-3 shrink-0 text-muted-foreground/60" />
                     <span className="text-[10px]">{guard.lastSeen}</span>
                   </div>
                 ) : guard.nextShift ? (
-                  <p className="text-[10px] text-muted-foreground/80 mt-0.5">Next Shift: {guard.nextShift}</p>
+                  <p className="text-[10px] text-muted-foreground/80 mt-1">Next Shift: {guard.nextShift}</p>
                 ) : null}
               </div>
             </div>

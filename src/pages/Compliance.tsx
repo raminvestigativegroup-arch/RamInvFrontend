@@ -8,11 +8,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import DateSelect from "@/components/common/DateSelect";
+import FormField from "@/components/common/FormField";
 
 const normalizeImageUrl = (url?: string) => {
   if (!url) return undefined;
@@ -55,6 +66,7 @@ const Compliance = () => {
   const [editDocType, setEditDocType] = useState("State ID");
   const [editCustomDocType, setEditCustomDocType] = useState("");
   const [editExpiryDate, setEditExpiryDate] = useState("");
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
 
   // Upload Form State
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -64,6 +76,9 @@ const Compliance = () => {
   const [customDocType, setCustomDocType] = useState("");
   const [uploadExpiryDate, setUploadExpiryDate] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
+  const [docToDelete, setDocToDelete] = useState<string | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -148,11 +163,10 @@ const Compliance = () => {
     },
     onError: (err: any) => {
       const errMsg = err?.response?.data?.message || err?.message || "Failed to upload document.";
-      toast({
-        variant: "destructive",
-        title: "Upload Failed",
-        description: errMsg,
-      });
+      setUploadErrors(prev => ({
+        ...prev,
+        form: errMsg
+      }));
     },
   });
 
@@ -173,11 +187,10 @@ const Compliance = () => {
     },
     onError: (err: any) => {
       const errMsg = err?.response?.data?.message || err?.message || "Failed to update document.";
-      toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: errMsg,
-      });
+      setEditErrors(prev => ({
+        ...prev,
+        form: errMsg
+      }));
     },
   });
 
@@ -193,6 +206,8 @@ const Compliance = () => {
         description: "Document deleted successfully.",
       });
       setSelectedDoc(null);
+      setIsDeleteConfirmOpen(false);
+      setDocToDelete(null);
       queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
     onError: (err: any) => {
@@ -205,31 +220,53 @@ const Compliance = () => {
     },
   });
 
-  const handleUploadSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateUploadForm = () => {
+    const newErrors: Record<string, string> = {};
     if (!uploadOwnerId) {
-      toast({ variant: "destructive", title: "Validation Error", description: "Please select a guard or manager." });
-      return;
+      newErrors.ownerId = "Owner selection is required";
     }
     if (uploadDocType === "Other" && !customDocType.trim()) {
-      toast({ variant: "destructive", title: "Validation Error", description: "Please specify the custom document name." });
-      return;
+      newErrors.customDocType = "Document name is required";
     }
     if (!uploadExpiryDate) {
-      toast({ variant: "destructive", title: "Validation Error", description: "Please select an expiry date." });
-      return;
+      newErrors.expiryDate = "Expiry date is required";
     }
     if (!uploadFile) {
-      toast({ variant: "destructive", title: "Validation Error", description: "Please choose a document image file." });
-      return;
+      newErrors.file = "Document file is required";
+    } else {
+      const allowedExtensions = /\.(jpg|jpeg|png|gif|webp|avif|heic|pdf|doc|docx)$/i;
+      if (!uploadFile.name.match(allowedExtensions)) {
+        newErrors.file = "Invalid file format. Supported: PNG, JPG, WEBP, AVIF, GIF, HEIC, PDF, DOC, DOCX";
+      } else if (uploadFile.size > 45 * 1024 * 1024) {
+        newErrors.file = "File size exceeds the 45MB limit";
+      }
     }
+    setUploadErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateEditForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (editDocType === "Other" && !editCustomDocType.trim()) {
+      newErrors.customDocType = "Document name is required";
+    }
+    if (!editExpiryDate) {
+      newErrors.expiryDate = "Expiry date is required";
+    }
+    setEditErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleUploadSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateUploadForm()) return;
 
     const formData = new FormData();
     formData.append("ownerId", uploadOwnerId);
     formData.append("ownerType", uploadUserType);
     formData.append("name", uploadDocType === "Other" ? customDocType : uploadDocType);
     formData.append("expiryDate", uploadExpiryDate);
-    formData.append("documentImage", uploadFile);
+    formData.append("documentImage", uploadFile!);
 
     uploadMutation.mutate(formData);
   };
@@ -237,14 +274,7 @@ const Compliance = () => {
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDoc) return;
-    if (editDocType === "Other" && !editCustomDocType.trim()) {
-      toast({ variant: "destructive", title: "Validation Error", description: "Please specify the custom document name." });
-      return;
-    }
-    if (!editExpiryDate) {
-      toast({ variant: "destructive", title: "Validation Error", description: "Please select an expiry date." });
-      return;
-    }
+    if (!validateEditForm()) return;
 
     const finalName = editDocType === "Other" ? editCustomDocType : editDocType;
     editMutation.mutate({
@@ -419,6 +449,14 @@ const Compliance = () => {
     { value: "Pistol License", label: "Pistol License" },
     { value: "Other", label: "Other Government ID" }
   ];
+
+  const filteredDocTypeOptions = useMemo(() => {
+    if (!uploadOwnerId) return docTypeOptions;
+    const submitted = rawDocuments
+      .filter((doc: any) => doc.ownerId === uploadOwnerId && doc.ownerType === uploadUserType)
+      .map((doc: any) => doc.name);
+    return docTypeOptions.filter(opt => opt.value === "Other" || !submitted.includes(opt.value));
+  }, [uploadOwnerId, uploadUserType, rawDocuments, docTypeOptions]);
 
   const ownerTypeOptions = [
     { value: "all", label: "All Roles" },
@@ -595,8 +633,8 @@ const Compliance = () => {
                       <td className="px-5 py-4 text-sm text-muted-foreground font-semibold">{doc.expiryDate}</td>
                       <td className="px-5 py-4">
                         <span className={`status-badge ${doc.status === "valid" ? "status-badge-active" :
-                            doc.status === "expiring" ? "status-badge-warning" :
-                              "status-badge-danger"
+                          doc.status === "expiring" ? "status-badge-warning" :
+                            "status-badge-danger"
                           }`}>
                           {doc.status === "valid" ? "Verified" : doc.status === "expiring" ? "Expiring Soon" : "Expired"}
                         </span>
@@ -682,8 +720,8 @@ const Compliance = () => {
                   <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record</p>
                 </div>
                 <span className={`status-badge ${selectedDoc.status === "valid" ? "status-badge-active" :
-                    selectedDoc.status === "expiring" ? "status-badge-warning" :
-                      "status-badge-danger"
+                  selectedDoc.status === "expiring" ? "status-badge-warning" :
+                    "status-badge-danger"
                   }`}>
                   {selectedDoc.status === "valid" ? "Verified" : selectedDoc.status === "expiring" ? "Expiring Soon" : "Expired"}
                 </span>
@@ -759,15 +797,14 @@ const Compliance = () => {
                   {hasDeletePermission && (
                     <Button
                       onClick={() => {
-                        if (window.confirm("Are you sure you want to delete this compliance document?")) {
-                          deleteMutation.mutate(selectedDoc.id);
-                        }
+                        setDocToDelete(selectedDoc.id);
+                        setIsDeleteConfirmOpen(true);
                       }}
                       disabled={deleteMutation.isPending}
                       variant="destructive"
                       size="sm"
                     >
-                      {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                      Delete
                     </Button>
                   )}
                 </div>
@@ -801,14 +838,28 @@ const Compliance = () => {
       </Dialog>
 
       {/* Upload Document Dialog */}
-      <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+      <Dialog open={isUploadOpen} onOpenChange={(val) => {
+        setIsUploadOpen(val);
+        if (!val) {
+          setUploadOwnerId("");
+          setUploadDocType("State ID");
+          setCustomDocType("");
+          setUploadExpiryDate("");
+          setUploadFile(null);
+        }
+        setUploadErrors({});
+      }}>
         <DialogContent className="sm:max-w-md p-6 border-none shadow-2xl rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">Upload Compliance Document</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleUploadSubmit} className="space-y-4 mt-2">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Upload For</label>
+          <form onSubmit={handleUploadSubmit} className="space-y-4 mt-2" noValidate>
+            {uploadErrors.form && (
+              <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                {uploadErrors.form}
+              </div>
+            )}
+            <FormField label="Upload For">
               <div className="flex gap-2 p-1 bg-secondary/50 rounded-xl border border-border">
                 <Button
                   type="button"
@@ -835,62 +886,81 @@ const Compliance = () => {
                   Manager
                 </Button>
               </div>
-            </div>
+            </FormField>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Select Person</label>
+            <FormField label="Select Person" required error={uploadErrors.ownerId}>
               <SelectDropdown
                 value={uploadOwnerId}
-                onChange={setUploadOwnerId}
+                onChange={(val) => {
+                  setUploadOwnerId(val);
+                  if (uploadErrors.ownerId) setUploadErrors(prev => ({ ...prev, ownerId: undefined }));
+                  if (val) {
+                    const submitted = rawDocuments
+                      .filter((doc: any) => doc.ownerId === val && doc.ownerType === uploadUserType)
+                      .map((doc: any) => doc.name);
+                    const available = docTypeOptions.find(opt => opt.value === "Other" || !submitted.includes(opt.value));
+                    if (available) {
+                      setUploadDocType(available.value);
+                    }
+                  } else {
+                    setUploadDocType("State ID");
+                  }
+                }}
                 options={personOptions}
                 placeholder="Select individual..."
               />
-            </div>
+            </FormField>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Document Name</label>
+            <FormField label="Document Name" required>
               <SelectDropdown
                 value={uploadDocType}
                 onChange={setUploadDocType}
-                options={docTypeOptions}
+                options={filteredDocTypeOptions}
                 placeholder="Select document name..."
               />
-            </div>
+            </FormField>
 
             {uploadDocType === "Other" && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground uppercase">Specify ID Name</label>
+              <FormField label="Specify ID Name" required error={uploadErrors.customDocType}>
                 <input
                   type="text"
                   placeholder="e.g. Drivers License"
                   value={customDocType}
-                  onChange={(e) => setCustomDocType(e.target.value)}
-                  required
-                  className="w-full px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                  onChange={(e) => {
+                    setCustomDocType(e.target.value);
+                    if (uploadErrors.customDocType) setUploadErrors(prev => ({ ...prev, customDocType: undefined }));
+                  }}
+                  className={`w-full px-3 py-2.5 bg-secondary border rounded-xl text-xs focus:outline-none focus:ring-2 ${uploadErrors.customDocType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                    }`}
                 />
-              </div>
+              </FormField>
             )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Expiry Date</label>
+            <FormField label="Expiry Date" required error={uploadErrors.expiryDate}>
               <DateSelect
                 value={uploadExpiryDate}
-                onChange={setUploadExpiryDate}
+                onChange={(val) => {
+                  setUploadExpiryDate(val);
+                  if (uploadErrors.expiryDate) setUploadErrors(prev => ({ ...prev, expiryDate: undefined }));
+                }}
                 placeholder="Select expiry date"
               />
-            </div>
+            </FormField>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Document Image / File</label>
-              <div className="relative border-2 border-dashed border-border rounded-2xl p-4 flex flex-col items-center justify-center bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer group">
+            <FormField label="Document Image / File" required error={uploadErrors.file}>
+              <div className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer group ${uploadErrors.file ? "border-destructive" : "border-border"
+                }`}>
                 <input
                   type="file"
                   accept="image/*,.pdf"
-                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                  required
+                  onChange={(e) => {
+                    setUploadFile(e.target.files?.[0] || null);
+                    if (uploadErrors.file) setUploadErrors(prev => ({ ...prev, file: undefined }));
+                  }}
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
-                <Upload className="w-8 h-8 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
+                <Upload className={`w-8 h-8 group-hover:text-primary transition-colors mb-2 ${uploadErrors.file ? "text-destructive" : "text-muted-foreground"
+                  }`} />
                 <p className="text-xs font-bold text-foreground">
                   {uploadFile ? uploadFile.name : "Click to select a file"}
                 </p>
@@ -898,7 +968,7 @@ const Compliance = () => {
                   Supports Images and PDFs up to 45MB
                 </p>
               </div>
-            </div>
+            </FormField>
 
             <div className="pt-2 flex justify-end gap-2">
               <Button
@@ -929,44 +999,58 @@ const Compliance = () => {
       </Dialog>
 
       {/* Edit Document Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog open={isEditOpen} onOpenChange={(val) => {
+        setIsEditOpen(val);
+        if (!val) {
+          setSelectedDoc(null);
+        }
+        setEditErrors({});
+      }}>
         <DialogContent className="sm:max-w-md p-6 border-none shadow-2xl rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">Edit Compliance Document</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleEditSubmit} className="space-y-4 mt-2">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Document Name</label>
+          <form onSubmit={handleEditSubmit} className="space-y-4 mt-2" noValidate>
+            {editErrors.form && (
+              <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                {editErrors.form}
+              </div>
+            )}
+            <FormField label="Document Name" required>
               <SelectDropdown
                 value={editDocType}
                 onChange={setEditDocType}
                 options={docTypeOptions}
                 placeholder="Select document name..."
               />
-            </div>
+            </FormField>
 
             {editDocType === "Other" && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-muted-foreground uppercase">Specify ID Name</label>
+              <FormField label="Specify ID Name" required error={editErrors.customDocType}>
                 <input
                   type="text"
                   placeholder="e.g. Drivers License"
                   value={editCustomDocType}
-                  onChange={(e) => setEditCustomDocType(e.target.value)}
-                  required
-                  className="w-full px-3 py-2.5 bg-secondary border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                  onChange={(e) => {
+                    setEditCustomDocType(e.target.value);
+                    if (editErrors.customDocType) setEditErrors(prev => ({ ...prev, customDocType: undefined }));
+                  }}
+                  className={`w-full px-3 py-2.5 bg-secondary border rounded-xl text-xs focus:outline-none focus:ring-2 ${editErrors.customDocType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                    }`}
                 />
-              </div>
+              </FormField>
             )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Expiry Date</label>
+            <FormField label="Expiry Date" required error={editErrors.expiryDate}>
               <DateSelect
                 value={editExpiryDate}
-                onChange={setEditExpiryDate}
+                onChange={(val) => {
+                  setEditExpiryDate(val);
+                  if (editErrors.expiryDate) setEditErrors(prev => ({ ...prev, expiryDate: undefined }));
+                }}
                 placeholder="Select expiry date"
               />
-            </div>
+            </FormField>
 
             <div className="pt-2 flex justify-end gap-2">
               <Button
@@ -995,6 +1079,31 @@ const Compliance = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the compliance document from the records.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDocToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (docToDelete) {
+                  deleteMutation.mutate(docToDelete);
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

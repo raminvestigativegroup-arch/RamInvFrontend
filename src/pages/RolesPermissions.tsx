@@ -200,6 +200,7 @@ const RolesPermissions = () => {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const getModulePermissions = (mod: any) => {
     if ('permissions' in mod) return mod.permissions;
@@ -353,9 +354,10 @@ const RolesPermissions = () => {
   const handleCreateRole = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRoleName.trim()) {
-      toast({ title: "Validation Error", description: "Role name is required.", variant: "destructive" });
+      setErrors({ name: "Role name is required" });
       return;
     }
+    setErrors({});
     if (editingRole) {
       updateRoleMutation.mutate({ id: editingRole.id, name: newRoleName.trim() });
     } else {
@@ -604,6 +606,7 @@ const RolesPermissions = () => {
           if (!val) {
             setEditingRole(null);
             setNewRoleName("");
+            setErrors({});
           }
         }}
         title={editingRole ? "Update Role" : "Create New Role"}
@@ -615,16 +618,18 @@ const RolesPermissions = () => {
         }
         isLoading={createRoleMutation.isPending || updateRoleMutation.isPending}
       >
-        <FormField label="Role Name" required>
-
+        <FormField label="Role Name" required error={errors.name}>
           <input
             type="text"
             placeholder="e.g. Head Guard"
             value={newRoleName}
-            onChange={(e) => setNewRoleName(e.target.value)}
-            className="w-full px-3 py-2 mb-1 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            onChange={(e) => {
+              setNewRoleName(e.target.value);
+              if (errors.name) setErrors(prev => ({ ...prev, name: undefined }));
+            }}
+            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm mb-2 text-foreground focus:outline-none focus:ring-2 ${errors.name ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+              }`}
           />
-
         </FormField>
       </EntityDialog>
 
@@ -705,8 +710,8 @@ const RolesPermissions = () => {
                       />
                       <span className="text-sm font-semibold text-foreground">{mod.title}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${moduleState === "all" ? "bg-success/10 text-success border border-success/20" :
-                          moduleState === "partial" ? "bg-warning/10 text-warning border border-warning/20" :
-                            "bg-secondary text-muted-foreground border border-border"
+                        moduleState === "partial" ? "bg-warning/10 text-warning border border-warning/20" :
+                          "bg-secondary text-muted-foreground border border-border"
                         }`}>
                         {checkedCount} / {items.length}
                       </span>
@@ -730,8 +735,8 @@ const RolesPermissions = () => {
                           <label
                             key={perm.key}
                             className={`flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none ${isChecked
-                                ? "bg-primary/5 border-primary/25 text-foreground font-medium shadow-sm"
-                                : "bg-card border-border hover:bg-muted/20 text-muted-foreground"
+                              ? "bg-primary/5 border-primary/25 text-foreground font-medium shadow-sm"
+                              : "bg-card border-border hover:bg-muted/20 text-muted-foreground"
                               }`}
                           >
                             <input

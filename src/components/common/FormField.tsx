@@ -3,6 +3,7 @@ import React from "react";
 interface FormFieldProps {
   label: string;
   required?: boolean;
+  error?: string;
   children: React.ReactNode;
   className?: string;
 }
@@ -10,6 +11,7 @@ interface FormFieldProps {
 const FormField: React.FC<FormFieldProps> = ({
   label,
   required,
+  error,
   children,
   className = "",
 }) => {
@@ -19,6 +21,9 @@ const FormField: React.FC<FormFieldProps> = ({
         {label} {required && <span className="text-destructive">*</span>}
       </label>
       {children}
+      {error && (
+        <p className="text-destructive text-[11px] font-semibold mt-1 ml-0.5 animate-fade-in">{error}</p>
+      )}
     </div>
   );
 };

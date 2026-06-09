@@ -127,12 +127,18 @@ const ComplianceAlerts = () => {
       </div>
       <div className="p-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
         {alertDocs.map((doc) => (
-          <div key={doc.id} className="flex items-start gap-2.5 p-3.5 bg-secondary rounded-lg cursor-pointer hover:bg-muted transition-colors" onClick={() => navigate("/dashboard/compliance")}>
-            <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${doc.status === "expired" ? "bg-destructive" : "bg-warning"}`} />
-            <div>
-              <p className="text-sm font-medium text-foreground">{doc.personName}</p>
-              <p className="text-xs text-muted-foreground">{doc.docType}</p>
-              <p className={`text-xs font-medium mt-0.5 ${doc.status === "expired" ? "text-destructive" : "text-warning"}`}>
+          <div
+            key={doc.id}
+            className="flex items-start gap-3 p-3.5 bg-card border border-border/80 rounded-xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group"
+            onClick={() => navigate("/dashboard/compliance")}
+          >
+            <div className={`relative w-2 h-2 rounded-full mt-1.5 shrink-0 ${doc.status === "expired" ? "bg-destructive" : "bg-warning"}`}>
+              <span className={`absolute -inset-1 rounded-full animate-ping opacity-25 ${doc.status === "expired" ? "bg-destructive" : "bg-warning"}`} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate">{doc.personName}</p>
+              <p className="text-xs text-muted-foreground truncate">{doc.docType}</p>
+              <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${doc.status === "expired" ? "text-destructive" : "text-warning"}`}>
                 {doc.status === "expired" ? `Expired: ${doc.expiryDate}` : `Expires: ${doc.expiryDate}`}
               </p>
             </div>

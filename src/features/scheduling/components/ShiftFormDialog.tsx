@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import TimeSelect from "@/components/common/TimeSelect";
+import FormField from "@/components/common/FormField";
 
 interface Props {
   open: boolean;
@@ -14,9 +15,11 @@ interface Props {
   onSave: (entries: ScheduleEntry[]) => void;
   editEntry?: ScheduleEntry | null;
   existingEntries: ScheduleEntry[];
+  isLoadingSave?: boolean;
+  error?: string;
 }
 
-const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntries }: Props) => {
+const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntries, isLoadingSave = false, error }: Props) => {
   const { toast } = useToast();
   const [form, setForm] = useState({
     selectedGuards: [] as string[], // Now stores guard IDs
@@ -26,6 +29,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
     shiftStart: "06:00",
     shiftEnd: "14:00",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Fetch verified guards from API
   const { data: guards = [], isLoading: isLoadingGuards } = useQuery({
@@ -94,13 +98,29 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
 
   useEffect(() => {
     if (open) {
+      setErrors({});
       if (editEntry) {
-        // Try to find guard ID by name if possible, or use a fallback
-        const guardId = guards.find(g => g.name === editEntry.guard)?.id || "";
+        // Extract the scheduleId prefix (first UUID part before the guard UUID)
+        const scheduleId = editEntry.id.split("-")[0];
+        
+        // Find all guards currently assigned to this schedule from existingEntries
+        const assignedGuards = existingEntries
+          .filter(e => e.id.startsWith(scheduleId + "-"))
+          .map(e => e.guard);
+        
+        // Map guard names to their corresponding guard IDs
+        const guardIds = assignedGuards.map(name => guards.find(g => g.name === name)?.id).filter(Boolean) as string[];
+        
+        // Fallback to the single guard if no other matching composite entries are found
+        if (guardIds.length === 0) {
+          const singleGuardId = guards.find(g => g.name === editEntry.guard)?.id || "";
+          if (singleGuardId) guardIds.push(singleGuardId);
+        }
+
         const siteId = sites.find(s => s.name === editEntry.site)?.id || "";
 
         setForm({
-          selectedGuards: guardId ? [guardId] : [],
+          selectedGuards: guardIds,
           siteId: siteId,
           startDate: editEntry.date,
           endDate: editEntry.date,
@@ -118,13 +138,9 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
         });
       }
     }
-  }, [editEntry, open, sites, guards]);
+  }, [editEntry, open, sites, guards, existingEntries]);
 
   const toggleGuard = (id: string) => {
-    if (editEntry) {
-      setForm((f) => ({ ...f, selectedGuards: [id] }));
-      return;
-    }
     setForm((f) => ({
       ...f,
       selectedGuards: f.selectedGuards.includes(id)
@@ -134,19 +150,36 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
   };
 
   const selectAllGuards = () => {
-    if (editEntry) return;
     setForm((f) => ({
       ...f,
       selectedGuards: f.selectedGuards.length === guards.length ? [] : guards.map((g: any) => g.id),
     }));
   };
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!form.siteId) {
+      newErrors.siteId = "Site is required";
+    }
+    if (form.selectedGuards.length === 0) {
+      newErrors.selectedGuards = "At least one guard must be selected";
+    }
+    if (!form.startDate) {
+      newErrors.startDate = "Start date is required";
+    }
+    if (!form.endDate) {
+      newErrors.endDate = "End date is required";
+    } else if (new Date(form.startDate) > new Date(form.endDate)) {
+      newErrors.endDate = "End date cannot be before start date";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.selectedGuards.length === 0 || !form.siteId || !form.startDate || !form.endDate) {
-      toast({ title: "Validation Error", description: "Select at least one guard and fill all fields.", variant: "destructive" });
-      return;
-    }
+    if (!validateForm()) return;
 
     // Prepare payload in the specific format requested
     const payload = {
@@ -159,7 +192,6 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
     };
 
     onSave(payload as any); // Type cast since onSave expects ScheduleEntry[] usually, will fix in parent
-    onOpenChange(false);
   };
 
   const isLoading = isLoadingGuards || isLoadingSites;
@@ -176,34 +208,54 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
             <p className="text-sm text-muted-foreground">Fetching data...</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Site *</label>
+          <form onSubmit={handleSubmit} className="space-y-4 mt-2" noValidate>
+            {error && (
+              <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                {error}
+              </div>
+            )}
+            <FormField label="Site" required error={errors.siteId}>
               <SelectDropdown
                 value={form.siteId}
-                onChange={val => setForm(f => ({ ...f, siteId: val }))}
+                onChange={val => {
+                  setForm(f => ({ ...f, siteId: val }));
+                  if (errors.siteId) setErrors(prev => ({ ...prev, siteId: undefined }));
+                }}
                 options={sites.map((s: any) => ({ value: s.id, label: s.name }))}
                 placeholder="Select a site"
+                className={errors.siteId ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                {editEntry ? "Guard *" : "Guards *"}{" "}
-                <span className="text-muted-foreground font-normal">({form.selectedGuards.length} selected)</span>
-              </label>
-              <div className="border border-border rounded-lg bg-secondary max-h-40 overflow-y-auto">
-                {!editEntry && (
-                  <button type="button" onClick={selectAllGuards} className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary hover:bg-accent transition-colors border-b border-border">
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${form.selectedGuards.length === guards.length ? "bg-primary border-primary" : "border-border"}`}>
-                      {form.selectedGuards.length === guards.length && guards.length > 0 && <Check className="w-3 h-3 text-primary-foreground" />}
-                    </div>
-                    Select All Verified
-                  </button>
-                )}
+            </FormField>
+            
+            <FormField label="Guards" required error={errors.selectedGuards}>
+              <div className={`border rounded-lg bg-secondary max-h-40 overflow-y-auto ${
+                errors.selectedGuards ? "border-destructive" : "border-border"
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    selectAllGuards();
+                    setErrors(prev => ({ ...prev, selectedGuards: undefined }));
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary hover:bg-accent transition-colors border-b border-border"
+                >
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center ${form.selectedGuards.length === guards.length ? "bg-primary border-primary" : "border-border"}`}>
+                    {form.selectedGuards.length === guards.length && guards.length > 0 && <Check className="w-3 h-3 text-primary-foreground" />}
+                  </div>
+                  Select All Verified
+                </button>
                 {guards.length === 0 ? (
                   <div className="p-4 text-center text-xs text-muted-foreground">No verified guards available</div>
                 ) : guards.map((g: any) => (
-                  <button key={g.id} type="button" onClick={() => toggleGuard(g.id)} className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors text-left">
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => {
+                      toggleGuard(g.id);
+                      setErrors(prev => ({ ...prev, selectedGuards: undefined }));
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors text-left"
+                  >
                     <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${form.selectedGuards.includes(g.id) ? "bg-primary border-primary" : "border-border"}`}>
                       {form.selectedGuards.includes(g.id) && <Check className="w-3 h-3 text-primary-foreground" />}
                     </div>
@@ -212,27 +264,35 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
                   </button>
                 ))}
               </div>
-            </div>
+            </FormField>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Start Date *</label>
+              <FormField label="Start Date" required error={errors.startDate}>
                 <input
                   type="date"
                   value={form.startDate}
-                  onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, startDate: e.target.value }));
+                    if (errors.startDate) setErrors(prev => ({ ...prev, startDate: undefined }));
+                  }}
+                  className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${
+                    errors.startDate ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                  }`}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">End Date *</label>
+              </FormField>
+              <FormField label="End Date" required error={errors.endDate}>
                 <input
                   type="date"
                   value={form.endDate}
-                  onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
-                  className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, endDate: e.target.value }));
+                    if (errors.endDate) setErrors(prev => ({ ...prev, endDate: undefined }));
+                  }}
+                  className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${
+                    errors.endDate ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                  }`}
                 />
-              </div>
+              </FormField>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -246,9 +306,21 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => onOpenChange(false)} className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
-                {editEntry ? "Update Shift" : `Create ${form.selectedGuards.length > 0 ? `${form.selectedGuards.length} Shift(s)` : "Shift"}`}
+              <button
+                type="button"
+                disabled={isLoadingSave}
+                onClick={() => onOpenChange(false)}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoadingSave}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+              >
+                {isLoadingSave && <Loader2 className="w-4.5 h-4.5 animate-spin" />}
+                {editEntry ? (isLoadingSave ? "Updating..." : "Update Shift") : (isLoadingSave ? "Creating..." : `Create ${form.selectedGuards.length > 0 ? `${form.selectedGuards.length} Shift(s)` : "Shift"}`)}
               </button>
             </div>
           </form>

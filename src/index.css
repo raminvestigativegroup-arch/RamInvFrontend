@@ -8,8 +8,8 @@
 @layer base {
   :root {
     /* Light theme tokens - upgraded to match premium light dashboard */
-    --background: 218 12% 95%;
-    /* soft grey background #EFF1F4 */
+    --background: 215 15% 94%;
+    /* refined slate-gray #EBEEF2 */
     --foreground: 222.2 47.4% 11.2%;
     /* dark slate text #0F172A */
 
@@ -52,23 +52,24 @@
 
     --radius: 0.75rem;
 
-    /* Sidebar - dark themed matching the screenshot */
-    --sidebar-background: 233 75% 8%;
-    /* deep dark navy blue */
-    --sidebar-foreground: 228 30% 72%;
-    /* muted lavender blue */
-    --sidebar-primary: 220 90% 56%;
-    /* vibrant royal blue */
-    --sidebar-primary-foreground: 0 0% 100%;
+
+    /* Sidebar - light themed matching user request */
+    --sidebar-background: 0 0% 100%;
     /* pure white */
-    --sidebar-accent: 228 35% 15%;
-    /* subtle navy highlight */
-    --sidebar-accent-foreground: 0 0% 100%;
-    /* white text on hover */
-    --sidebar-border: 228 45% 12%;
-    /* faint horizontal divider */
-    --sidebar-ring: 220 90% 56%;
-    --sidebar-muted: 228 20% 50%;
+    --sidebar-foreground: 215.4 16.3% 46.9%;
+    /* muted gray text */
+    --sidebar-primary: 228 50% 22%;
+    /* dark navy active item text/bg */
+    --sidebar-primary-foreground: 0 0% 100%;
+    /* white text on active */
+    --sidebar-accent: 210 40% 96.1%;
+    /* light gray hover background */
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    /* dark text on hover */
+    --sidebar-border: 214.3 31.8% 91.4%;
+    /* light border */
+    --sidebar-ring: 228 50% 22%;
+    --sidebar-muted: 215.4 16.3% 46.9%;
 
     --chart-1: 228 50% 22%;
     --chart-2: 142.1 70.6% 45.3%;
@@ -222,49 +223,113 @@
   }
 
   .status-badge-active {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
-    background-color: hsl(145 60% 42% / 0.12);
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background-color: hsl(145 60% 42% / 0.08);
     color: hsl(145 60% 42%);
+    border: 1px solid hsl(145 60% 42% / 0.15);
+  }
+
+  .status-badge-active::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: currentColor;
+    margin-right: 5px;
+    flex-shrink: 0;
   }
 
   .status-badge-inactive {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
-    background-color: hsl(220 10% 50% / 0.12);
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background-color: hsl(220 10% 50% / 0.08);
     color: hsl(220 10% 50%);
+    border: 1px solid hsl(220 10% 50% / 0.15);
+  }
+
+  .status-badge-inactive::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: currentColor;
+    margin-right: 5px;
+    flex-shrink: 0;
   }
 
   .status-badge-warning {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
-    background-color: hsl(38 92% 55% / 0.12);
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background-color: hsl(38 92% 55% / 0.08);
     color: hsl(38 92% 55%);
+    border: 1px solid hsl(38 92% 55% / 0.15);
+  }
+
+  .status-badge-warning::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: currentColor;
+    margin-right: 5px;
+    flex-shrink: 0;
   }
 
   .status-badge-danger {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
-    background-color: hsl(0 72% 55% / 0.12);
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    background-color: hsl(0 72% 55% / 0.08);
     color: hsl(0 72% 55%);
+    border: 1px solid hsl(0 72% 55% / 0.15);
+  }
+
+  .status-badge-danger::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: currentColor;
+    margin-right: 5px;
+    flex-shrink: 0;
   }
 
   .priority-high {
     @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold;
-    background-color: hsl(0 72% 55% / 0.1);
+    background-color: hsl(0 72% 55% / 0.08);
     color: hsl(0 72% 55%);
+    border: 1px solid hsl(0 72% 55% / 0.12);
   }
 
   .priority-medium {
     @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold;
-    background-color: hsl(38 92% 55% / 0.1);
+    background-color: hsl(38 92% 55% / 0.08);
     color: hsl(38 92% 55%);
+    border: 1px solid hsl(38 92% 55% / 0.12);
   }
 
   .priority-low {
     @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold;
-    background-color: hsl(145 60% 42% / 0.1);
+    background-color: hsl(145 60% 42% / 0.08);
     color: hsl(145 60% 42%);
+    border: 1px solid hsl(145 60% 42% / 0.12);
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  button,
+  select {
+    transition: all 0.2s ease-in-out;
   }
 
   .module-page-header {
-    @apply flex items-center justify-between sticky top-0 z-20 bg-white shadow-sm border-b border-border/30 py-4 -mx-6 px-6 transition-all;
+    @apply flex items-center justify-between sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-border/40 py-4 -mx-6 px-6 transition-all;
     margin-top: -1.5rem !important;
   }
 
@@ -274,11 +339,12 @@
   }
 
   .bg-card {
-    @apply shadow-sm;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.02) !important;
   }
 
   .data-table {
-    @apply w-full bg-card rounded-xl border border-border overflow-hidden shadow-sm;
+    @apply w-full bg-card rounded-xl border border-border overflow-hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(0, 0, 0, 0.02) !important;
   }
 
   /* Upgrade dialog / alertdialog to a premium floating shadow */
@@ -299,26 +365,26 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.25);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.45);
+  background: rgba(0, 0, 0, 0.2);
 }
 
-/* Sidebar scrollbars override to blend with sidebar's dark background */
+/* Sidebar scrollbars override to blend with sidebar's light background */
 .bg-sidebar ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .bg-sidebar ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .bg-sidebar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
 }
 
 /* Hide scrollbars utility */

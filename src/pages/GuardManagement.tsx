@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { sites, Guard } from "@/data/dummyData";
-import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, Users } from "lucide-react";
+import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, Users, Loader2, FileText, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -111,12 +111,12 @@ const resolveImageUrl = (pathOrData: string | undefined | null) => {
   if (pathOrData.startsWith("data:") || pathOrData.startsWith("http:") || pathOrData.startsWith("https:")) {
     return pathOrData;
   }
-  if (pathOrData.startsWith("uploads/")) {
-    const cleanPath = pathOrData.replace(/\\/g, "/");
-    const host = API_BASE_URL.replace("/api/v1", "");
+  const cleanPath = pathOrData.replace(/\\/g, "/");
+  const host = API_BASE_URL.replace("/api/v1", "");
+  if (cleanPath.startsWith("uploads/")) {
     return `${host}/${cleanPath}`;
   }
-  return undefined;
+  return `${host}/uploads/${encodeURIComponent(cleanPath)}`;
 };
 
 const getComplianceDetails = (personId: string, documents: any[]) => {
@@ -186,10 +186,13 @@ const GuardManagement = () => {
     image: "",
     roleType: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingGuard, setEditingGuard] = useState<Guard | null>(null);
   const [deletingGuard, setDeletingGuard] = useState<Guard | null>(null);
   const [verifyingGuard, setVerifyingGuard] = useState<Guard | null>(null);
   const [isVerifiedChecked, setIsVerifiedChecked] = useState(false);
+  const [selectedDocIndex, setSelectedDocIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -251,11 +254,8 @@ const GuardManagement = () => {
       toast({ title: "Guard Added", description: "The new guard has been registered successfully." });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to add guard. Please try again.",
-        variant: "destructive",
-      });
+      const errMsg = error.response?.data?.message || "Failed to add guard. Please try again.";
+      setErrors(prev => ({ ...prev, form: errMsg }));
     },
   });
 
@@ -270,11 +270,8 @@ const GuardManagement = () => {
       toast({ title: "Guard Updated", description: "The guard information has been updated successfully." });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to update guard. Please try again.",
-        variant: "destructive",
-      });
+      const errMsg = error.response?.data?.message || "Failed to update guard. Please try again.";
+      setErrors(prev => ({ ...prev, form: errMsg }));
     },
   });
 
@@ -356,12 +353,43 @@ const GuardManagement = () => {
     }
   };
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!form.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    }
+    if (!form.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+    }
+    if (!editingGuard) {
+      if (!form.email.trim()) {
+        newErrors.email = "Email is required";
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(form.email)) {
+          newErrors.email = "Invalid email format";
+        }
+      }
+    }
+    if (!form.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required";
+    } else {
+      const phoneRegex = /^[+\d\s\-()]+$/;
+      if (!phoneRegex.test(form.phoneNumber)) {
+        newErrors.phoneNumber = "Invalid format";
+      }
+    }
+    if (!form.roleType.trim()) {
+      newErrors.roleType = "Role is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.firstName || !form.lastName || !form.email) {
-      toast({ title: "Validation Error", description: "First name, last name, and email are required.", variant: "destructive" });
-      return;
-    }
+    if (!validateForm()) return;
 
     if (editingGuard) {
       updateMutation.mutate({
@@ -599,13 +627,22 @@ const GuardManagement = () => {
         open={open}
         onOpenChange={(val) => {
           setOpen(val);
-          if (!val) setEditingGuard(null);
+          if (!val) {
+            setEditingGuard(null);
+            setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "" });
+          }
+          setErrors({});
         }}
         title={editingGuard ? "Update Guard Profile" : "Add New Guard"}
         onSubmit={handleSubmit}
         submitLabel={editingGuard ? (updateMutation.isPending ? "Updating..." : "Update Profile") : (createMutation.isPending ? "Adding..." : "Add Guard")}
       >
 
+        {errors.form && (
+          <div className="p-3 mb-4 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+            {errors.form}
+          </div>
+        )}
         <FormField label="Profile Photo">
           <div
             onClick={() => document.getElementById('guard-image-upload')?.click()}
@@ -648,35 +685,75 @@ const GuardManagement = () => {
         </FormField>
 
         <div className="grid grid-cols-3 gap-3">
-          <FormField label="First Name" required>
-            <input value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} placeholder="e.g. John" className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          <FormField label="First Name" required error={errors.firstName}>
+            <input
+              value={form.firstName}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, firstName: e.target.value }));
+                if (errors.firstName) setErrors(prev => ({ ...prev, firstName: undefined }));
+              }}
+              placeholder="e.g. John"
+              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${errors.firstName ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                }`}
+            />
           </FormField>
           <FormField label="Middle Name">
-            <input value={form.middleName} onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))} placeholder="e.g. M." className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+            <input
+              value={form.middleName}
+              onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))}
+              placeholder="e.g. M."
+              className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
           </FormField>
-          <FormField label="Last Name" required>
-            <input value={form.lastName} onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))} placeholder="e.g. Smith" className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+          <FormField label="Last Name" required error={errors.lastName}>
+            <input
+              value={form.lastName}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, lastName: e.target.value }));
+                if (errors.lastName) setErrors(prev => ({ ...prev, lastName: undefined }));
+              }}
+              placeholder="e.g. Smith"
+              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${errors.lastName ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                }`}
+            />
           </FormField>
         </div>
-        <FormField label="Email" required>
+        <FormField label="Email" required error={errors.email}>
           <input
             type="email"
             value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, email: e.target.value }));
+              if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+            }}
             placeholder="e.g. john@securepro.com"
             disabled={!!editingGuard}
-            className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${errors.email ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+              }`}
           />
         </FormField>
-        <FormField label="Phone" >
-          <input value={form.phoneNumber} onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))} placeholder="e.g. +1 555-0100" className="w-full mb-1 px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+        <FormField label="Phone" required error={errors.phoneNumber}>
+          <input
+            value={form.phoneNumber}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, phoneNumber: e.target.value }));
+              if (errors.phoneNumber) setErrors(prev => ({ ...prev, phoneNumber: undefined }));
+            }}
+            placeholder="e.g. +1 555-0100"
+            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${errors.phoneNumber ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+              }`}
+          />
         </FormField>
-        <FormField label="Role">
+        <FormField label="Role" required error={errors.roleType}>
           <SelectDropdown
             value={form.roleType}
-            onChange={val => setForm(f => ({ ...f, roleType: val }))}
+            onChange={val => {
+              setForm(f => ({ ...f, roleType: val }));
+              if (errors.roleType) setErrors(prev => ({ ...prev, roleType: undefined }));
+            }}
             options={rolesList.map(role => ({ value: role.name, label: role.name }))}
             placeholder="Select a role"
+            className={errors.roleType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
           />
         </FormField>
         {/* <FormField label="Assigned Site">
@@ -717,55 +794,175 @@ const GuardManagement = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Verification Dialog */}
-      <AlertDialog open={!!verifyingGuard} onOpenChange={(val) => {
+      {/* Verification Dialog (Document Details Modal) */}
+      <Dialog open={!!verifyingGuard} onOpenChange={(val) => {
         if (!val) {
           setVerifyingGuard(null);
           setIsVerifiedChecked(false);
+          setSelectedDocIndex(0);
+          setImageError(false);
         }
       }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6 text-primary" />
+        <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-background">
+          {verifyingGuard && (() => {
+            const guardDocs = rawDocuments.filter((doc: any) => doc.ownerId === verifyingGuard.id && doc.ownerType === "Guard");
+            const selectedDoc = guardDocs[selectedDocIndex];
+
+            return (
+              <div className="flex flex-col">
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-4 border-b border-border/50 flex items-center justify-between">
+                  <div>
+                    <DialogTitle className="text-lg font-bold text-foreground">Document Details</DialogTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record for {verifyingGuard.name}</p>
+                  </div>
+                  {verifyingGuard.isVerified && (
+                    <span className="status-badge-active mt-6">
+                      Verified Guard
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-0 min-h-[400px]">
+                  {/* Left Column: Documents List */}
+                  <div className="col-span-1 md:col-span-4 border-r border-border/50 p-4 space-y-3 bg-secondary/10">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Guard Documents</h3>
+                    {guardDocs.length === 0 ? (
+                      <div className="py-8 text-center text-xs text-muted-foreground">
+                        No compliance documents uploaded yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {guardDocs.map((doc: any, idx: number) => {
+                          let status = "expired";
+                          const expiry = doc.expiryDate ? new Date(doc.expiryDate) : null;
+                          const today = new Date();
+                          if (expiry) {
+                            const diffTime = expiry.getTime() - today.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            if (diffDays > 30) {
+                              status = "valid";
+                            } else if (diffDays > 0) {
+                              status = "expiring";
+                            }
+                          }
+
+                          return (
+                            <button
+                              key={doc.id || idx}
+                              type="button"
+                              onClick={() => {
+                                setSelectedDocIndex(idx);
+                                setImageError(false);
+                              }}
+                              className={`w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between ${selectedDocIndex === idx
+                                ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
+                                : "bg-card border-border hover:bg-secondary/40 text-muted-foreground"
+                                }`}
+                            >
+                              <div className="truncate pr-2">
+                                <p className="text-xs font-bold text-foreground truncate">{doc.name}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">Exp: {doc.expiryDate || "N/A"}</p>
+                              </div>
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${status === "valid" ? "bg-success" : status === "expiring" ? "bg-warning" : "bg-destructive"
+                                }`} />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column: Selected Document Preview & Details */}
+                  <div className="col-span-1 md:col-span-8 p-6 flex flex-col justify-between">
+                    {selectedDoc ? (
+                      <div className="space-y-4">
+                        <div className="relative aspect-[16/9] w-full bg-secondary/50 rounded-2xl overflow-hidden border border-border">
+                          {selectedDoc.documentImage && !imageError ? (
+                            <img
+                              src={resolveImageUrl(selectedDoc.documentImage)}
+                              alt={selectedDoc.name}
+                              className="w-full h-full object-contain"
+                              onError={() => setImageError(true)}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
+                              <FileText className="w-10 h-10 opacity-30 mb-2" />
+                              <p className="text-xs font-semibold">No document preview</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-3 bg-secondary/30 rounded-xl border border-border/50">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Document Type</p>
+                            <p className="text-sm font-bold text-foreground mt-0.5">{selectedDoc.name}</p>
+                          </div>
+                          <div className="p-3 bg-secondary/30 rounded-xl border border-border/50">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Expiration Date</p>
+                            <p className="text-sm font-bold text-foreground mt-0.5">{selectedDoc.expiryDate || "N/A"}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground py-12">
+                        <ShieldCheck className="w-12 h-12 opacity-20 mb-3" />
+                        <p className="text-sm font-medium">Select a document from the left to view details</p>
+                      </div>
+                    )}
+
+                    {/* Verification Action Panel */}
+                    <div className="mt-6 pt-4 border-t border-border flex flex-col gap-4">
+                      <div className="flex items-center gap-3 p-3 bg-secondary/40 rounded-xl border border-border">
+                        <input
+                          type="checkbox"
+                          id="verify-check-modal"
+                          checked={isVerifiedChecked}
+                          onChange={(e) => setIsVerifiedChecked(e.target.checked)}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                        />
+                        <label htmlFor="verify-check-modal" className="text-xs font-semibold cursor-pointer select-none text-foreground">
+                          I confirm that documents are verified and authentic
+                        </label>
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => {
+                            setVerifyingGuard(null);
+                            setIsVerifiedChecked(false);
+                            setSelectedDocIndex(0);
+                            setImageError(false);
+                          }}
+                          size="sm"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          disabled={!isVerifiedChecked || updateMutation.isPending}
+                          onClick={() => {
+                            updateMutation.mutate({ id: verifyingGuard.id, verified: "true" });
+                            setVerifyingGuard(null);
+                            setIsVerifiedChecked(false);
+                            setSelectedDocIndex(0);
+                            setImageError(false);
+                          }}
+                          size="sm"
+                          className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
+                        >
+                          {updateMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                          {updateMutation.isPending ? "Verifying..." : "Verify Guard"}
+                        </Button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
               </div>
-              <AlertDialogTitle>Verify Guard Documents</AlertDialogTitle>
-            </div>
-            <AlertDialogDescription>
-              Please confirm that you have verified all required documents for <strong>{verifyingGuard?.name}</strong>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex items-center gap-3 p-4 bg-secondary/50 rounded-lg border border-border mt-2">
-            <input
-              type="checkbox"
-              id="verify-check"
-              checked={isVerifiedChecked}
-              onChange={(e) => setIsVerifiedChecked(e.target.checked)}
-              className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-            />
-            <label htmlFor="verify-check" className="text-sm font-medium cursor-pointer select-none">
-              I confirm that documents are verified and authentic
-            </label>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={!isVerifiedChecked || updateMutation.isPending}
-              onClick={() => {
-                if (verifyingGuard) {
-                  updateMutation.mutate({ id: verifyingGuard.id, verified: "true" });
-                  setVerifyingGuard(null);
-                  setIsVerifiedChecked(false);
-                }
-              }}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {updateMutation.isPending ? "Verifying..." : "Verify Guard"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
