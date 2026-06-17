@@ -42,6 +42,11 @@ const ScheduleCalendarView = ({ entries, onSelectDate, selectedDate }: Props) =>
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  
+  // Pad trailing empty days to make a complete grid row
+  const totalCells = Math.ceil(cells.length / 7) * 7;
+  const paddingCount = totalCells - cells.length;
+  for (let i = 0; i < paddingCount; i++) cells.push(null);
 
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -86,14 +91,14 @@ const ScheduleCalendarView = ({ entries, onSelectDate, selectedDate }: Props) =>
             <div
               key={day}
               onClick={() => onSelectDate(dateStr)}
-              className={`min-h-[100px] border-b border-r border-border p-1.5 cursor-pointer transition-colors hover:bg-accent/10 ${
-                isSelected ? "bg-primary/5" : ""
+              className={`min-h-[100px] border-b border-r border-border p-1.5 cursor-pointer transition-all hover:bg-accent/10 ${
+                isSelected ? "bg-primary/5 ring-1 ring-primary/20 ring-inset" : ""
               }`}
             >
               <div className="flex justify-between items-start mb-1">
-                <span className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full ${
-                  isToday ? "bg-primary text-primary-foreground" : 
-                  isSelected ? "bg-secondary text-foreground" : "text-foreground"
+                <span className={`text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full ${
+                  isToday ? "bg-primary text-primary-foreground font-bold" : 
+                  isSelected ? "bg-primary/20 text-primary" : "text-foreground"
                 }`}>
                   {day}
                 </span>

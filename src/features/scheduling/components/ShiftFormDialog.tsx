@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import TimeSelect from "@/components/common/TimeSelect";
 import FormField from "@/components/common/FormField";
+import DateSelect from "@/components/common/DateSelect";
 
 interface Props {
   open: boolean;
@@ -22,12 +23,12 @@ interface Props {
 const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntries, isLoadingSave = false, error }: Props) => {
   const { toast } = useToast();
   const [form, setForm] = useState({
-    selectedGuards: [] as string[], // Now stores guard IDs
-    siteId: "", // Now stores site ID
+    selectedGuards: [] as string[],
+    siteId: "",
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
-    shiftStart: "06:00",
-    shiftEnd: "14:00",
+    shiftStart: "",
+    shiftEnd: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -133,8 +134,8 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
           siteId: "",
           startDate: new Date().toISOString().split('T')[0],
           endDate: new Date().toISOString().split('T')[0],
-          shiftStart: "06:00",
-          shiftEnd: "14:00"
+          shiftStart: "",
+          shiftEnd: ""
         });
       }
     }
@@ -171,6 +172,14 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
       newErrors.endDate = "End date is required";
     } else if (new Date(form.startDate) > new Date(form.endDate)) {
       newErrors.endDate = "End date cannot be before start date";
+    }
+    if (!form.shiftStart) {
+      newErrors.shiftStart = "Shift start time is required";
+    }
+    if (!form.shiftEnd) {
+      newErrors.shiftEnd = "Shift end time is required";
+    } else if (form.shiftStart && form.shiftEnd <= form.shiftStart) {
+      newErrors.shiftEnd = "Shift end must be after shift start";
     }
 
     setErrors(newErrors);
@@ -268,42 +277,52 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
 
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Start Date" required error={errors.startDate}>
-                <input
-                  type="date"
+                <DateSelect
                   value={form.startDate}
-                  onChange={(e) => {
-                    setForm((f) => ({ ...f, startDate: e.target.value }));
-                    if (errors.startDate) setErrors(prev => ({ ...prev, startDate: undefined }));
+                  onChange={(val) => {
+                    setForm((f) => ({
+                      ...f,
+                      startDate: val,
+                      // Auto-clamp: if endDate is now before the new startDate, bump it up
+                      endDate: f.endDate && f.endDate < val ? val : f.endDate,
+                    }));
+                    if (errors.startDate) setErrors(prev => ({ ...prev, startDate: undefined, endDate: undefined }));
                   }}
-                  className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${
-                    errors.startDate ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
-                  }`}
+                  className={errors.startDate ? "border-destructive focus:ring-destructive/20" : ""}
                 />
               </FormField>
               <FormField label="End Date" required error={errors.endDate}>
-                <input
-                  type="date"
+                <DateSelect
                   value={form.endDate}
-                  onChange={(e) => {
-                    setForm((f) => ({ ...f, endDate: e.target.value }));
+                  onChange={(val) => {
+                    setForm((f) => ({ ...f, endDate: val }));
                     if (errors.endDate) setErrors(prev => ({ ...prev, endDate: undefined }));
                   }}
-                  className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${
-                    errors.endDate ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
-                  }`}
+                  className={errors.endDate ? "border-destructive focus:ring-destructive/20" : ""}
                 />
               </FormField>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Shift Start</label>
-                <TimeSelect value={form.shiftStart} onChange={(val) => setForm((f) => ({ ...f, shiftStart: val }))} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Shift End</label>
-                <TimeSelect value={form.shiftEnd} onChange={(val) => setForm((f) => ({ ...f, shiftEnd: val }))} />
-              </div>
+              <FormField label="Shift Start" required error={errors.shiftStart}>
+                <TimeSelect
+                  value={form.shiftStart}
+                  onChange={(val) => {
+                    setForm((f) => ({ ...f, shiftStart: val }));
+                    // Clear shiftEnd error if shiftStart changes — user will re-validate on submit
+                    if (errors.shiftStart || errors.shiftEnd) setErrors(prev => ({ ...prev, shiftStart: undefined, shiftEnd: undefined }));
+                  }}
+                />
+              </FormField>
+              <FormField label="Shift End" required error={errors.shiftEnd}>
+                <TimeSelect
+                  value={form.shiftEnd}
+                  onChange={(val) => {
+                    setForm((f) => ({ ...f, shiftEnd: val }));
+                    if (errors.shiftEnd) setErrors(prev => ({ ...prev, shiftEnd: undefined }));
+                  }}
+                />
+              </FormField>
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button

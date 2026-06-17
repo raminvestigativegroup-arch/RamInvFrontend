@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { ScheduleEntry } from "@/data/dummyData";
@@ -45,6 +45,16 @@ const Scheduling = () => {
     return d;
   });
   const [filterSite, setFilterSite] = useState("all");
+
+  useEffect(() => {
+    const d = new Date(selectedDate + "T00:00");
+    const day = d.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diffToMonday);
+    setWeekStart(monday);
+  }, [selectedDate]);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   // Fetch Guards
@@ -233,12 +243,14 @@ const Scheduling = () => {
     const prev = new Date(weekStart);
     prev.setDate(prev.getDate() - 7);
     setWeekStart(prev);
+    setSelectedDate(prev.toISOString().split('T')[0]);
   };
 
   const handleNextWeek = () => {
     const next = new Date(weekStart);
     next.setDate(next.getDate() + 7);
     setWeekStart(next);
+    setSelectedDate(next.toISOString().split('T')[0]);
   };
 
   const getWeekRangeText = () => {
@@ -400,15 +412,52 @@ const Scheduling = () => {
               />
             </>
           )}
+
+          {viewMode === "site" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={() => {
+                    const prev = new Date(selectedDate + "T00:00");
+                    prev.setDate(prev.getDate() - 1);
+                    setSelectedDate(prev.toISOString().split('T')[0]);
+                  }}
+                  variant="secondary"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <ChevronLeft className="w-4 h-4 text-foreground" />
+                </Button>
+                <h2 className="text-base font-semibold text-foreground">
+                  {new Date(selectedDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </h2>
+                <Button
+                  onClick={() => {
+                    const next = new Date(selectedDate + "T00:00");
+                    next.setDate(next.getDate() + 1);
+                    setSelectedDate(next.toISOString().split('T')[0]);
+                  }}
+                  variant="secondary"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <ChevronRight className="w-4 h-4 text-foreground" />
+                </Button>
+              </div>
+
+              <ScheduleSiteView 
+                entries={entries} 
+                selectedDate={selectedDate} 
+                sites={filterSite === "all" ? activeSites : activeSites.filter((s: any) => s.name === filterSite)} 
+              />
+            </div>
+          )}
         </>
       )}
 
-      {viewMode === "site" && (
-        <ScheduleSiteView entries={entries} selectedDate={selectedDate} sites={activeSites} />
-      )}
-
       {/* Selected Day Detail */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      {viewMode !== "week" && (
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="text-base font-semibold text-foreground">
             Shifts for {new Date(selectedDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -478,6 +527,7 @@ const Scheduling = () => {
           </div>
         )}
       </div>
+      )}
       <ShiftFormDialog
         open={open}
         onOpenChange={(o) => { setOpen(o); if (!o) setEditEntry(null); }}

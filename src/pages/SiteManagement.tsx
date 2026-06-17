@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
-import { guards, Site } from "@/data/dummyData";
-import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, Locate, Search, Filter, Mail, Phone, Loader2 } from "lucide-react";
+import { Site } from "@/data/dummyData";
+import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, Locate, Search, Filter, Mail, Phone, Loader2, Calendar, Clock, MoreHorizontal, CalendarClock, CalendarClockIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +21,7 @@ import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const normalizeSitesResponse = (response: any): any[] => {
   if (Array.isArray(response)) return response;
@@ -77,6 +78,7 @@ const SiteManagement = () => {
   const [deletingSite, setDeletingSite] = useState<Site | null>(null);
   const [viewingGuardsSite, setViewingGuardsSite] = useState<Site | null>(null);
   const [guardSearch, setGuardSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<"guards" | "schedules">("guards");
 
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -534,68 +536,120 @@ const SiteManagement = () => {
 
       {!showLoader && !showError && !showEmpty && filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(site => (
-            <EntityCard
-              key={site.id}
-              title={site.name}
-              badge={{
-                label: site.status,
-                className: site.status === "active" ? "status-badge-active" : "status-badge-inactive"
-              }}
-              details={[
-                { icon: MapPin, content: site.address },
-                { icon: Users, content: `${siteGuardCounts[site.id] ?? site.guards.length} guards assigned` },
-              ]}
-              footerRight={
-                <span className="text-xs text-muted-foreground">Manager: {managersList.find(m => m.id === site.manager)?.name || site.manager}</span>
-              }
-              menuItems={([
-                ...(hasEditPermission ? [
-                  {
-                    label: "Site Update",
-                    icon: MapPin,
-                    onClick: () => handleEditClick(site)
-                  }
-                ] : []),
-                ...(hasDeletePermission ? [
-                  {
-                    label: "Delete Site",
-                    icon: Trash2,
-                    variant: "destructive" as const,
-                    onClick: () => setDeletingSite(site)
-                  }
-                ] : [])
-              ] as any)}
-              footerContent={(siteGuardIdsMap.get(site.id) && siteGuardIdsMap.get(site.id)!.size > 0) ? (
-                <div
-                  onClick={() => setViewingGuardsSite(site)}
-                  className="flex items-center gap-2 cursor-pointer group"
-                >
-                  <div className="flex -space-x-2 transition-transform group-hover:scale-105 duration-200">
-                    {Array.from(siteGuardIdsMap.get(site.id)!).slice(0, 5).map(gId => {
-                      const g = guardList.find(gu => String(gu.id) === String(gId));
+          {filtered.map(site => {
+            const activeSchedulesForSite = scheduleRaw.filter((s: any) =>
+              String(s.siteId || s.site) === String(site.id) &&
+              (s.status === "scheduled" || s.status === "in-progress" || s.status === "started")
+            );
 
-                      let avatarContent: React.ReactNode;
-                      if (g?.profilePhoto) {
-                        avatarContent = <img src={g.profilePhoto} alt={g.name || "Guard"} className="w-full h-full object-cover rounded-full" />;
-                      } else {
-                        avatarContent = g ? (g.name ? g.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : "") : String(gId).slice(0, 2).toUpperCase();
-                      }
+            return (
+              <EntityCard
+                key={site.id}
+                title={site.name}
+                badge={{
+                  label: site.status,
+                  className: site.status === "active" ? "status-badge-active" : "status-badge-inactive"
+                }}
+                details={[
+                  { icon: MapPin, content: site.address },
+                  { icon: Users, content: `${siteGuardCounts[site.id] ?? site.guards.length} guards assigned` },
+                  { icon: Calendar, content: `${activeSchedulesForSite.length} active schedule(s)` },
+                ]}
+                footerRight={
+                  <span className="text-xs text-muted-foreground">Manager: {managersList.find(m => m.id === site.manager)?.name || site.manager}</span>
+                }
+                menuItems={([
+                  ...(hasEditPermission ? [
+                    {
+                      label: "Site Update",
+                      icon: MapPin,
+                      onClick: () => handleEditClick(site)
+                    }
+                  ] : []),
+                  ...(hasDeletePermission ? [
+                    {
+                      label: "Delete Site",
+                      icon: Trash2,
+                      variant: "destructive" as const,
+                      onClick: () => setDeletingSite(site)
+                    }
+                  ] : [])
+                ] as any)}
+                footerContent={
+                  <div className="flex items-center justify-between w-full">
+                    {(siteGuardIdsMap.get(site.id) &&
+                      siteGuardIdsMap.get(site.id)!.size > 0) && (
+                        <div
+                          onClick={() => {
+                            setViewingGuardsSite(site);
+                            setActiveTab("guards");
+                          }}
+                          className="flex items-center gap-2 cursor-pointer group"
+                        >
+                          <div className="flex -space-x-2 transition-transform duration-200 group-hover:scale-105">
+                            {Array.from(siteGuardIdsMap.get(site.id)!)
+                              .slice(0, 5)
+                              .map((gId) => {
+                                const g = guardList.find(
+                                  (gu) => String(gu.id) === String(gId)
+                                );
 
-                      return (
-                        <div key={gId} className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shadow-sm">
-                          {avatarContent}
+                                let avatarContent: React.ReactNode;
+                                if (g?.profilePhoto) {
+                                  avatarContent = (
+                                    <img
+                                      src={g.profilePhoto}
+                                      alt={g.name || "Guard"}
+                                      className="w-full h-full object-cover rounded-full"
+                                    />
+                                  );
+                                } else {
+                                  avatarContent = g
+                                    ? g.name
+                                      ? g.name
+                                        .split(" ")
+                                        .map((n) => n[0].toUpperCase())
+                                        .join("")
+                                      : ""
+                                    : String(gId).slice(0, 2).toUpperCase();
+                                }
+
+                                return (
+                                  <div
+                                    key={gId}
+                                    className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shadow-sm"
+                                  >
+                                    {avatarContent}
+                                  </div>
+                                );
+                              })}
+                          </div>
+
+                          <span className="text-[10px] font-semibold text-muted-foreground transition-colors duration-200 underline decoration-dotted underline-offset-2 group-hover:text-primary">
+                            Click to view guards
+                          </span>
                         </div>
-                      );
-                    })}
+                      )}
+
+                    {activeSchedulesForSite.length > 0 && (
+                      <div
+                        onClick={() => {
+                          setViewingGuardsSite(site);
+                          setActiveTab("schedules");
+                        }}
+                        className="flex items-center gap-1 cursor-pointer group"
+                      >
+                        <Calendar className="w-3.5 h-3.5 text-muted-foreground transition-colors duration-200 group-hover:text-primary" />
+                        <span className="text-[10px] font-semibold text-muted-foreground transition-colors duration-200 underline decoration-dotted underline-offset-2 group-hover:text-primary">
+                          View Active Schedules ({activeSchedulesForSite.length})
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <span className="text-[10px] font-semibold text-muted-foreground group-hover:text-primary transition-colors duration-200 underline decoration-dotted underline-offset-2">
-                    Click to view guards
-                  </span>
-                </div>
-              ) : null}
-            />
-          ))}
+                }
+              />
+            );
+          })}
         </div>
       )}
 
@@ -630,6 +684,7 @@ const SiteManagement = () => {
         if (!val) {
           setViewingGuardsSite(null);
           setGuardSearch("");
+          setActiveTab("guards");
         }
       }}>
         <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-background">
@@ -649,127 +704,213 @@ const SiteManagement = () => {
               );
             });
 
+            const siteSchedules = scheduleRaw.filter((s: any) =>
+              String(s.siteId || s.site) === String(viewingGuardsSite.id) &&
+              (s.status === "scheduled" || s.status === "in-progress" || s.status === "started")
+            );
+
             return (
               <div className="flex flex-col">
-                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-4 border-b border-border/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <DialogTitle className="text-lg font-bold text-foreground">Assigned Guards</DialogTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">Active Guard Roster for {viewingGuardsSite.name}</p>
+                <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as "guards" | "schedules")} className="w-full">
+                  <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent pl-6 pr-16 py-4 border-b border-border/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <DialogTitle className="text-lg font-bold text-foreground">Site Details</DialogTitle>
+                      <p className="text-xs text-muted-foreground mt-0.5">{viewingGuardsSite.name}</p>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      {activeTab === "guards" && (
+                        <div className="relative w-full md:w-56">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                          <input
+                            value={guardSearch}
+                            onChange={(e) => setGuardSearch(e.target.value)}
+                            placeholder="Search assigned guards..."
+                            className="w-full pl-9 pr-3 py-1 bg-secondary border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                        </div>
+                      )}
+
+                      <TabsList className="bg-secondary/50 rounded-lg p-0.5 border border-border h-8 shrink-0">
+                        <TabsTrigger value="guards" className="text-xs py-0.5 px-3 rounded">Guards</TabsTrigger>
+                        <TabsTrigger value="schedules" className="text-xs py-0.5 px-3 rounded">Active Schedules</TabsTrigger>
+                      </TabsList>
+                    </div>
                   </div>
 
-                  {/* Search Bar on top */}
-                  <div className="relative w-full md:w-72 mr-6">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground mr-6" />
-                    <input
-                      value={guardSearch}
-                      onChange={(e) => setGuardSearch(e.target.value)}
-                      placeholder="Search assigned guards..."
-                      className="w-full pl-9 pr-3 py-1.5 bg-secondary border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
+                  <TabsContent value="guards" className="mt-0">
+                    <div className="p-6 max-h-[450px] overflow-y-auto">
+                      {filteredGuards.length === 0 ? (
+                        <div className="py-12 text-center text-xs text-muted-foreground">
+                          {assignedGuards.length === 0
+                            ? "No guards are currently assigned to this site."
+                            : "No guards match your search criteria."}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {filteredGuards.map((g: any, index) => {
+                            let avatarContent: React.ReactNode;
+                            if (g.profilePhoto) {
+                              avatarContent = <img src={g.profilePhoto} alt={g.name || "Guard"} className="w-full h-full object-cover rounded-full" />;
+                            } else {
+                              avatarContent = g.name ? g.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : String(g.id).slice(0, 2).toUpperCase();
+                            }
 
-                <div className="p-6 max-h-[450px] overflow-y-auto">
-                  {filteredGuards.length === 0 ? (
-                    <div className="py-12 text-center text-xs text-muted-foreground">
-                      {assignedGuards.length === 0
-                        ? "No guards are currently assigned to this site."
-                        : "No guards match your search criteria."}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {filteredGuards.map((g: any, index) => {
-                        let avatarContent: React.ReactNode;
-                        if (g.profilePhoto) {
-                          avatarContent = <img src={g.profilePhoto} alt={g.name || "Guard"} className="w-full h-full object-cover rounded-full" />;
-                        } else {
-                          avatarContent = g.name ? g.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : String(g.id).slice(0, 2).toUpperCase();
-                        }
+                            // Status styling
+                            const statusColors = {
+                              "on-duty": "bg-success text-success-foreground border-success/30",
+                              "break": "bg-warning text-warning-foreground border-warning/30",
+                              "off-duty": "bg-muted text-muted-foreground border-muted-foreground/10",
+                            };
 
-                        // Status styling
-                        const statusColors = {
-                          "on-duty": "bg-success text-success-foreground border-success/30",
-                          "break": "bg-warning text-warning-foreground border-warning/30",
-                          "off-duty": "bg-muted text-muted-foreground border-muted-foreground/10",
-                        };
+                            // Compliance styling
+                            const complianceColors = {
+                              "valid": "bg-success/10 text-success border-success/20",
+                              "expiring": "bg-warning/10 text-warning border-warning/20",
+                              "expired": "bg-destructive/10 text-destructive border-destructive/20",
+                            };
 
-                        // Compliance styling
-                        const complianceColors = {
-                          "valid": "bg-success/10 text-success border-success/20",
-                          "expiring": "bg-warning/10 text-warning border-warning/20",
-                          "expired": "bg-destructive/10 text-destructive border-destructive/20",
-                        };
+                            // Find shift times for this guard at this site
+                            const getShiftTimeText = () => {
+                              const sch = scheduleRaw.find((s: any) => {
+                                const isSiteMatch = String(s.siteId || s.site) === String(viewingGuardsSite.id);
+                                const guardIds = Array.isArray(s.guardIds) ? s.guardIds : (s.guardId ? [s.guardId] : []);
+                                return isSiteMatch && guardIds.map(String).includes(String(g.id));
+                              });
+                              if (!sch) return "No Shift Today";
+                              return `${sch.shiftStart?.substring(0, 5) || "N/A"} - ${sch.shiftEnd?.substring(0, 5) || "N/A"}`;
+                            };
 
-                        // Find shift times for this guard at this site
-                        const getShiftTimeText = () => {
-                          const sch = scheduleRaw.find((s: any) => {
-                            const isSiteMatch = String(s.siteId || s.site) === String(viewingGuardsSite.id);
-                            const guardIds = Array.isArray(s.guardIds) ? s.guardIds : (s.guardId ? [s.guardId] : []);
-                            return isSiteMatch && guardIds.map(String).includes(String(g.id));
-                          });
-                          if (!sch) return "No Shift Today";
-                          return `${sch.shiftStart?.substring(0, 5) || "N/A"} - ${sch.shiftEnd?.substring(0, 5) || "N/A"}`;
-                        };
+                            return (
+                              <div key={g.id || index} className="p-4 rounded-xl border border-border bg-card hover:bg-secondary/20 transition-all flex flex-col justify-between gap-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  {/* Avatar & Name */}
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shrink-0">
+                                      {avatarContent}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-bold text-foreground truncate">{g.name}</p>
+                                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">ID: {g.id}</p>
+                                    </div>
+                                  </div>
 
-                        return (
-                          <div key={g.id || index} className="p-4 rounded-xl border border-border bg-card hover:bg-secondary/20 transition-all flex flex-col justify-between gap-4">
-                            <div className="flex items-start justify-between gap-3">
-                              {/* Avatar & Name */}
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shrink-0">
-                                  {avatarContent}
+                                  {/* Duty Status Badge */}
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColors[g.status as keyof typeof statusColors] || statusColors["off-duty"]}`}>
+                                    {g.status || "off-duty"}
+                                  </span>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold text-foreground truncate">{g.name}</p>
-                                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">ID: {g.id}</p>
+
+                                {/* Contact & Shift Info */}
+                                <div className="space-y-1.5 text-xs text-muted-foreground border-t border-b border-border/50 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <Phone className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+                                    <span className="truncate">{g.phoneNumber || "No Phone"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Mail className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+                                    <span className="truncate">{g.email || "No Email"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-foreground font-semibold">
+                                    <Users className="w-3.5 h-3.5 text-primary shrink-0" />
+                                    <span>Shift: {getShiftTimeText()}</span>
+                                  </div>
+                                </div>
+
+                                {/* Additional Guard Info: Compliance & Hours */}
+                                <div className="flex items-center justify-between text-[11px] gap-2">
+                                  {/* Compliance Status Badge */}
+                                  <div className="flex items-center gap-1.5">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                                    <span className={`px-1.5 py-0.5 rounded border text-[10px] font-medium capitalize ${complianceColors[g.complianceStatus as keyof typeof complianceColors] || complianceColors["valid"]}`}>
+                                      {g.complianceStatus || "valid"} Compliance
+                                    </span>
+                                  </div>
+
+                                  {/* Hours Tracked */}
+                                  <div className="text-right">
+                                    <span className="text-muted-foreground">Hours: </span>
+                                    <span className="font-bold text-foreground">{g.hoursThisWeek || 0}h</span>
+                                    <span className="text-muted-foreground text-[10px]"> / {g.scheduledHours || 0}h scheduled</span>
+                                  </div>
                                 </div>
                               </div>
-
-                              {/* Duty Status Badge */}
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColors[g.status as keyof typeof statusColors] || statusColors["off-duty"]}`}>
-                                {g.status || "off-duty"}
-                              </span>
-                            </div>
-
-                            {/* Contact & Shift Info */}
-                            <div className="space-y-1.5 text-xs text-muted-foreground border-t border-b border-border/50 py-3">
-                              <div className="flex items-center gap-2">
-                                <Phone className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
-                                <span className="truncate">{g.phoneNumber || "No Phone"}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Mail className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
-                                <span className="truncate">{g.email || "No Email"}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-foreground font-semibold">
-                                <Users className="w-3.5 h-3.5 text-primary shrink-0" />
-                                <span>Shift: {getShiftTimeText()}</span>
-                              </div>
-                            </div>
-
-                            {/* Additional Guard Info: Compliance & Hours */}
-                            <div className="flex items-center justify-between text-[11px] gap-2">
-                              {/* Compliance Status Badge */}
-                              <div className="flex items-center gap-1.5">
-                                <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground" />
-                                <span className={`px-1.5 py-0.5 rounded border text-[10px] font-medium capitalize ${complianceColors[g.complianceStatus as keyof typeof complianceColors] || complianceColors["valid"]}`}>
-                                  {g.complianceStatus || "valid"} Compliance
-                                </span>
-                              </div>
-
-                              {/* Hours Tracked */}
-                              <div className="text-right">
-                                <span className="text-muted-foreground">Hours: </span>
-                                <span className="font-bold text-foreground">{g.hoursThisWeek || 0}h</span>
-                                <span className="text-muted-foreground text-[10px]"> / {g.scheduledHours || 0}h scheduled</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </TabsContent>
+
+                  <TabsContent value="schedules" className="mt-0">
+                    <div className="p-6 max-h-[450px] overflow-y-auto">
+                      {siteSchedules.length === 0 ? (
+                        <div className="py-12 text-center text-xs text-muted-foreground">
+                          No active schedules for this site.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {siteSchedules.map((sch: any, index: number) => {
+                            const schGuardIds = Array.isArray(sch.guardIds) ? sch.guardIds : (sch.guardId ? [sch.guardId] : []);
+                            const assignedNames = schGuardIds
+                              .map((gId: any) => {
+                                const g = guardList.find(gu => String(gu.id) === String(gId));
+                                return g ? g.name : "Unknown Guard";
+                              })
+                              .join(", ");
+
+                            return (
+                              <div key={sch.id || index} className="p-4 rounded-xl border border-border bg-card hover:bg-secondary/15 transition-all flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                  <CalendarClockIcon className="h-4 w-4 text-muted-foreground" />
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${sch.status === "in-progress"
+                                      ? "bg-success/10 text-success border-success/20"
+                                      : sch.status === "completed"
+                                        ? "bg-success/10 text-success border-success/20"
+                                        : sch.status === "missed"
+                                          ? "bg-destructive/10 text-destructive border-destructive/20"
+                                          : "bg-muted text-muted-foreground border-muted-foreground/10"
+                                      }`}
+                                  >
+                                    {sch.status}
+                                  </span>
+
+
+                                </div>
+
+                                <div className="space-y-2 text-xs text-muted-foreground">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+                                    <span className="text-foreground">
+                                      {new Date(sch.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                      {sch.endDate && sch.endDate !== sch.startDate && (
+                                        <> - {new Date(sch.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</>
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+                                    <span className="text-foreground">
+                                      {sch.shiftStart?.substring(0, 5)} - {sch.shiftEnd?.substring(0, 5)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-start gap-2 pt-1.5 border-t border-border/50">
+                                    <Users className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+                                    <div className="flex flex-col">
+                                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Guards Assigned</span>
+                                      <span className="text-foreground font-semibold mt-0.5">{assignedNames || "No guards assigned"}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
 
                 <div className="px-6 py-4 bg-secondary/20 border-t border-border/50 flex justify-end">
                   <Button
@@ -778,6 +919,7 @@ const SiteManagement = () => {
                     onClick={() => {
                       setViewingGuardsSite(null);
                       setGuardSearch("");
+                      setActiveTab("guards");
                     }}
                     size="sm"
                   >

@@ -46,9 +46,9 @@ const LiveMapView = ({ onSelectGuard, selectedGuardId, guards: dynamicGuards }: 
   // Build Google Maps Static-style embed URL (no key needed for embed)
   const center = selectedGuardId
     ? (() => {
-        const g = activeGuardsList.find(g => g.id === selectedGuardId);
-        return g ? `${g.lat},${g.lng}` : "40.73,-73.99";
-      })()
+      const g = activeGuardsList.find(g => g.id === selectedGuardId);
+      return g ? `${g.lat},${g.lng}` : "40.73,-73.99";
+    })()
     : "40.73,-73.99";
 
   const zoom = selectedGuardId ? 15 : 12;
@@ -57,7 +57,7 @@ const LiveMapView = ({ onSelectGuard, selectedGuardId, guards: dynamicGuards }: 
   const mapSrc = `https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d${selectedGuardId ? "3000" : "50000"}!2d${center.split(",")[1]}!3d${center.split(",")[0]}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1`;
 
   return (
-    <div className="bg-card rounded-xl border border-border overflow-hidden">
+    <div className="bg-card rounded-xl border border-border overflow-hidden flex flex-col h-full">
       <div className="flex items-center justify-between p-3 border-b border-border gap-2 flex-wrap">
         <h2 className="text-sm font-semibold text-foreground whitespace-nowrap">Live Guard Locations</h2>
         <div className="flex items-center gap-2 flex-1 justify-end">
@@ -99,7 +99,7 @@ const LiveMapView = ({ onSelectGuard, selectedGuardId, guards: dynamicGuards }: 
       </div>
 
       {/* Google Maps embed + guard overlay */}
-      <div className="relative h-[340px]">
+      <div className="relative flex-1 min-h-0">
         <iframe
           src={mapSrc}
           className="w-full h-full border-0"

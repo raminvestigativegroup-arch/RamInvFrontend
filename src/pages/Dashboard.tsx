@@ -90,7 +90,7 @@ const Dashboard = () => {
 
       {/* Map & Guard Status */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 relative group">
+        <div className="lg:col-span-2 relative group flex flex-col min-h-[400px]">
           <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} />
           <button
             onClick={() => setMapFullscreen(true)}
@@ -113,9 +113,8 @@ const Dashboard = () => {
         <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-0 overflow-hidden">
           <div className="h-full flex">
             {/* Map area */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative flex flex-col">
               <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} />
-              <style>{`.h-\\[340px\\] { height: 100% !important; }`}</style>
             </div>
             {/* Guard real-time panel */}
             <div className="w-80 border-l border-border bg-card overflow-y-auto">

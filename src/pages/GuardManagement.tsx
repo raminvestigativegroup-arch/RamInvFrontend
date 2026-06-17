@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { sites, Guard } from "@/data/dummyData";
-import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, Users, Loader2, FileText, Calendar } from "lucide-react";
+import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, Users, Loader2, FileText, Calendar, MapPin, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -321,21 +321,65 @@ const GuardManagement = () => {
     }
   });
 
+  const [viewingSchedulesGuard, setViewingSchedulesGuard] = useState<{ guard: Guard; assignments: any[] } | null>(null);
+
+  // Fetch active scheduling entries
+  const { data: scheduleRaw = [] } = useQuery({
+    queryKey: ["scheduling", "all"],
+    queryFn: async () => {
+      try {
+        const response = await api.scheduling.list();
+        const raw = response.data as any;
+        const list = Array.isArray(raw) ? raw : (raw?.data || raw?.schedules || raw?.items || []);
+        return Array.isArray(list) ? list : [];
+      } catch (e) {
+        return [];
+      }
+    }
+  });
+
+  const getGuardAssignments = (guardId: string) => {
+    const guardSchedules = scheduleRaw.filter((s: any) => {
+      const ids = Array.isArray(s.guardIds) ? s.guardIds.map(String) : (s.guardId ? [String(s.guardId)] : []);
+      return ids.includes(String(guardId)) && (s.status === "scheduled" || s.status === "in-progress" || s.status === "started");
+    });
+
+    return guardSchedules.map((s: any) => {
+      const siteObj = siteList.find((site: any) => String(site.id) === String(s.siteId));
+      return {
+        scheduleId: s.id,
+        siteName: siteObj ? siteObj.name : "Unknown Site",
+        siteAddress: siteObj ? siteObj.address : "",
+        startDate: s.startDate,
+        endDate: s.endDate,
+        shiftStart: s.shiftStart ? s.shiftStart.substring(0, 5) : "",
+        shiftEnd: s.shiftEnd ? s.shiftEnd.substring(0, 5) : "",
+        status: s.status,
+      };
+    });
+  };
+
   const filtered = useMemo(() => {
     return guardList.filter((g) => {
       const matchVerified =
         verifiedFilter === "all" ||
         (verifiedFilter === "verified" && g.isVerified) ||
         (verifiedFilter === "unverified" && !g.isVerified);
+
+      const assignments = getGuardAssignments(g.id);
+      const uniqueSiteNames = Array.from(new Set(assignments.map(a => a.siteName.toLowerCase())));
+
       const matchSite =
         siteFilter === "all" ||
-        g.site.toLowerCase() === siteFilter.toLowerCase();
+        (siteFilter === "unassigned" && uniqueSiteNames.length === 0) ||
+        uniqueSiteNames.includes(siteFilter.toLowerCase());
+
       const matchCompliance =
         complianceFilter === "all" ||
         g.complianceStatus === complianceFilter;
       return matchVerified && matchSite && matchCompliance;
     });
-  }, [guardList, verifiedFilter, siteFilter, complianceFilter]);
+  }, [guardList, verifiedFilter, siteFilter, complianceFilter, scheduleRaw, siteList]);
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
   const showLoader = isLoading && filtered.length > 0;
@@ -566,6 +610,10 @@ const GuardManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((guard) => {
             const { complianceStatus, licenseExpiry } = getComplianceDetails(guard.id, rawDocuments);
+            const assignments = getGuardAssignments(guard.id);
+            const uniqueSiteNames = Array.from(new Set(assignments.map(a => a.siteName)));
+            const siteText = uniqueSiteNames.length > 0 ? uniqueSiteNames.join(", ") : "Unassigned";
+
             return (
               <EntityCard
                 key={guard.id}
@@ -578,8 +626,9 @@ const GuardManagement = () => {
                 details={[
                   { icon: Mail, content: guard.email },
                   { icon: Phone, content: guard.phoneNumber },
+                  { icon: MapPin, content: siteText },
                 ]}
-                footerLeft={guard.site}
+                footerLeft={undefined}
                 footerMiddle={
                   <span className={guard.isVerified ? "status-badge-active" : "status-badge-inactive"}>
                     {guard.isVerified ? "Verified" : "Not Verified"}
@@ -609,11 +658,40 @@ const GuardManagement = () => {
                   },
                 ].filter(Boolean) as any}
                 footerContent={
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-medium ${complianceStatus === "valid" ? "text-success" : complianceStatus === "expiring" ? "text-warning" : complianceStatus === "expired" ? "text-destructive" : "text-muted-foreground"}`}>
-                      License: {complianceStatus}
-                    </span>
-                    <span className="text-xs text-muted-foreground">Exp: {licenseExpiry}</span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-medium ${complianceStatus === "valid" ? "text-success" : complianceStatus === "expiring" ? "text-warning" : complianceStatus === "expired" ? "text-destructive" : "text-muted-foreground"}`}>
+                        License: {complianceStatus}
+                      </span>
+                      <span className="text-xs text-muted-foreground">Exp: {licenseExpiry}</span>
+                    </div>
+                    {assignments.length > 0 && (
+                      <>
+                        {/* Site chips — visible at a glance */}
+                        {/* <div className="flex flex-wrap gap-1">
+                          {uniqueSiteNames.slice(0, 3).map(site => (
+                            <span key={site} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold border border-primary/20 truncate max-w-[100px]">
+                              {site}
+                            </span>
+                          ))}
+                          {uniqueSiteNames.length > 3 && (
+                            <span className="px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-[10px] font-semibold border border-border">
+                              +{uniqueSiteNames.length - 3} more
+                            </span>
+                          )}
+                        </div> */}
+                        {/* Schedule trigger */}
+                        <div
+                          onClick={() => setViewingSchedulesGuard({ guard, assignments })}
+                          className="flex items-center gap-1 cursor-pointer group"
+                        >
+                          <Calendar className="w-3.5 h-3.5 text-muted-foreground transition-colors duration-200 group-hover:text-primary" />
+                          <span className="text-[10px] font-semibold text-muted-foreground transition-colors duration-200 underline decoration-dotted underline-offset-2 group-hover:text-primary">
+                            View {assignments.length} Schedule{assignments.length !== 1 ? "s" : ""} across {uniqueSiteNames.length} site{uniqueSiteNames.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 }
               />
@@ -957,6 +1035,127 @@ const GuardManagement = () => {
                     </div>
 
                   </div>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Viewing Guard Schedules Dialog */}
+      <Dialog open={!!viewingSchedulesGuard} onOpenChange={(val) => !val && setViewingSchedulesGuard(null)}>
+        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-background">
+          {viewingSchedulesGuard && (() => {
+            const { guard, assignments } = viewingSchedulesGuard;
+
+            // Group assignments by site name
+            const bySite = assignments.reduce((acc: Record<string, any[]>, a: any) => {
+              const key = a.siteName;
+              if (!acc[key]) acc[key] = [];
+              acc[key].push(a);
+              return acc;
+            }, {} as Record<string, any[]>);
+
+            const siteNames = Object.keys(bySite);
+            const totalShifts = assignments.length;
+
+            return (
+              <div className="flex flex-col">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-5 border-b border-border/50">
+                  <DialogTitle className="text-lg font-bold text-foreground">Guard Schedule Overview</DialogTitle>
+                  <p className="text-xs text-muted-foreground mt-0.5">{guard.name}</p>
+                  {/* Summary chips */}
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
+                      <MapPin className="w-3 h-3" />
+                      {siteNames.length} Site{siteNames.length !== 1 ? "s" : ""}
+                    </span>
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-foreground text-xs font-semibold border border-border">
+                      <Calendar className="w-3 h-3" />
+                      {totalShifts} Active Schedule{totalShifts !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Per-site sections */}
+                <div className="p-6 max-h-[480px] overflow-y-auto space-y-6">
+                  {siteNames.map((siteName) => {
+                    const siteShifts = bySite[siteName];
+                    const firstShift = siteShifts[0];
+                    return (
+                      <div key={siteName}>
+                        {/* Site heading */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <MapPin className="w-3.5 h-3.5 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold text-foreground truncate">{siteName}</h4>
+                            {firstShift?.siteAddress && (
+                              <p className="text-[10px] text-muted-foreground truncate">{firstShift.siteAddress}</p>
+                            )}
+                          </div>
+                          <span className="ml-auto shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border">
+                            {siteShifts.length} shift{siteShifts.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+
+                        {/* Shift cards for this site */}
+                        <div className="space-y-2 pl-3 border-l-2 border-primary/20">
+                          {siteShifts.map((shift: any, idx: number) => (
+                            <div
+                              key={shift.scheduleId || idx}
+                              className="p-3 rounded-xl border border-border bg-secondary/30 hover:bg-secondary/50 transition-colors flex items-center gap-3"
+                            >
+                              {/* Shift number badge */}
+                              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">
+                                {idx + 1}
+                              </div>
+
+                              {/* Dates */}
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+                                <Calendar className="w-3 h-3 text-primary shrink-0" />
+                                <span className="truncate">
+                                  {new Date(shift.startDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                  {shift.endDate && shift.endDate !== shift.startDate && (
+                                    <> – {new Date(shift.endDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</>
+                                  )}
+                                </span>
+                              </div>
+
+                              {/* Times */}
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+                                <Clock className="w-3 h-3 text-primary" />
+                                <span className="font-medium text-foreground">{shift.shiftStart} – {shift.shiftEnd}</span>
+                              </div>
+
+                              {/* Status badge */}
+                              <span className={`ml-auto shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${shift.status === "in-progress" || shift.status === "started"
+                                  ? "bg-success/10 text-success border-success/20"
+                                  : shift.status === "missed"
+                                    ? "bg-destructive/10 text-destructive border-destructive/20"
+                                    : "bg-muted text-muted-foreground border-muted-foreground/10"
+                                }`}>
+                                {shift.status}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="px-6 py-4 bg-secondary/20 border-t border-border/50 flex justify-end">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setViewingSchedulesGuard(null)}
+                    size="sm"
+                  >
+                    Close
+                  </Button>
                 </div>
               </div>
             );

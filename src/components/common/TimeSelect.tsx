@@ -4,8 +4,9 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 
 interface TimeSelectProps {
-  value: string; // "HH:MM" 24h format
+  value: string; // "HH:MM" 24h format, or "" for unset
   onChange: (value: string) => void;
+  placeholder?: string;
   className?: string;
   disabled?: boolean;
 }
@@ -14,19 +15,24 @@ const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"
 const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 const periods = ["AM", "PM"];
 
+const DEFAULT_TIME = "06:00";
+
 const TimeSelect: React.FC<TimeSelectProps> = ({
-  value = "06:00",
+  value = "",
   onChange,
+  placeholder = "Select time",
   className = "",
   disabled = false,
 }) => {
+  const hasValue = value && value.trim().length > 0;
+
   // Parse initial 24h format to 12h components
   const parse24to12 = (timeString: string) => {
-    const [hourStr, minuteStr] = (timeString || "06:00").split(":");
+    const [hourStr, minuteStr] = (timeString || DEFAULT_TIME).split(":");
     let hour = parseInt(hourStr || "6", 10);
     const minute = minuteStr || "00";
     const ampm = hour >= 12 ? "PM" : "AM";
-    
+
     hour = hour % 12;
     hour = hour ? hour : 12; // 0 becomes 12
     return {
@@ -36,7 +42,9 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
     };
   };
 
-  const { hour: currentHour, minute: currentMinute, ampm: currentAmpm } = parse24to12(value);
+  // When no value is set, use default just for internal picker scroll state
+  const parsed = parse24to12(hasValue ? value : DEFAULT_TIME);
+  const { hour: currentHour, minute: currentMinute, ampm: currentAmpm } = parsed;
 
   const format12to24 = (h: string, m: string, period: string) => {
     let hr = parseInt(h, 10);
@@ -57,7 +65,9 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
     onChange(format12to24(currentHour, currentMinute, period));
   };
 
-  const displayTime = `${currentHour}:${currentMinute} ${currentAmpm}`;
+  const displayTime = hasValue
+    ? `${currentHour}:${currentMinute} ${currentAmpm}`
+    : null;
 
   // Refs for scrolling selected items into view
   const hourRef = useRef<HTMLDivElement>(null);
@@ -117,25 +127,26 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
           type="button"
           disabled={disabled}
           className={cn(
-            "flex items-center justify-between w-full h-[38px] px-3 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-colors",
+            "flex items-center justify-between w-full h-[38px] px-3 bg-secondary border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed select-none transition-colors",
+            hasValue ? "text-foreground" : "text-muted-foreground",
             className
           )}
         >
-          <span>{displayTime}</span>
-          <Clock className="w-4 h-4 text-muted-foreground" />
+          <span>{displayTime ?? placeholder}</span>
+          <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-[280px] p-2 bg-popover border border-border rounded-lg shadow-lg z-50">
         <div className="grid grid-cols-3 gap-1 h-56 text-center select-none">
           {/* Hours Column */}
-          <div 
-            ref={hourRef} 
+          <div
+            ref={hourRef}
             onWheel={handleHourWheel}
             className="flex flex-col overflow-y-auto scrollbar-none border-r border-border pr-1 cursor-ns-resize"
           >
             <span className="text-[10px] uppercase font-semibold text-muted-foreground mb-1 select-none sticky top-0 bg-popover py-1">Hour</span>
             {hours.map((h) => {
-              const isActive = h === currentHour;
+              const isActive = hasValue && h === currentHour;
               return (
                 <button
                   key={h}
@@ -156,14 +167,14 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
           </div>
 
           {/* Minutes Column */}
-          <div 
-            ref={minuteRef} 
+          <div
+            ref={minuteRef}
             onWheel={handleMinuteWheel}
             className="flex flex-col overflow-y-auto scrollbar-none border-r border-border px-1 cursor-ns-resize"
           >
             <span className="text-[10px] uppercase font-semibold text-muted-foreground mb-1 select-none sticky top-0 bg-popover py-1">Minute</span>
             {minutes.map((m) => {
-              const isActive = m === currentMinute;
+              const isActive = hasValue && m === currentMinute;
               return (
                 <button
                   key={m}
@@ -184,13 +195,13 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
           </div>
 
           {/* Period Column (AM/PM) */}
-          <div 
+          <div
             onWheel={handlePeriodWheel}
             className="flex flex-col overflow-y-auto scrollbar-none pl-1 cursor-ns-resize"
           >
             <span className="text-[10px] uppercase font-semibold text-muted-foreground mb-1 select-none sticky top-0 bg-popover py-1">Period</span>
             {periods.map((p) => {
-              const isActive = p === currentAmpm;
+              const isActive = hasValue && p === currentAmpm;
               return (
                 <button
                   key={p}

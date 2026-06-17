@@ -729,9 +729,9 @@ const Compliance = () => {
                   <DialogTitle className="text-lg font-bold text-foreground">Document Details</DialogTitle>
                   <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record</p>
                 </div>
-                <span className={`status-badge ${selectedDoc.status === "valid" ? " mb-2 " :
-                  selectedDoc.status === "expiring" ? "status-badge-warning" :
-                    "status-badge-danger"
+                <span className={`status-badge ${selectedDoc.status === "valid" ? "status-badge-active m-2" :
+                  selectedDoc.status === "expiring" ? "status-badge-warning m-2" :
+                    "status-badge-danger m-2"
                   }`}>
                   {selectedDoc.status === "valid" ? "Verified" : selectedDoc.status === "expiring" ? "Expiring Soon" : "Expired"}
                 </span>
