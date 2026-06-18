@@ -681,8 +681,6 @@ const HoursTracking = () => {
                                 email: activeSelectedSite.managerEmail,
                                 phoneNumber:
                                   activeSelectedSite.managerPhone,
-                                profilePhoto:
-                                  activeSelectedSite.managerPhoto,
                               },
                             ].filter((m) => m.name !== "Unassigned");
 
@@ -717,15 +715,7 @@ const HoursTracking = () => {
                                   {/* Top Section */}
                                   <div className="flex items-center gap-3">
                                     <div className="w-11 h-11 rounded-full overflow-hidden border border-primary/20 bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
-                                      {mgr.profilePhoto ? (
-                                        <img
-                                          src={resolveImageUrl(mgr.profilePhoto)}
-                                          alt={mgr.name}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        mgr.name?.charAt(0).toUpperCase() || "U"
-                                      )}
+                                      {mgr.name?.charAt(0).toUpperCase() || "U"}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
@@ -833,15 +823,7 @@ const HoursTracking = () => {
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-2">
                                     <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 text-[10px] font-bold shadow-xs overflow-hidden">
-                                      {guard.profilePhoto ? (
-                                        <img
-                                          src={resolveImageUrl(guard.profilePhoto)}
-                                          alt={guard.name}
-                                          className="w-full h-full object-cover"
-                                        />
-                                      ) : (
-                                        guard.avatar
-                                      )}
+                                      {guard.avatar}
                                     </div>
                                     <span className="font-semibold text-slate-900 dark:text-white text-sm">{guard.name}</span>
                                   </div>
