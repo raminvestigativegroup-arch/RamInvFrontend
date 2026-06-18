@@ -156,6 +156,8 @@ const Scheduling = () => {
             id: s.id || s._id,
             guard: guardName,
             site: siteName,
+            siteId: s.siteId || null,
+            managerId: s.managerId || null,
             date: start.toISOString().split('T')[0],
             shiftStart: (s.shiftStart || "00:00").substring(0, 5),
             shiftEnd: (s.shiftEnd || "00:00").substring(0, 5),
@@ -178,6 +180,8 @@ const Scheduling = () => {
             id: `${s.id || s._id}-${gId}-${dateStr}`,
             guard: guardName,
             site: siteName,
+            siteId: s.siteId || null,
+            managerId: s.managerId || null,
             date: dateStr,
             shiftStart: (s.shiftStart || "00:00:00").substring(0, 5),
             shiftEnd: (s.shiftEnd || "00:00:00").substring(0, 5),
@@ -199,8 +203,8 @@ const Scheduling = () => {
 
 
   const isNotFound = isErrorEntries && ((errorEntries as any)?.response?.status === 404 || (errorEntries as any)?.message?.includes("404"));
-  const showLoader = isLoadingEntries && entries.length > 0;
-  const showEmpty = entries.length === 0 || isNotFound;
+  const showLoader = isLoadingEntries;
+  const showEmpty = !isLoadingEntries && (entries.length === 0 || isNotFound);
   const showError = isErrorEntries && !isNotFound;
 
   const createMutation = useMutation({

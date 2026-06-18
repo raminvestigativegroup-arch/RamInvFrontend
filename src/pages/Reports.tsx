@@ -110,14 +110,13 @@ const Reports = () => {
 
       {/* Stats Overview */}
       {statsLoading ? (
-        <div className="flex items-center justify-center py-6">
-          <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          <span className="ml-2 text-muted-foreground text-xs">Loading live reporting stats...</span>
-        </div>
+        <StateMessage type="loading" message="Loading live reporting stats..." inline className="my-2" />
       ) : statsError ? (
-        <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-xl p-4 text-center">
-          Failed to load live metrics. Displaying default views.
-        </div>
+        <StateMessage
+          type="error"
+          title="Error Loading Stats"
+          message="Failed to load live metrics. Displaying default views."
+        />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {statsCards.map((stat) => (
@@ -190,17 +189,18 @@ const Reports = () => {
           <tbody>
             {listLoading ? (
               <tr>
-                <td colSpan={5} className="text-center py-10 text-sm text-muted-foreground">
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                    <span>Loading templates...</span>
-                  </div>
+                <td colSpan={5} className="p-4">
+                  <StateMessage type="loading" message="Loading templates..." inline />
                 </td>
               </tr>
             ) : listError ? (
               <tr>
-                <td colSpan={5} className="text-center py-10 text-sm text-destructive font-medium">
-                  Failed to load report templates.
+                <td colSpan={5} className="p-4">
+                  <StateMessage
+                    type="error"
+                    title="Load Failure"
+                    message="Failed to load report templates."
+                  />
                 </td>
               </tr>
             ) : listResponse?.reports && listResponse.reports.length > 0 ? (
@@ -260,10 +260,7 @@ const Reports = () => {
           </DialogHeader>
 
           {previewLoading ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <span className="ml-2 mt-2 text-muted-foreground text-sm">Generating preview dynamically...</span>
-            </div>
+            <StateMessage type="loading" message="Generating preview dynamically..." className="my-6" />
           ) : previewResponse ? (
             <div className="space-y-5 mt-2">
               {previewResponse.sections.map((section: any, i: number) => (

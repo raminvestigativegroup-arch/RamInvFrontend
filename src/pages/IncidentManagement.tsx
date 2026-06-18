@@ -233,9 +233,8 @@ const IncidentManagement = () => {
     });
   }, [incidentList, search, priorityFilter, siteFilter, guardFilter, dateFilter]);
 
-  const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
-  const showLoader = isLoading && filtered.length > 0;
-  const showEmpty = filtered.length === 0 || isNotFound;
+  const showLoader = isLoading;
+  const showEmpty = !isLoading && (filtered.length === 0 || isNotFound);
   const showError = isError && !isNotFound;
 
   const aiSelected = aiIncidentId ? incidentList.find((i) => i.id === aiIncidentId) : null;
@@ -270,73 +269,76 @@ const IncidentManagement = () => {
         </Button>
       </div>
 
-      {/* Search & Filters */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search incidents..." className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
-          </div>
-          {activeFilters > 0 && (
-            <Button
-              variant="link"
-              size="sm"
-              onClick={() => { setPriorityFilter("all"); setSiteFilter("all"); setGuardFilter("all"); setDateFilter("all"); }}
-              className="text-xs text-destructive hover:underline shadow-none p-0 h-auto"
-            >
-              Clear {activeFilters} filter(s)
-            </Button>
-          )}
+      {/* Search, Filters and Sort Toolbar */}
+      <div className="flex flex-col md:flex-row gap-3 items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search incidents..."
+            className="pl-9 pr-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 h-[38px] rounded-lg text-sm w-full placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary"
+          />
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end items-center">
           {/* Priority */}
-          <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground mr-1">Priority:</span>
-            {["all", "high", "medium", "low"].map((p) => (
-              <Button
-                key={p}
-                onClick={() => setPriorityFilter(p)}
-                variant={priorityFilter === p ? "default" : "secondary"}
-                size="sm"
-                className="h-7 px-2.5 rounded-lg text-xs"
-              >
-                {p === "all" ? "All" : p.charAt(0).toUpperCase() + p.slice(1)}
-              </Button>
-            ))}
-          </div>
+          <SelectDropdown
+            value={priorityFilter}
+            onChange={setPriorityFilter}
+            options={[
+              { value: "all", label: "All Priorities" },
+              { value: "high", label: "High" },
+              { value: "medium", label: "Medium" },
+              { value: "low", label: "Low" }
+            ]}
+            placeholder="Priority"
+            className="w-full sm:w-[130px]"
+          />
 
           {/* Date */}
-          <div className="w-[180px]">
+          <div className="w-full sm:w-[150px]">
             <DateSelect
               value={dateFilter === "all" ? "" : dateFilter}
               onChange={(val) => setDateFilter(val || "all")}
               placeholder="All Dates"
-              className="h-[32px] text-xs font-semibold"
+              className="h-[38px] text-xs font-semibold"
             />
           </div>
 
           {/* Site */}
-          <div className="w-36">
-            <SelectDropdown
-              value={siteFilter}
-              onChange={setSiteFilter}
-              options={[{ value: "all", label: "All Sites" }, ...siteList.map((s) => ({ value: s.name, label: s.name }))] || []}
-              placeholder="All Sites"
-              className="h-[32px] mb-0 text-xs"
-            />
-          </div>
+          <SelectDropdown
+            value={siteFilter}
+            onChange={setSiteFilter}
+            options={[{ value: "all", label: "All Sites" }, ...siteList.map((s) => ({ value: s.name, label: s.name }))] || []}
+            placeholder="Site"
+            className="w-full sm:w-[140px]"
+          />
 
           {/* Guard */}
-          <div className="w-36">
-            <SelectDropdown
-              value={guardFilter}
-              onChange={setGuardFilter}
-              options={[{ value: "all", label: "All Guards" }, ...guardList.map((g) => ({ value: g.id, label: g.name }))] || []}
-              placeholder="All Guards"
-              className="h-[32px] mb-0 text-xs"
-            />
-          </div>
+          <SelectDropdown
+            value={guardFilter}
+            onChange={setGuardFilter}
+            options={[{ value: "all", label: "All Guards" }, ...guardList.map((g) => ({ value: g.id, label: g.name }))] || []}
+            placeholder="Guard"
+            className="w-full sm:w-[140px]"
+          />
+
+          {activeFilters > 0 && (
+            <Button
+              onClick={() => {
+                setPriorityFilter("all");
+                setSiteFilter("all");
+                setGuardFilter("all");
+                setDateFilter("all");
+              }}
+              variant="ghost"
+              size="sm"
+              className="text-xs h-[38px] font-semibold text-slate-500 hover:text-slate-700"
+            >
+              Reset
+            </Button>
+          )}
         </div>
       </div>
 
@@ -433,10 +435,7 @@ const IncidentManagement = () => {
         {selectedIncidentId && (
           <div className="w-1/2 bg-card rounded-xl border border-border p-6 min-h-[400px] flex flex-col">
             {isDetailsLoading ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
-                <Loader2 className="w-6 h-6 animate-spin mb-2" />
-                <p className="text-sm">Loading details...</p>
-              </div>
+              <StateMessage type="loading" message="Loading details..." inline className="m-auto" />
             ) : selectedIncident ? (
               <>
                 <div className="flex items-center justify-between mb-4">
@@ -511,10 +510,7 @@ const IncidentManagement = () => {
               </div>
 
               {isRefining ? (
-                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                  <Loader2 className="w-6 h-6 animate-spin mb-2 text-primary" />
-                  <p className="text-sm">Gemini AI is refining raw notes...</p>
-                </div>
+                <StateMessage type="loading" message="Gemini AI is refining raw notes..." className="py-6" />
               ) : isRefineError ? (
                 <div className="bg-destructive/10 text-destructive p-4 rounded-lg text-sm flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />

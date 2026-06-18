@@ -191,9 +191,7 @@ const SystemSettings = () => {
         )}
 
         {isLoadingSettings ? (
-          <div className="flex justify-center items-center py-10">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
+          <StateMessage type="loading" message="Loading company settings..." inline className="my-6" />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">

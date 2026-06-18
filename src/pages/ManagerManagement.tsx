@@ -30,6 +30,7 @@ type ManagerApiResponse =
     managers?: Manager[];
     items?: Manager[];
     results?: Manager[];
+
   };
 
 const normalizeRolesResponse = (response: any): any[] => {
@@ -101,7 +102,7 @@ const getComplianceDetails = (personId: string, documents: any[]) => {
     return { complianceStatus: "N/A", licenseExpiry: "N/A" };
   }
 
-  let licenseDoc = personDocs.find((doc: any) => 
+  let licenseDoc = personDocs.find((doc: any) =>
     (doc.name || "").toLowerCase().includes("license")
   );
   if (!licenseDoc) {
@@ -120,7 +121,7 @@ const getComplianceDetails = (personId: string, documents: any[]) => {
       } else {
         expiryDateStr = String(licenseDoc.expiryDate).split("T")[0];
       }
-      
+
       const today = new Date();
       const diffMs = expDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
@@ -198,7 +199,6 @@ const ManagerManagement = () => {
     },
   });
 
-  const [showFilters, setShowFilters] = useState(false);
   const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -218,8 +218,32 @@ const ManagerManagement = () => {
         }
         return (Array.isArray(list) ? list : []).map((s: any) => ({
           id: s.id || s._id,
-          name: s.name || "Unnamed Site"
+          name: s.name || "Unnamed Site",
+          managerIds: s.managerIds || [],
+          managers: s.managers || [],
+          manager: s.manager || s.managerid
         }));
+      } catch (e) {
+        return [];
+      }
+    }
+  });
+
+  const { data: guardList = [] } = useQuery({
+    queryKey: ["guards"],
+    queryFn: async () => {
+      try {
+        const response = await api.guards.list();
+        const raw = response.data as any;
+        let list: any[] = [];
+        if (Array.isArray(raw)) list = raw;
+        else if (Array.isArray(raw?.data)) list = raw.data;
+        else if (raw?.data && typeof raw.data === 'object') {
+          list = raw.data.guards || raw.data.items || raw.data.results || [];
+        } else {
+          list = raw?.guards || raw?.items || raw?.results || [];
+        }
+        return list;
       } catch (e) {
         return [];
       }
@@ -240,8 +264,8 @@ const ManagerManagement = () => {
   }, [managerList, verifiedFilter, statusFilter]);
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
-  const showLoader = isLoading && filtered.length > 0;
-  const showEmpty = filtered.length === 0 || isNotFound;
+  const showLoader = isLoading;
+  const showEmpty = !isLoading && (filtered.length === 0 || isNotFound);
   const showError = isError && !isNotFound;
 
   const { data: rolesList = [] } = useQuery({
@@ -442,73 +466,57 @@ const ManagerManagement = () => {
         )}
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search managers..."
-              className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-          <Button
-            onClick={() => setShowFilters(!showFilters)}
-            variant={showFilters ? "default" : "secondary"}
-          >
-            <Filter className="w-4 h-4" />Filters
-          </Button>
+      {/* Search, Filters and Sort Toolbar */}
+      <div className="flex flex-col md:flex-row gap-3 items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search managers..."
+            className="pl-9 pr-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 h-[38px] rounded-lg text-sm w-full placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary"
+          />
         </div>
 
-        {showFilters && (
-          <div className="flex flex-wrap items-center gap-3 p-4 bg-secondary/35 border border-border rounded-xl">
-            {/* Status / Verification Filter */}
-            <div className="w-40">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">Status</label>
-              <SelectDropdown
-                value={verifiedFilter}
-                onChange={setVerifiedFilter}
-                options={[
-                  { value: "all", label: "All Statuses" },
-                  { value: "verified", label: "Verified Only" },
-                  { value: "unverified", label: "Unverified Only" },
-                ]}
-                placeholder="All Statuses"
-                className="h-[32px] text-xs py-0 mb-0"
-              />
-            </div>
+        <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end items-center">
+          <SelectDropdown
+            value={verifiedFilter}
+            onChange={setVerifiedFilter}
+            options={[
+              { value: "all", label: "All Statuses" },
+              { value: "verified", label: "Verified Only" },
+              { value: "unverified", label: "Unverified Only" },
+            ]}
+            placeholder="Status"
+            className="w-full sm:w-[135px]"
+          />
 
-            {/* Account Status Filter */}
-            <div className="w-40">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">Account State</label>
-              <SelectDropdown
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={[
-                  { value: "all", label: "All Accounts" },
-                  { value: "active", label: "Active Only" },
-                  { value: "inactive", label: "Inactive Only" },
-                ]}
-                placeholder="All Accounts"
-                className="h-[32px] text-xs py-0 mb-0"
-              />
-            </div>
+          <SelectDropdown
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: "all", label: "All Accounts" },
+              { value: "active", label: "Active Only" },
+              { value: "inactive", label: "Inactive Only" },
+            ]}
+            placeholder="Account State"
+            className="w-full sm:w-[135px]"
+          />
 
-            {/* Clear Filters Button */}
-              <Button
-                onClick={() => {
-                  setVerifiedFilter("all");
-                  setStatusFilter("all");
-                }}
-                variant="outline"
-                size="sm"
-                className="mt-5"
-              >
-                Reset Filters
-              </Button>
-          </div>
-        )}
+          {(verifiedFilter !== "all" || statusFilter !== "all") && (
+            <Button
+              onClick={() => {
+                setVerifiedFilter("all");
+                setStatusFilter("all");
+              }}
+              variant="ghost"
+              size="sm"
+              className="text-xs h-[38px] font-semibold text-slate-500 hover:text-slate-700"
+            >
+              Reset
+            </Button>
+          )}
+        </div>
       </div>
       <EntityDialog
         open={open}
@@ -581,9 +589,8 @@ const ManagerManagement = () => {
                 if (errors.firstName) setErrors(prev => ({ ...prev, firstName: undefined }));
               }}
               placeholder="e.g. John"
-              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${
-                errors.firstName ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
-              }`}
+              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${errors.firstName ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                }`}
             />
           </FormField>
           <FormField label="Middle Name">
@@ -602,9 +609,8 @@ const ManagerManagement = () => {
                 if (errors.lastName) setErrors(prev => ({ ...prev, lastName: undefined }));
               }}
               placeholder="e.g. Smith"
-              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${
-                errors.lastName ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
-              }`}
+              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${errors.lastName ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                }`}
             />
           </FormField>
         </div>
@@ -617,9 +623,8 @@ const ManagerManagement = () => {
               if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
             }}
             disabled={!!editingManager}
-            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-              errors.email ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
-            }`}
+            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${errors.email ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+              }`}
             placeholder="e.g. john@securepro.com"
           />
         </FormField>
@@ -630,9 +635,8 @@ const ManagerManagement = () => {
               setForm(f => ({ ...f, phoneNumber: e.target.value }));
               if (errors.phoneNumber) setErrors(prev => ({ ...prev, phoneNumber: undefined }));
             }}
-            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${
-              errors.phoneNumber ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
-            }`}
+            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${errors.phoneNumber ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+              }`}
             placeholder="e.g. +1 555-0300"
           />
         </FormField>
@@ -694,6 +698,15 @@ const ManagerManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(mgr => {
             const { complianceStatus, licenseExpiry } = getComplianceDetails(mgr.id, rawDocuments);
+
+            const assignedSites = siteList.filter((s: any) =>
+              s.managerIds?.some((id: any) => String(id) === String(mgr.id)) ||
+              s.managers?.some((m: any) => String(m.id) === String(mgr.id)) ||
+              String(s.manager) === String(mgr.id)
+            );
+
+            const assignedGuards = guardList.filter((g: any) => String(g.managerId) === String(mgr.id));
+
             return (
               <EntityCard
                 key={mgr.id}
@@ -706,7 +719,7 @@ const ManagerManagement = () => {
                 details={[
                   { icon: Mail, content: mgr.email },
                   { icon: Phone, content: mgr.phoneNumber },
-                  ...mgr.sites.map(site => ({ icon: MapPin, content: site }))
+                  ...assignedSites.map(s => ({ icon: MapPin, content: s.name }))
                 ]}
                 footerLeft={
                   <span className={mgr.status === "active" ? "status-badge-active" : "status-badge-inactive"}>{mgr.status}</span>
@@ -739,11 +752,35 @@ const ManagerManagement = () => {
                   ] : [])
                 ]}
                 footerContent={
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-medium ${complianceStatus === "valid" ? "text-success" : complianceStatus === "expiring" ? "text-warning" : complianceStatus === "expired" ? "text-destructive" : "text-muted-foreground"}`}>
-                      License: {complianceStatus}
-                    </span>
-                    <span className="text-xs text-muted-foreground">Exp: {licenseExpiry}</span>
+                  <div className="flex flex-col gap-2.5 w-full">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-medium ${complianceStatus === "valid" ? "text-success" : complianceStatus === "expiring" ? "text-warning" : complianceStatus === "expired" ? "text-destructive" : "text-muted-foreground"}`}>
+                        License: {complianceStatus}
+                      </span>
+                      <span className="text-xs text-muted-foreground">Exp: {licenseExpiry}</span>
+                    </div>
+                    {assignedGuards.length > 0 && (
+                      <div className="flex items-center gap-2 mt-1 border-t border-border/50 pt-2">
+                        <div className="flex -space-x-1.5">
+                          {assignedGuards.slice(0, 5).map((g: any) => {
+                            let avatarContent: React.ReactNode;
+                            if (g.profilePhoto) {
+                              avatarContent = <img src={g.profilePhoto} alt={g.name} className="w-full h-full object-cover rounded-full" />;
+                            } else {
+                              avatarContent = g.name ? g.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : "G";
+                            }
+                            return (
+                              <div key={g.id} className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold border border-card overflow-hidden shadow-xs">
+                                {avatarContent}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {assignedGuards.length} guard(s) scheduled
+                        </span>
+                      </div>
+                    )}
                   </div>
                 }
               />

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { Site } from "@/data/dummyData";
-import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, Locate, Search, Filter, Mail, Phone, Loader2, Calendar, Clock, MoreHorizontal, CalendarClock, CalendarClockIcon } from "lucide-react";
+import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, UserCheck, Locate, Search, Filter, Mail, Phone, Loader2, Calendar, Clock, MoreHorizontal, CalendarClock, CalendarClockIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -32,12 +32,15 @@ const normalizeSitesResponse = (response: any): any[] => {
   return response.site || response.sites || response.items || response.results || [];
 };
 
-const normalizeSite = (site: any, index: number): Site => ({
+const normalizeSite = (site: any, index: number): any => ({
   id: String(site.id || site._id || `S${String(index + 1).padStart(3, "0")}`),
   name: String(site.name || "Unnamed Site"),
   address: String(site.address || site.location || "No Address"),
   guards: Array.isArray(site.guards) ? site.guards.map(String) : [],
   manager: String(site.managerid || site.manager || site.managerName || "Unassigned"),
+  managerid: site.managerid || null,
+  managerIds: site.managerIds || [],
+  managers: site.managers || [],
   status: site.status === "inactive" ? "inactive" : "active",
   lat: Number(site.lat ?? site.latitude ?? 0),
   lng: Number(site.lng ?? site.longitude ?? 0),
@@ -54,7 +57,7 @@ const normalizeManagersResponse = (response: any): any[] => {
 
 const normalizeManager = (manager: any): any => ({
   id: String(manager.id || manager._id || ""),
-  name: String(manager.name || "Unknown Manager"),
+  name: String(manager.name || `${manager.firstName || ""} ${manager.lastName || ""}`.trim() || "Unknown Manager"),
   isVerified: manager.isVerified === true || manager.verified === true || manager.verified === "true" || manager.isVerified === "true",
 });
 
@@ -72,13 +75,13 @@ const SiteManagement = () => {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const [form, setForm] = useState({ name: "", address: "", manager: "", status: "active" as "active" | "inactive", lat: "", lng: "" });
+  const [form, setForm] = useState({ name: "", address: "", manager: "", managerIds: [] as string[], status: "active" as "active" | "inactive", lat: "", lng: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [editingSite, setEditingSite] = useState<Site | null>(null);
-  const [deletingSite, setDeletingSite] = useState<Site | null>(null);
-  const [viewingGuardsSite, setViewingGuardsSite] = useState<Site | null>(null);
+  const [editingSite, setEditingSite] = useState<any | null>(null);
+  const [deletingSite, setDeletingSite] = useState<any | null>(null);
+  const [viewingGuardsSite, setViewingGuardsSite] = useState<any | null>(null);
   const [guardSearch, setGuardSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<"guards" | "schedules">("guards");
+  const [activeTab, setActiveTab] = useState<"guards" | "schedules" | "managers">("managers");
 
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -115,7 +118,6 @@ const SiteManagement = () => {
     },
   });
 
-  const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [managerFilter, setManagerFilter] = useState("all");
 
@@ -127,16 +129,17 @@ const SiteManagement = () => {
 
       const matchManager =
         managerFilter === "all" ||
-        (managerFilter === "unassigned" && (!s.manager || s.manager === "Unassigned" || s.manager === "Unassigned Manager")) ||
-        String(s.manager).toLowerCase() === managerFilter.toLowerCase();
+        (managerFilter === "unassigned" && (!s.managerIds || s.managerIds.length === 0) && (!s.manager || s.manager === "Unassigned" || s.manager === "Unassigned Manager")) ||
+        (s.managerIds && s.managerIds.includes(managerFilter)) ||
+        String(s.managerid || s.manager).toLowerCase() === managerFilter.toLowerCase();
 
       return matchStatus && matchManager;
     });
   }, [siteList, statusFilter, managerFilter]);
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
-  const showLoader = isLoading && filtered.length > 0;
-  const showEmpty = filtered.length === 0 || isNotFound;
+  const showLoader = isLoading;
+  const showEmpty = !isLoading && (filtered.length === 0 || isNotFound);
   const showError = isError && !isNotFound;
 
   // Fetch Guards (to show avatars/names if available)
@@ -208,7 +211,7 @@ const SiteManagement = () => {
       queryClient.invalidateQueries({ queryKey: ["sites"] });
       toast({ title: "Success", description: "Site created successfully." });
       setOpen(false);
-      setForm({ name: "", address: "", manager: "", status: "active", lat: "", lng: "" });
+      setForm({ name: "", address: "", manager: "", managerIds: [], status: "active", lat: "", lng: "" });
     },
     onError: (error: any) => {
       const errMsg = error.response?.data?.message || "Failed to create site.";
@@ -217,7 +220,7 @@ const SiteManagement = () => {
   });
 
   const updateSiteMutation = useMutation({
-    mutationFn: async (payload: { id: string; managerid?: string; status?: string }) => {
+    mutationFn: async (payload: { id: string; managerid?: string; managerIds?: string[]; status?: string }) => {
       const { id, ...data } = payload;
       const response = await api.sites.update(id, data);
       return response.data;
@@ -227,7 +230,7 @@ const SiteManagement = () => {
       toast({ title: "Success", description: "Site updated successfully." });
       setOpen(false);
       setEditingSite(null);
-      setForm({ name: "", address: "", manager: "", status: "active", lat: "", lng: "" });
+      setForm({ name: "", address: "", manager: "", managerIds: [], status: "active", lat: "", lng: "" });
     },
     onError: (error: any) => {
       const errMsg = error.response?.data?.message || "Failed to update site.";
@@ -264,9 +267,7 @@ const SiteManagement = () => {
     if (!form.address.trim()) {
       newErrors.address = "Address is required";
     }
-    if (!form.manager.trim()) {
-      newErrors.manager = "Manager selection is required";
-    }
+    // Managers are optional on both create and edit
     if (form.lat.trim()) {
       const latNum = Number(form.lat);
       if (isNaN(latNum) || latNum < -90 || latNum > 90) {
@@ -288,35 +289,39 @@ const SiteManagement = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const payload = {
-      name: form.name,
-      address: form.address,
-      managerid: form.manager,
-      status: form.status,
-      latitude: form.lat ? Number(form.lat) : null,
-      longitude: form.lng ? Number(form.lng) : null
-    };
-
     if (editingSite) {
       updateSiteMutation.mutate({
         id: editingSite.id,
-        managerid: form.manager,
-        status: form.status
-      });
+        name: form.name,
+        address: form.address,
+        status: form.status,
+        managerIds: form.managerIds,
+        latitude: form.lat ? Number(form.lat) : null,
+        longitude: form.lng ? Number(form.lng) : null
+      } as any);
     } else {
+      const payload = {
+        name: form.name,
+        address: form.address,
+        status: form.status,
+        managerIds: form.managerIds,
+        latitude: form.lat ? Number(form.lat) : null,
+        longitude: form.lng ? Number(form.lng) : null
+      };
       createSiteMutation.mutate(payload);
     }
   };
 
-  const handleEditClick = (site: Site) => {
+  const handleEditClick = (site: any) => {
     setEditingSite(site);
     setForm({
       name: site.name,
       address: site.address,
-      manager: site.manager,
+      manager: site.managerid || site.manager || "",
+      managerIds: site.managerIds || [],
       status: site.status as "active" | "inactive",
-      lat: String(site.lat),
-      lng: String(site.lng),
+      lat: String(site.lat ?? ""),
+      lng: String(site.lng ?? ""),
     });
     setOpen(true);
   };
@@ -349,73 +354,57 @@ const SiteManagement = () => {
         )}
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search sites..."
-              className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-          <Button
-            onClick={() => setShowFilters(!showFilters)}
-            variant={showFilters ? "default" : "secondary"}
-          >
-            <Filter className="w-4 h-4" />Filters
-          </Button>
+      {/* Search, Filters and Sort Toolbar */}
+      <div className="flex flex-col md:flex-row gap-3 items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search sites..."
+            className="pl-9 pr-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 h-[38px] rounded-lg text-sm w-full placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary"
+          />
         </div>
 
-        {showFilters && (
-          <div className="flex flex-wrap items-center gap-3 p-4 bg-secondary/35 border border-border rounded-xl">
-            {/* Status Filter */}
-            <div className="w-40">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">Status</label>
-              <SelectDropdown
-                value={statusFilter}
-                onChange={setStatusFilter}
-                options={[
-                  { value: "all", label: "All Statuses" },
-                  { value: "active", label: "Active" },
-                  { value: "inactive", label: "Inactive" },
-                ]}
-                placeholder="All Statuses"
-                className="h-[32px] text-xs py-0 mb-0"
-              />
-            </div>
+        <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end items-center">
+          <SelectDropdown
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: "all", label: "All Statuses" },
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+            ]}
+            placeholder="Status"
+            className="w-full sm:w-[135px]"
+          />
 
-            {/* Manager Filter */}
-            <div className="w-48">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">Assigned Manager</label>
-              <SelectDropdown
-                value={managerFilter}
-                onChange={setManagerFilter}
-                options={[
-                  { value: "all", label: "All Managers" },
-                  { value: "unassigned", label: "Unassigned" },
-                  ...managersList.map((m: any) => ({ value: m.id, label: m.name })),
-                ]}
-                placeholder="All Managers"
-                className="h-[32px] text-xs py-0 mb-0"
-              />
-            </div>
+          <SelectDropdown
+            value={managerFilter}
+            onChange={setManagerFilter}
+            options={[
+              { value: "all", label: "All Managers" },
+              { value: "unassigned", label: "Unassigned" },
+              ...managersList.map((m: any) => ({ value: m.id, label: m.name })),
+            ]}
+            placeholder="Assigned Manager"
+            className="w-full sm:w-[160px]"
+          />
 
-            {/* Clear Filters Button */}
+          {(statusFilter !== "all" || managerFilter !== "all") && (
             <Button
               onClick={() => {
                 setStatusFilter("all");
                 setManagerFilter("all");
               }}
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="mt-5"
+              className="text-xs h-[38px] font-semibold text-slate-500 hover:text-slate-700"
             >
-              Reset Filters
+              Reset
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       <EntityDialog
         open={open}
@@ -423,7 +412,7 @@ const SiteManagement = () => {
           setOpen(val);
           if (!val) {
             setEditingSite(null);
-            setForm({ name: "", address: "", manager: "", status: "active", lat: "", lng: "" });
+            setForm({ name: "", address: "", manager: "", managerIds: [], status: "active", lat: "", lng: "" });
           }
           setErrors({});
         }}
@@ -444,7 +433,6 @@ const SiteManagement = () => {
               setForm(f => ({ ...f, name: e.target.value }));
               if (errors.name) setErrors(prev => ({ ...prev, name: undefined }));
             }}
-            disabled={!!editingSite}
             className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${errors.name ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
               }`}
             placeholder="e.g. Corporate Tower B"
@@ -457,22 +445,38 @@ const SiteManagement = () => {
               setForm(f => ({ ...f, address: e.target.value }));
               if (errors.address) setErrors(prev => ({ ...prev, address: undefined }));
             }}
-            disabled={!!editingSite}
             className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${errors.address ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
               }`}
             placeholder="e.g. 100 Park Ave, New York, NY"
           />
         </FormField>
-        <FormField label="Manager" required error={errors.manager}>
-          <SelectDropdown
-            value={form.manager}
-            onChange={val => {
-              setForm(f => ({ ...f, manager: val }));
-              if (errors.manager) setErrors(prev => ({ ...prev, manager: undefined }));
-            }}
-            options={managersList.map(m => ({ value: m.id, label: m.name }))}
-            placeholder="Select a manager"
-          />
+        <FormField label="Assigned Managers" error={errors.managers}>
+          <div className="space-y-2 max-h-48 overflow-y-auto p-3 bg-secondary/50 border border-border rounded-lg mb-2">
+            {managersList.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-2">No managers available</p>
+            ) : managersList.map((m: any) => {
+              const isChecked = form.managerIds.includes(m.id);
+              return (
+                <label key={m.id} className="flex items-center gap-2 text-sm text-foreground cursor-pointer hover:bg-secondary p-1 rounded">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => {
+                      setForm(f => {
+                        const newIds = isChecked
+                          ? f.managerIds.filter(id => id !== m.id)
+                          : [...f.managerIds, m.id];
+                        return { ...f, managerIds: newIds };
+                      });
+                      if (errors.managers) setErrors(prev => ({ ...prev, managers: undefined }));
+                    }}
+                    className="rounded border-border text-primary focus:ring-primary h-4 w-4"
+                  />
+                  <span>{m.name}</span>
+                </label>
+              );
+            })}
+          </div>
         </FormField>
         <FormField label="Status">
           <SelectDropdown
@@ -553,11 +557,10 @@ const SiteManagement = () => {
                 details={[
                   { icon: MapPin, content: site.address },
                   { icon: Users, content: `${siteGuardCounts[site.id] ?? site.guards.length} guards assigned` },
+                  { icon: UserCheck, content: `${site.managers?.length ?? 0} manager(s) assigned` },
                   { icon: Calendar, content: `${activeSchedulesForSite.length} active schedule(s)` },
                 ]}
-                footerRight={
-                  <span className="text-xs text-muted-foreground">Manager: {managersList.find(m => m.id === site.manager)?.name || site.manager}</span>
-                }
+
                 menuItems={([
                   ...(hasEditPermission ? [
                     {
@@ -576,9 +579,64 @@ const SiteManagement = () => {
                   ] : [])
                 ] as any)}
                 footerContent={
-                  <div className="flex items-center justify-between w-full">
-                    {(siteGuardIdsMap.get(site.id) &&
-                      siteGuardIdsMap.get(site.id)!.size > 0) && (
+                  <div className="flex flex-col gap-3 w-full">
+                    <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+                      {/* Managers row */}
+                      {site.managers && site.managers.length > 0 ? (
+                        <div
+                          onClick={() => {
+                            setViewingGuardsSite(site);
+                            setActiveTab("managers");
+                          }}
+                          className="flex items-center gap-2 cursor-pointer group"
+                        >
+                          <div className="flex -space-x-2 transition-transform duration-200 group-hover:scale-105">
+                            {site.managers.slice(0, 5).map((m: any) => {
+                              let avatarContent: React.ReactNode;
+                              if (m.profilePhoto) {
+                                avatarContent = (
+                                  <img
+                                    src={m.profilePhoto}
+                                    alt={m.name || "Manager"}
+                                    className="w-full h-full object-cover rounded-full"
+                                  />
+                                );
+                              } else {
+                                avatarContent = m.name
+                                  ? m.name
+                                    .split(" ")
+                                    .map((n: string) => n[0].toUpperCase())
+                                    .join("")
+                                  : "M";
+                              }
+
+                              return (
+                                <div
+                                  key={m.id}
+                                  className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shadow-sm"
+                                >
+                                  {avatarContent}
+                                </div>
+                              );
+                            })}
+                            {site.managers.length > 5 && (
+                              <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground text-[10px] font-bold border-2 border-card shadow-sm">
+                                +{site.managers.length - 5}
+                              </div>
+                            )}
+                          </div>
+
+                          <span className="text-[10px] font-semibold text-muted-foreground transition-colors duration-200 underline decoration-dotted underline-offset-2 group-hover:text-primary">
+                            Click to view managers ({site.managers.length})
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">No managers assigned</span>
+                      )}
+
+                      {/* Guards row */}
+                      {(siteGuardIdsMap.get(site.id) &&
+                        siteGuardIdsMap.get(site.id)!.size > 0) ? (
                         <div
                           onClick={() => {
                             setViewingGuardsSite(site);
@@ -626,10 +684,13 @@ const SiteManagement = () => {
                           </div>
 
                           <span className="text-[10px] font-semibold text-muted-foreground transition-colors duration-200 underline decoration-dotted underline-offset-2 group-hover:text-primary">
-                            Click to view guards
+                            Click to view guards ({siteGuardIdsMap.get(site.id)!.size})
                           </span>
                         </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">No guards scheduled</span>
                       )}
+                    </div>
 
                     {activeSchedulesForSite.length > 0 && (
                       <div
@@ -637,7 +698,7 @@ const SiteManagement = () => {
                           setViewingGuardsSite(site);
                           setActiveTab("schedules");
                         }}
-                        className="flex items-center gap-1 cursor-pointer group"
+                        className="flex items-center gap-1.5 cursor-pointer group border-t border-border/50 pt-2.5 mt-1"
                       >
                         <Calendar className="w-3.5 h-3.5 text-muted-foreground transition-colors duration-200 group-hover:text-primary" />
                         <span className="text-[10px] font-semibold text-muted-foreground transition-colors duration-200 underline decoration-dotted underline-offset-2 group-hover:text-primary">
@@ -684,7 +745,7 @@ const SiteManagement = () => {
         if (!val) {
           setViewingGuardsSite(null);
           setGuardSearch("");
-          setActiveTab("guards");
+          setActiveTab("managers");
         }
       }}>
         <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-background">
@@ -704,6 +765,16 @@ const SiteManagement = () => {
               );
             });
 
+            const assignedManagers = (viewingGuardsSite.managers || []).filter((m: any) => {
+              const term = guardSearch.toLowerCase();
+              return (
+                m.name?.toLowerCase().includes(term) ||
+                m.email?.toLowerCase().includes(term) ||
+                m.phoneNumber?.toLowerCase().includes(term) ||
+                m.id?.toLowerCase().includes(term)
+              );
+            });
+
             const siteSchedules = scheduleRaw.filter((s: any) =>
               String(s.siteId || s.site) === String(viewingGuardsSite.id) &&
               (s.status === "scheduled" || s.status === "in-progress" || s.status === "started")
@@ -711,7 +782,7 @@ const SiteManagement = () => {
 
             return (
               <div className="flex flex-col">
-                <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as "guards" | "schedules")} className="w-full">
+                <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as "guards" | "schedules" | "managers")} className="w-full">
                   <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent pl-6 pr-16 py-4 border-b border-border/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                       <DialogTitle className="text-lg font-bold text-foreground">Site Details</DialogTitle>
@@ -719,24 +790,80 @@ const SiteManagement = () => {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      {activeTab === "guards" && (
+                      {(activeTab === "guards" || activeTab === "managers") && (
                         <div className="relative w-full md:w-56">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                           <input
                             value={guardSearch}
                             onChange={(e) => setGuardSearch(e.target.value)}
-                            placeholder="Search assigned guards..."
+                            placeholder={activeTab === "guards" ? "Search assigned guards..." : "Search assigned managers..."}
                             className="w-full pl-9 pr-3 py-1 bg-secondary border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                           />
                         </div>
                       )}
 
                       <TabsList className="bg-secondary/50 rounded-lg p-0.5 border border-border h-8 shrink-0">
+                        <TabsTrigger value="managers" className="text-xs py-0.5 px-3 rounded">Managers</TabsTrigger>
                         <TabsTrigger value="guards" className="text-xs py-0.5 px-3 rounded">Guards</TabsTrigger>
                         <TabsTrigger value="schedules" className="text-xs py-0.5 px-3 rounded">Active Schedules</TabsTrigger>
                       </TabsList>
                     </div>
                   </div>
+
+                  <TabsContent value="managers" className="mt-0">
+                    <div className="p-6 max-h-[450px] overflow-y-auto">
+                      {assignedManagers.length === 0 ? (
+                        <div className="py-12 text-center text-xs text-muted-foreground">
+                          {viewingGuardsSite.managers?.length === 0
+                            ? "No managers are currently assigned to this site."
+                            : "No managers match your search criteria."}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {assignedManagers.map((m: any, index: number) => {
+                            let avatarContent: React.ReactNode;
+                            if (m.profilePhoto) {
+                              avatarContent = <img src={m.profilePhoto} alt={m.name || "Manager"} className="w-full h-full object-cover rounded-full" />;
+                            } else {
+                              avatarContent = m.name ? m.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : "M";
+                            }
+
+                            return (
+                              <div key={m.id || index} className="p-4 rounded-xl border border-border bg-card hover:bg-secondary/20 transition-all flex flex-col justify-between gap-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  {/* Avatar & Name */}
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shrink-0">
+                                      {avatarContent}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-bold text-foreground truncate">{m.name}</p>
+                                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">Manager ID: {m.id}</p>
+                                    </div>
+                                  </div>
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-primary/10 text-primary border-primary/20">
+                                    Site Manager
+                                  </span>
+                                </div>
+
+                                {/* Contact Info */}
+                                <div className="space-y-1.5 text-xs text-muted-foreground border-t border-border/50 pt-3">
+                                  <div className="flex items-center gap-2">
+                                    <Phone className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+                                    <span className="truncate">{m.phoneNumber || "No Phone"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Mail className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
+                                    <span className="truncate">{m.email || "No Email"}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
 
                   <TabsContent value="guards" className="mt-0">
                     <div className="p-6 max-h-[450px] overflow-y-auto">
@@ -815,6 +942,15 @@ const SiteManagement = () => {
                                     <Users className="w-3.5 h-3.5 text-primary shrink-0" />
                                     <span>Shift: {getShiftTimeText()}</span>
                                   </div>
+                                  {(() => {
+                                    const guardManager = managersList.find((m: any) => String(m.id) === String(g.managerId));
+                                    return (
+                                      <div className="flex items-center gap-2 text-foreground font-medium">
+                                        <User className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                                        <span>Manager: {guardManager ? guardManager.name : "Unassigned"}</span>
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
 
                                 {/* Additional Guard Info: Compliance & Hours */}
@@ -919,7 +1055,7 @@ const SiteManagement = () => {
                     onClick={() => {
                       setViewingGuardsSite(null);
                       setGuardSearch("");
-                      setActiveTab("guards");
+                      setActiveTab("managers");
                     }}
                     size="sm"
                   >

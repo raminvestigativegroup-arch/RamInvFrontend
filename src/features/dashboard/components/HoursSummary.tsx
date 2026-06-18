@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Clock, CalendarClock } from "lucide-react";
+import { ArrowRight, Clock, CalendarClock, Users, TrendingUp, Timer } from "lucide-react";
 import { DashboardKpis } from "@/services/dashboardService";
 
 interface HoursSummaryProps {
@@ -10,12 +10,13 @@ interface HoursSummaryProps {
 const HoursSummary = ({ kpis, loading }: HoursSummaryProps) => {
   const navigate = useNavigate();
 
-  // Use real API values — no hardcoded fallbacks
   const worked = kpis?.workedHoursToday ?? 0;
   const scheduled = kpis?.scheduledHoursToday ?? 0;
+  const remaining = Math.max(0, scheduled - worked);
   const pct = scheduled > 0 ? Math.min(100, Math.round((worked / scheduled) * 100)) : 0;
+  const activeGuards = kpis?.activeGuards ?? 0;
+  const totalGuards = kpis?.totalGuards ?? 0;
 
-  // Format hours nicely: 8.5 → "8h 30m", 8 → "8h"
   const formatHours = (h: number) => {
     if (h === 0) return "0h";
     const hrs = Math.floor(h);
@@ -24,26 +25,32 @@ const HoursSummary = ({ kpis, loading }: HoursSummaryProps) => {
     return `${hrs}h ${mins}m`;
   };
 
+  const pctColor =
+    pct >= 90 ? "text-emerald-500" :
+      pct >= 60 ? "text-amber-500" :
+        "text-rose-500";
+
+  const barColor =
+    pct >= 90 ? "from-emerald-500 to-emerald-400" :
+      pct >= 60 ? "from-amber-500   to-amber-400" :
+        "from-rose-500    to-rose-400";
+
   if (loading) {
     return (
       <div className="bg-card rounded-xl border border-border p-5 shadow-sm animate-pulse">
-        <div className="flex items-center justify-between mb-4">
-          <div className="h-4 w-44 bg-muted rounded" />
+        <div className="flex items-center justify-between mb-5">
+          <div className="h-4 w-48 bg-muted rounded" />
           <div className="h-4 w-20 bg-muted rounded" />
         </div>
-        <div className="flex items-center gap-6">
-          <div className="flex-1 space-y-2">
-            <div className="flex justify-between">
-              <div className="h-3 w-28 bg-muted rounded" />
-              <div className="h-3 w-28 bg-muted rounded" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-3 w-20 bg-muted rounded" />
+              <div className="h-6 w-14 bg-muted rounded" />
             </div>
-            <div className="w-full h-3.5 bg-muted rounded-full" />
-          </div>
-          <div className="text-right shrink-0">
-            <div className="h-8 w-14 bg-muted rounded" />
-            <div className="h-2.5 w-14 bg-muted rounded mt-1.5" />
-          </div>
+          ))}
         </div>
+        <div className="w-full h-3 bg-muted rounded-full" />
       </div>
     );
   }
@@ -51,8 +58,21 @@ const HoursSummary = ({ kpis, loading }: HoursSummaryProps) => {
   return (
     <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-bold text-foreground">Hours Summary — Today</h2>
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-bold text-foreground">Hours Summary</h2>
+          <span className="text-xs font-semibold text-muted-foreground bg-secondary px-2 py-0.5 rounded-full border border-border">
+            Today
+          </span>
+          {/* Live pulse indicator */}
+          <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+            </span>
+            Live
+          </span>
+        </div>
         <button
           onClick={() => navigate("/dashboard/hours")}
           className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
@@ -61,49 +81,33 @@ const HoursSummary = ({ kpis, loading }: HoursSummaryProps) => {
         </button>
       </div>
 
-      <div className="flex items-center gap-6">
-        {/* Progress section */}
-        <div className="flex-1">
-          {/* Labels */}
-          <div className="flex justify-between text-xs font-medium text-foreground mb-2">
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-primary" />
-              Worked: <strong className="text-primary font-bold ml-0.5">{formatHours(worked)}</strong>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
-              Scheduled: <strong className="font-bold ml-0.5">{formatHours(scheduled)}</strong>
-            </span>
-          </div>
 
-          {/* Progress bar */}
-          <div className="w-full h-3.5 bg-secondary rounded-full overflow-hidden border border-border/10">
+
+      {/* Progress bar + coverage */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1 space-y-1.5">
+          <div className="flex justify-between text-[10px] font-semibold text-muted-foreground">
+            <span>Coverage progress</span>
+            <span className={pctColor}>{pct}%</span>
+          </div>
+          <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden border border-border/20">
             <div
-              className="h-full rounded-full transition-all duration-700 ease-out"
-              style={{
-                width: `${pct}%`,
-                background: "linear-gradient(90deg, hsl(228 45% 28%) 0%, hsl(220 90% 52%) 100%)",
-                minWidth: pct > 0 ? "6px" : "0px",
-              }}
+              className={`h-full rounded-full transition-all duration-700 ease-out bg-gradient-to-r ${barColor}`}
+              style={{ width: `${pct}%`, minWidth: pct > 0 ? "6px" : "0px" }}
             />
           </div>
-
-          {/* No data state */}
           {scheduled === 0 && (
-            <p className="text-xs text-muted-foreground mt-1.5">No shifts scheduled for today.</p>
+            <p className="text-xs text-muted-foreground">No shifts scheduled for today.</p>
           )}
         </div>
 
-        {/* Percentage */}
-        <div className="text-right shrink-0">
-          <p
-            className="text-3xl font-extrabold leading-none tracking-tight"
-            style={{ color: "hsl(228 50% 22%)" }}
-          >
+        {/* Coverage badge */}
+        <div className="shrink-0 text-right">
+          <p className={`text-3xl font-extrabold leading-none tracking-tight ${pctColor}`}>
             {pct}%
           </p>
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">
-            Coverage
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1 flex items-center gap-1 justify-end">
+            <TrendingUp className="w-3 h-3" /> Coverage
           </p>
         </div>
       </div>

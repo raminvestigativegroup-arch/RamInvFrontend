@@ -44,6 +44,7 @@ export interface Manager {
   sites: string[];
   status: "active" | "inactive";
   licenseExpiry: string;
+  avatar: string;
   isVerified?: boolean;
   roleId?: string;
 }
@@ -81,7 +82,9 @@ export interface ScheduleEntry {
   date: string;
   shiftStart: string;
   shiftEnd: string;
+  siteId?: string;
   actualStart?: string;
+  managerId?: string;
   actualEnd?: string;
   status: "scheduled" | "in-progress" | "completed" | "missed";
 }
@@ -119,9 +122,9 @@ export const guards: Guard[] = [
 ];
 
 export const managers: Manager[] = [
-  { id: "M001", name: "Thomas Anderson", email: "thomas.a@securepro.com", phoneNumber: "+1 555-0201", role: "Regional Manager", sites: ["Downtown Office Complex", "Mall Central"], status: "active", licenseExpiry: "2026-10-15", isVerified: true },
-  { id: "M002", name: "Jennifer Lopez", email: "jennifer.l@securepro.com", phoneNumber: "+1 555-0202", role: "Site Manager", sites: ["Tech Park Campus"], status: "active", licenseExpiry: "2026-07-20", isVerified: true },
-  { id: "M003", name: "William Park", email: "william.p@securepro.com", phoneNumber: "+1 555-0203", role: "Operations Manager", sites: ["Harbor Warehouse", "Residential Tower A"], status: "active", licenseExpiry: "2026-05-01" },
+  { id: "M001", name: "Thomas Anderson", email: "thomas.a@securepro.com", phoneNumber: "+1 555-0201", role: "Regional Manager", sites: ["Downtown Office Complex", "Mall Central"], status: "active", licenseExpiry: "2026-10-15", isVerified: true, avatar: "" },
+  { id: "M002", name: "Jennifer Lopez", email: "jennifer.l@securepro.com", phoneNumber: "+1 555-0202", role: "Site Manager", sites: ["Tech Park Campus"], status: "active", licenseExpiry: "2026-07-20", isVerified: true, avatar: "" },
+  { id: "M003", name: "William Park", email: "william.p@securepro.com", phoneNumber: "+1 555-0203", role: "Operations Manager", sites: ["Harbor Warehouse", "Residential Tower A"], status: "active", licenseExpiry: "2026-05-01", avatar: "" },
 ];
 
 export const sites: Site[] = [

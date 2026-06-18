@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import KpiCards from "@/features/dashboard/components/KpiCards";
@@ -16,9 +16,18 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [selectedGuardId, setSelectedGuardId] = useState<string | null>(null);
   const [mapFullscreen, setMapFullscreen] = useState(false);
-  const [kpis, setKpis] = useState<DashboardKpis | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: kpis = null,
+    isLoading: loading,
+    error: kpiError,
+  } = useQuery<DashboardKpis>({
+    queryKey: ["dashboard", "kpis"],
+    queryFn: () => dashboardService.getKpis(),
+    refetchInterval: 30000, // refresh every 30 s to keep Hours Summary live
+    staleTime: 20000,
+  });
+
+  const error = kpiError ? (kpiError as any).message || "Failed to load dashboard data" : null;
 
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
@@ -33,33 +42,6 @@ const Dashboard = () => {
     queryFn: () => dashboardService.getGuardStatus(),
     refetchInterval: 10000,
   });
-
-  useEffect(() => {
-    let active = true;
-    const fetchKpis = async () => {
-      try {
-        setLoading(true);
-        const data = await dashboardService.getKpis();
-        if (active) {
-          setKpis(data);
-          setError(null);
-        }
-      } catch (err: any) {
-        if (active) {
-          setError(err.message || "Failed to load dashboard data");
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchKpis();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   return (
     <div className="p-6 space-y-6 max-w-full">

@@ -113,10 +113,7 @@ const Notifications = () => {
 
       {/* Notification List */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <span className="ml-2 text-muted-foreground text-sm font-medium">Loading notifications...</span>
-        </div>
+        <StateMessage type="loading" message="Loading notifications..." />
       ) : error ? (
         <StateMessage
           type="error"

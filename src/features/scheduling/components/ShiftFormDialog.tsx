@@ -25,12 +25,15 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
   const [form, setForm] = useState({
     selectedGuards: [] as string[],
     siteId: "",
+    managerId: "",
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     shiftStart: "",
     shiftEnd: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Tracks the active preset offset (days) so startDate changes keep the same duration
+  const [activePresetDays, setActivePresetDays] = useState<number | null>(null);
 
   // Fetch verified guards from API
   const { data: guards = [], isLoading: isLoadingGuards } = useQuery({
@@ -52,9 +55,10 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
         return (Array.isArray(list) ? list : [])
           .map((g: any) => ({
             id: g.id || g._id,
-            name: g.name || g.fullName || "Unnamed",
+            name: g.name || g.fullName || `${g.firstName || ""} ${g.lastName || ""}`.trim() || "Unnamed",
             site: g.site || g.siteName || "Unassigned",
-            verified: g.verified === true || g.verified === "true" || g.isVerified === true
+            verified: g.verified === true || g.verified === "true" || g.isVerified === true,
+            managerId: g.managerId || null
           }))
           .filter((g: any) => g.verified);
       } catch (error: any) {
@@ -86,7 +90,9 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
           .map((s: any) => ({
             id: s.id || s._id,
             name: s.name || "Unnamed Site",
-            status: s.status || "inactive"
+            status: s.status || "inactive",
+            managers: s.managers || [],
+            managerIds: s.managerIds || [],
           }))
           .filter((s: any) => s.status === "active");
       } catch (error: any) {
@@ -103,26 +109,28 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
       if (editEntry) {
         // Extract the scheduleId prefix (first UUID part before the guard UUID)
         const scheduleId = editEntry.id.split("-")[0];
-        
+
         // Find all guards currently assigned to this schedule from existingEntries
         const assignedGuards = existingEntries
           .filter(e => e.id.startsWith(scheduleId + "-"))
           .map(e => e.guard);
-        
+
         // Map guard names to their corresponding guard IDs
         const guardIds = assignedGuards.map(name => guards.find(g => g.name === name)?.id).filter(Boolean) as string[];
-        
+
         // Fallback to the single guard if no other matching composite entries are found
         if (guardIds.length === 0) {
           const singleGuardId = guards.find(g => g.name === editEntry.guard)?.id || "";
           if (singleGuardId) guardIds.push(singleGuardId);
         }
 
-        const siteId = sites.find(s => s.name === editEntry.site)?.id || "";
+        const siteId = editEntry.siteId || sites.find(s => s.name === editEntry.site)?.id || "";
+        const managerId = editEntry.managerId || "";
 
         setForm({
           selectedGuards: guardIds,
           siteId: siteId,
+          managerId: managerId,
           startDate: editEntry.date,
           endDate: editEntry.date,
           shiftStart: editEntry.shiftStart.substring(0, 5),
@@ -132,6 +140,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
         setForm({
           selectedGuards: [],
           siteId: "",
+          managerId: "",
           startDate: new Date().toISOString().split('T')[0],
           endDate: new Date().toISOString().split('T')[0],
           shiftStart: "",
@@ -140,6 +149,17 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
       }
     }
   }, [editEntry, open, sites, guards, existingEntries]);
+
+  // Find currently selected site details to get its managers
+  const selectedSite = sites.find((s: any) => s.id === form.siteId);
+  const siteManagers = selectedSite ? selectedSite.managers || [] : [];
+
+  // Filter guards: show guards who are unassigned or assigned to this manager.
+  // If no manager is selected yet, show all verified guards.
+  const filteredGuards = guards.filter((g: any) => {
+    if (!form.managerId) return true;
+    return !g.managerId || String(g.managerId) === String(form.managerId);
+  });
 
   const toggleGuard = (id: string) => {
     setForm((f) => ({
@@ -153,7 +173,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
   const selectAllGuards = () => {
     setForm((f) => ({
       ...f,
-      selectedGuards: f.selectedGuards.length === guards.length ? [] : guards.map((g: any) => g.id),
+      selectedGuards: f.selectedGuards.length === filteredGuards.length ? [] : filteredGuards.map((g: any) => g.id),
     }));
   };
 
@@ -161,6 +181,9 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
     const newErrors: Record<string, string> = {};
     if (!form.siteId) {
       newErrors.siteId = "Site is required";
+    }
+    if (!form.managerId) {
+      newErrors.managerId = "Manager is required";
     }
     if (form.selectedGuards.length === 0) {
       newErrors.selectedGuards = "At least one guard must be selected";
@@ -194,20 +217,21 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
     const payload = {
       guardIds: form.selectedGuards,
       siteId: form.siteId,
+      managerId: form.managerId,
       startDate: form.startDate,
       endDate: form.endDate,
       shiftStart: `${form.shiftStart}:00`,
       shiftEnd: `${form.shiftEnd}:00`,
     };
 
-    onSave(payload as any); // Type cast since onSave expects ScheduleEntry[] usually, will fix in parent
+    onSave(payload as any);
   };
 
   const isLoading = isLoadingGuards || isLoadingSites;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{editEntry ? "Edit Shift" : "Create New Shift"}</DialogTitle>
         </DialogHeader>
@@ -227,7 +251,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
               <SelectDropdown
                 value={form.siteId}
                 onChange={val => {
-                  setForm(f => ({ ...f, siteId: val }));
+                  setForm(f => ({ ...f, siteId: val, managerId: "", selectedGuards: [] }));
                   if (errors.siteId) setErrors(prev => ({ ...prev, siteId: undefined }));
                 }}
                 options={sites.map((s: any) => ({ value: s.id, label: s.name }))}
@@ -235,27 +259,44 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
                 className={errors.siteId ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
               />
             </FormField>
-            
+
+            <FormField label="Manager" required error={errors.managerId}>
+              <SelectDropdown
+                value={form.managerId}
+                onChange={val => {
+                  setForm(f => ({ ...f, managerId: val, selectedGuards: [] }));
+                  if (errors.managerId) setErrors(prev => ({ ...prev, managerId: undefined }));
+                }}
+                options={siteManagers.map((m: any) => ({ value: m.id, label: m.name }))}
+                placeholder={form.siteId ? "Select a manager" : "Please select a site first"}
+                disabled={!form.siteId}
+                className={errors.managerId ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
+              />
+            </FormField>
+
             <FormField label="Guards" required error={errors.selectedGuards}>
-              <div className={`border rounded-lg bg-secondary max-h-40 overflow-y-auto ${
-                errors.selectedGuards ? "border-destructive" : "border-border"
-              }`}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    selectAllGuards();
-                    setErrors(prev => ({ ...prev, selectedGuards: undefined }));
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary hover:bg-accent transition-colors border-b border-border"
-                >
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center ${form.selectedGuards.length === guards.length ? "bg-primary border-primary" : "border-border"}`}>
-                    {form.selectedGuards.length === guards.length && guards.length > 0 && <Check className="w-3 h-3 text-primary-foreground" />}
+              <div className={`border rounded-lg bg-secondary max-h-40 overflow-y-auto ${errors.selectedGuards ? "border-destructive" : "border-border"
+                }`}>
+                {filteredGuards.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      selectAllGuards();
+                      setErrors(prev => ({ ...prev, selectedGuards: undefined }));
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary hover:bg-accent transition-colors border-b border-border"
+                  >
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${form.selectedGuards.length === filteredGuards.length ? "bg-primary border-primary" : "border-border"}`}>
+                      {form.selectedGuards.length === filteredGuards.length && filteredGuards.length > 0 && <Check className="w-3 h-3 text-primary-foreground" />}
+                    </div>
+                    Select All Verified Guards
+                  </button>
+                )}
+                {filteredGuards.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-muted-foreground">
+                    No verified guards found
                   </div>
-                  Select All Verified
-                </button>
-                {guards.length === 0 ? (
-                  <div className="p-4 text-center text-xs text-muted-foreground">No verified guards available</div>
-                ) : guards.map((g: any) => (
+                ) : filteredGuards.map((g: any) => (
                   <button
                     key={g.id}
                     type="button"
@@ -275,17 +316,70 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
               </div>
             </FormField>
 
+            {/* Quick Duration Presets */}
+            <div className="space-y-2">
+              <span className="text-xs font-medium text-muted-foreground">Quick Duration</span>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "24 Hours", days: 0, fullDay: true },
+                  { label: "3 Days", days: 2, fullDay: false },
+                  { label: "1 Week", days: 6, fullDay: false },
+                  { label: "2 Weeks", days: 13, fullDay: false },
+                  { label: "1 Month", days: 29, fullDay: false },
+                ].map(preset => {
+                  const today = new Date();
+                  const start = today.toISOString().split("T")[0];
+                  const endD = new Date(today);
+                  endD.setDate(today.getDate() + preset.days);
+                  const end = endD.toISOString().split("T")[0];
+
+                  const isActive = activePresetDays === preset.days &&
+                    (preset.fullDay ? form.shiftStart === "00:00" && form.shiftEnd === "23:59" : true);
+
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        setActivePresetDays(preset.days);
+                        setForm(f => ({
+                          ...f,
+                          startDate: start,
+                          endDate: end,
+                          ...(preset.fullDay ? { shiftStart: "00:00", shiftEnd: "23:59" } : {}),
+                        }));
+                        setErrors(prev => ({ ...prev, startDate: undefined, endDate: undefined, shiftStart: undefined, shiftEnd: undefined }));
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isActive
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                          : "bg-secondary text-foreground border-border hover:bg-accent hover:border-primary/40"
+                        }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Start Date" required error={errors.startDate}>
                 <DateSelect
                   value={form.startDate}
                   onChange={(val) => {
-                    setForm((f) => ({
-                      ...f,
-                      startDate: val,
-                      // Auto-clamp: if endDate is now before the new startDate, bump it up
-                      endDate: f.endDate && f.endDate < val ? val : f.endDate,
-                    }));
+                    setForm((f) => {
+                      // If a preset is active, keep the same duration offset
+                      let newEnd = f.endDate;
+                      if (activePresetDays !== null) {
+                        const d = new Date(val);
+                        d.setDate(d.getDate() + activePresetDays);
+                        newEnd = d.toISOString().split("T")[0];
+                      } else {
+                        // Auto-clamp: if endDate is now before the new startDate, bump it up
+                        newEnd = f.endDate && f.endDate < val ? val : f.endDate;
+                      }
+                      return { ...f, startDate: val, endDate: newEnd };
+                    });
                     if (errors.startDate) setErrors(prev => ({ ...prev, startDate: undefined, endDate: undefined }));
                   }}
                   className={errors.startDate ? "border-destructive focus:ring-destructive/20" : ""}
@@ -295,6 +389,8 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
                 <DateSelect
                   value={form.endDate}
                   onChange={(val) => {
+                    // Manual end-date change breaks the preset lock
+                    setActivePresetDays(null);
                     setForm((f) => ({ ...f, endDate: val }));
                     if (errors.endDate) setErrors(prev => ({ ...prev, endDate: undefined }));
                   }}

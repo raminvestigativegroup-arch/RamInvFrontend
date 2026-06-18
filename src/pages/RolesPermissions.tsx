@@ -412,8 +412,8 @@ const RolesPermissions = () => {
   };
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
-  const showLoader = isLoading && rolesList.length === 0;
-  const showEmpty = rolesList.length === 0 || isNotFound;
+  const showLoader = isLoading;
+  const showEmpty = !isLoading && (rolesList.length === 0 || isNotFound);
   const showError = isError && !isNotFound;
 
   if (!hasViewPermission) {

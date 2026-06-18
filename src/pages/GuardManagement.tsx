@@ -75,7 +75,7 @@ const normalizeRole = (role: any): any => ({
   name: String(role.name || "Unknown Role"),
 });
 
-const normalizeGuard = (guard: RawRecord, index: number): Guard => {
+const normalizeGuard = (guard: RawRecord, index: number): any => {
   const firstName = String(guard.firstName || "");
   const middleName = String(guard.middleName || "");
   const lastName = String(guard.lastName || "");
@@ -103,6 +103,8 @@ const normalizeGuard = (guard: RawRecord, index: number): Guard => {
     scheduledHours: Number(guard.scheduledHours || 0),
     isVerified: guard.isVerified === true || guard.verified === true || guard.verified === "true" || guard.isVerified === "true",
     roleId: String(guard.roleId || ""),
+    managerId: String(guard.managerId || ""),
+    manager: guard.manager || null,
   };
 };
 
@@ -185,9 +187,10 @@ const GuardManagement = () => {
     licenseExpiry: "2027-01-01",
     image: "",
     roleType: "",
+    managerId: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [editingGuard, setEditingGuard] = useState<Guard | null>(null);
+  const [editingGuard, setEditingGuard] = useState<any | null>(null);
   const [deletingGuard, setDeletingGuard] = useState<Guard | null>(null);
   const [verifyingGuard, setVerifyingGuard] = useState<Guard | null>(null);
   const [isVerifiedChecked, setIsVerifiedChecked] = useState(false);
@@ -242,15 +245,31 @@ const GuardManagement = () => {
     enabled: hasViewPermission,
   });
 
+  const { data: rawManagers = [] } = useQuery({
+    queryKey: ["managers", "all"],
+    queryFn: async () => {
+      const response = await api.managers.list();
+      return response.data?.data || response.data || [];
+    },
+  });
+
+  const managersList = useMemo(() => {
+    const rawList = Array.isArray(rawManagers) ? rawManagers : ((rawManagers as any).managers || []);
+    return rawList.map((m: any) => ({
+      id: m.id,
+      name: `${m.firstName || m.name || ""} ${m.lastName || ""}`.trim() || "Unknown Manager"
+    }));
+  }, [rawManagers]);
+
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: (data: { firstName: string; middleName?: string; lastName: string; email: string; phoneNumber: string; roleType: string; profilePhoto?: string }) =>
+    mutationFn: (data: { firstName: string; middleName?: string; lastName: string; email: string; phoneNumber: string; roleType: string; profilePhoto?: string; managerId?: string }) =>
       api.guards.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guards"] });
       setOpen(false);
-      setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "" });
+      setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "", managerId: "" });
       toast({ title: "Guard Added", description: "The new guard has been registered successfully." });
     },
     onError: (error: any) => {
@@ -260,13 +279,13 @@ const GuardManagement = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { id: string; firstName?: string; middleName?: string; lastName?: string; phoneNumber?: string; roleType?: string; verified?: string; profilePhoto?: string }) =>
+    mutationFn: (data: { id: string; firstName?: string; middleName?: string; lastName?: string; phoneNumber?: string; roleType?: string; verified?: string; profilePhoto?: string; managerId?: string | null }) =>
       api.guards.update(data.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guards"] });
       setOpen(false);
       setEditingGuard(null);
-      setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "" });
+      setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "", managerId: "" });
       toast({ title: "Guard Updated", description: "The guard information has been updated successfully." });
     },
     onError: (error: any) => {
@@ -292,7 +311,6 @@ const GuardManagement = () => {
   });
 
 
-  const [showFilters, setShowFilters] = useState(false);
   const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [siteFilter, setSiteFilter] = useState("all");
   const [complianceFilter, setComplianceFilter] = useState("all");
@@ -382,8 +400,8 @@ const GuardManagement = () => {
   }, [guardList, verifiedFilter, siteFilter, complianceFilter, scheduleRaw, siteList]);
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
-  const showLoader = isLoading && filtered.length > 0;
-  const showEmpty = filtered.length === 0 || isNotFound;
+  const showLoader = isLoading;
+  const showEmpty = !isLoading && (filtered.length === 0 || isNotFound);
   const showError = isError && !isNotFound;
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -444,6 +462,7 @@ const GuardManagement = () => {
         phoneNumber: form.phoneNumber,
         roleType: form.roleType,
         profilePhoto: form.image,
+        managerId: form.managerId || null,
       });
     } else {
       createMutation.mutate({
@@ -454,11 +473,12 @@ const GuardManagement = () => {
         phoneNumber: form.phoneNumber,
         roleType: form.roleType || "guard",
         profilePhoto: form.image,
+        managerId: form.managerId || null,
       });
     }
   };
 
-  const handleEditClick = (guard: Guard) => {
+  const handleEditClick = (guard: any) => {
     setEditingGuard(guard);
     setForm({
       firstName: guard.firstName || "",
@@ -470,6 +490,7 @@ const GuardManagement = () => {
       licenseExpiry: guard.licenseExpiry,
       image: resolveImageUrl(guard.profilePhoto) || "",
       roleType: rolesList.find((r: any) => r.id === guard.roleId)?.name || "",
+      managerId: guard.managerId || "",
     });
     setOpen(true);
   };
@@ -503,86 +524,71 @@ const GuardManagement = () => {
         )}
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search guards..." className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
-          </div>
-          <Button
-            onClick={() => setShowFilters(!showFilters)}
-            variant={showFilters ? "default" : "secondary"}
-          >
-            <Filter className="w-4 h-4" />Filters
-          </Button>
+      {/* Search, Filters and Sort Toolbar */}
+      <div className="flex flex-col md:flex-row gap-3 items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search guards..."
+            className="pl-9 pr-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 h-[38px] rounded-lg text-sm w-full placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary"
+          />
         </div>
 
-        {showFilters && (
-          <div className="flex flex-wrap items-center gap-3 p-4 bg-secondary/35 border border-border rounded-xl">
-            {/* Status / Verification Filter */}
-            <div className="w-40">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">Status</label>
-              <SelectDropdown
-                value={verifiedFilter}
-                onChange={setVerifiedFilter}
-                options={[
-                  { value: "all", label: "All Statuses" },
-                  { value: "verified", label: "Verified Only" },
-                  { value: "unverified", label: "Unverified Only" },
-                ]}
-                placeholder="All Statuses"
-                className="h-[32px] text-xs py-0 mb-0"
-              />
-            </div>
+        <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end items-center">
+          <SelectDropdown
+            value={verifiedFilter}
+            onChange={setVerifiedFilter}
+            options={[
+              { value: "all", label: "All Statuses" },
+              { value: "verified", label: "Verified Only" },
+              { value: "unverified", label: "Unverified Only" },
+            ]}
+            placeholder="Status"
+            className="w-full sm:w-[135px]"
+          />
 
-            {/* Site Filter */}
-            <div className="w-44">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">Assigned Site</label>
-              <SelectDropdown
-                value={siteFilter}
-                onChange={setSiteFilter}
-                options={[
-                  { value: "all", label: "All Sites" },
-                  { value: "unassigned", label: "Unassigned" },
-                  ...siteList.map((s: any) => ({ value: s.name, label: s.name })),
-                ]}
-                placeholder="All Sites"
-                className="h-[32px] text-xs py-0 mb-0"
-              />
-            </div>
+          <SelectDropdown
+            value={siteFilter}
+            onChange={setSiteFilter}
+            options={[
+              { value: "all", label: "All Sites" },
+              { value: "unassigned", label: "Unassigned" },
+              ...siteList.map((s: any) => ({ value: s.name, label: s.name })),
+            ]}
+            placeholder="Assigned Site"
+            className="w-full sm:w-[150px]"
+          />
 
-            {/* Compliance Status Filter */}
-            <div className="w-40">
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">Compliance</label>
-              <SelectDropdown
-                value={complianceFilter}
-                onChange={setComplianceFilter}
-                options={[
-                  { value: "all", label: "All Compliance" },
-                  { value: "valid", label: "Valid License" },
-                  { value: "expiring", label: "Expiring Soon" },
-                  { value: "expired", label: "Expired License" },
-                ]}
-                placeholder="All Compliance"
-                className="h-[32px] text-xs py-0 mb-0"
-              />
-            </div>
+          <SelectDropdown
+            value={complianceFilter}
+            onChange={setComplianceFilter}
+            options={[
+              { value: "all", label: "All Compliance" },
+              { value: "valid", label: "Valid License" },
+              { value: "expiring", label: "Expiring Soon" },
+              { value: "expired", label: "Expired License" },
+            ]}
+            placeholder="Compliance"
+            className="w-full sm:w-[150px]"
+          />
 
-            {/* Clear Filters Button */}
+          {(verifiedFilter !== "all" || siteFilter !== "all" || complianceFilter !== "all") && (
             <Button
               onClick={() => {
                 setVerifiedFilter("all");
                 setSiteFilter("all");
                 setComplianceFilter("all");
               }}
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="mt-5"
+              className="text-xs h-[38px] font-semibold text-slate-500 hover:text-slate-700"
             >
-              Reset Filters
+              Reset
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {showLoader && (
@@ -627,6 +633,7 @@ const GuardManagement = () => {
                   { icon: Mail, content: guard.email },
                   { icon: Phone, content: guard.phoneNumber },
                   { icon: MapPin, content: siteText },
+                  { icon: User, content: guard.manager ? `Manager: ${guard.manager.name || `${guard.manager.firstName || ""} ${guard.manager.lastName || ""}`.trim()}` : "No Manager Assigned" },
                 ]}
                 footerLeft={undefined}
                 footerMiddle={
@@ -707,7 +714,7 @@ const GuardManagement = () => {
           setOpen(val);
           if (!val) {
             setEditingGuard(null);
-            setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "" });
+            setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "", managerId: "" });
           }
           setErrors({});
         }}
@@ -832,6 +839,18 @@ const GuardManagement = () => {
             options={rolesList.map(role => ({ value: role.name, label: role.name }))}
             placeholder="Select a role"
             className={errors.roleType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
+          />
+        </FormField>
+        <FormField label="Assigned Manager" error={errors.managerId}>
+          <SelectDropdown
+            value={form.managerId}
+            onChange={val => {
+              setForm(f => ({ ...f, managerId: val }));
+              if (errors.managerId) setErrors(prev => ({ ...prev, managerId: undefined }));
+            }}
+            options={managersList.map(m => ({ value: m.id, label: m.name }))}
+            placeholder="Select a manager (optional)"
+            className={errors.managerId ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
           />
         </FormField>
         {/* <FormField label="Assigned Site">
@@ -1132,10 +1151,10 @@ const GuardManagement = () => {
 
                               {/* Status badge */}
                               <span className={`ml-auto shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${shift.status === "in-progress" || shift.status === "started"
-                                  ? "bg-success/10 text-success border-success/20"
-                                  : shift.status === "missed"
-                                    ? "bg-destructive/10 text-destructive border-destructive/20"
-                                    : "bg-muted text-muted-foreground border-muted-foreground/10"
+                                ? "bg-success/10 text-success border-success/20"
+                                : shift.status === "missed"
+                                  ? "bg-destructive/10 text-destructive border-destructive/20"
+                                  : "bg-muted text-muted-foreground border-muted-foreground/10"
                                 }`}>
                                 {shift.status}
                               </span>
