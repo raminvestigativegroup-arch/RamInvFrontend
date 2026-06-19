@@ -74,7 +74,7 @@ const ScheduleWeekView = ({ entries, guards, onEdit, onDelete, filterSite, weekS
                     {guard.profilePhoto ? (
                       <img src={guard.profilePhoto} alt={guard.name || "Guard"} className="w-full h-full object-cover rounded-full" />
                     ) : (
-                      guard.name.split(" ").map((n) => n[0].toUpperCase()).join("")
+                      guard.name.split(" ").filter(Boolean).map((n) => n[0].toUpperCase()).join("")
                     )}
                   </div>
                   <span className="text-sm font-semibold text-foreground truncate">{guard.name}</span>

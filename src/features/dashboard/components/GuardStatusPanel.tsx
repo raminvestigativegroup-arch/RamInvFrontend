@@ -37,6 +37,7 @@ const GuardStatusPanel = ({ selectedGuardId, onSelectGuard, guards: dynamicGuard
         {filtered.map((guard) => {
           const initials = guard.name
             .split(" ")
+            .filter(Boolean)
             .map((n: string) => n[0])
             .join("")
             .slice(0, 2)

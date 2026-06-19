@@ -713,7 +713,7 @@ const ManagerManagement = () => {
                 title={mgr.name}
                 subtitle={mgr.role}
                 avatar={{
-                  text: mgr.name.split(" ").map(n => n[0]).join(""),
+                  text: mgr.name.split(" ").filter(Boolean).map(n => n[0]).join(""),
                   src: resolveImageUrl(mgr.avatar)
                 }}
                 details={[
@@ -767,7 +767,7 @@ const ManagerManagement = () => {
                             if (g.profilePhoto) {
                               avatarContent = <img src={g.profilePhoto} alt={g.name} className="w-full h-full object-cover rounded-full" />;
                             } else {
-                              avatarContent = g.name ? g.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : "G";
+                              avatarContent = g.name ? g.name.split(" ").filter(Boolean).map((n: string) => n[0].toUpperCase()).join("") : "G";
                             }
                             return (
                               <div key={g.id} className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold border border-card overflow-hidden shadow-xs">

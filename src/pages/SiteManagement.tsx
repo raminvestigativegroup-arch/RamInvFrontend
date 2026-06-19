@@ -605,6 +605,7 @@ const SiteManagement = () => {
                                 avatarContent = m.name
                                   ? m.name
                                     .split(" ")
+                                    .filter(Boolean)
                                     .map((n: string) => n[0].toUpperCase())
                                     .join("")
                                   : "M";
@@ -666,6 +667,7 @@ const SiteManagement = () => {
                                     ? g.name
                                       ? g.name
                                         .split(" ")
+                                        .filter(Boolean)
                                         .map((n) => n[0].toUpperCase())
                                         .join("")
                                       : ""
@@ -825,7 +827,7 @@ const SiteManagement = () => {
                             if (m.profilePhoto) {
                               avatarContent = <img src={m.profilePhoto} alt={m.name || "Manager"} className="w-full h-full object-cover rounded-full" />;
                             } else {
-                              avatarContent = m.name ? m.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : "M";
+                              avatarContent = m.name ? m.name.split(" ").filter(Boolean).map((n: string) => n[0].toUpperCase()).join("") : "M";
                             }
 
                             return (
@@ -880,7 +882,7 @@ const SiteManagement = () => {
                             if (g.profilePhoto) {
                               avatarContent = <img src={g.profilePhoto} alt={g.name || "Guard"} className="w-full h-full object-cover rounded-full" />;
                             } else {
-                              avatarContent = g.name ? g.name.split(" ").map((n: string) => n[0].toUpperCase()).join("") : String(g.id).slice(0, 2).toUpperCase();
+                              avatarContent = g.name ? g.name.split(" ").filter(Boolean).map((n: string) => n[0].toUpperCase()).join("") : String(g.id).slice(0, 2).toUpperCase();
                             }
 
                             // Status styling

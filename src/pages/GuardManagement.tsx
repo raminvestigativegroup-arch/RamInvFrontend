@@ -841,18 +841,7 @@ const GuardManagement = () => {
             className={errors.roleType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
           />
         </FormField>
-        <FormField label="Assigned Manager" error={errors.managerId}>
-          <SelectDropdown
-            value={form.managerId}
-            onChange={val => {
-              setForm(f => ({ ...f, managerId: val }));
-              if (errors.managerId) setErrors(prev => ({ ...prev, managerId: undefined }));
-            }}
-            options={managersList.map(m => ({ value: m.id, label: m.name }))}
-            placeholder="Select a manager (optional)"
-            className={errors.managerId ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
-          />
-        </FormField>
+        
         {/* <FormField label="Assigned Site">
           <select value={form.site} onChange={(e) => setForm((f) => ({ ...f, site: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
             {sites.filter((s) => s.status === "active").map((s) => (

@@ -88,7 +88,7 @@ const HoursSummary = ({ kpis, loading }: HoursSummaryProps) => {
         <div className="flex-1 space-y-1.5">
           <div className="flex justify-between text-[10px] font-semibold text-muted-foreground">
             <span>Coverage progress</span>
-            <span className={pctColor}>{pct}%</span>
+            {/* <span className={pctColor}>{pct}%</span> */}
           </div>
           <div className="w-full h-2.5 bg-secondary rounded-full overflow-hidden border border-border/20">
             <div
