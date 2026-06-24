@@ -472,11 +472,10 @@ const HoursTracking = () => {
 
                         {/* Active/Inactive Status */}
                         <td className="px-6 py-4 text-center">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                            site.status === "active"
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${site.status === "active"
                               ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
                               : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                          }`}>
+                            }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${site.status === "active" ? "bg-emerald-500" : "bg-slate-400"}`} />
                             {site.status === "active" ? "Active" : "Inactive"}
                           </span>
@@ -808,7 +807,6 @@ const HoursTracking = () => {
                             <th className="px-4 py-3 text-center">Clock Out</th>
                             <th className="px-4 py-3 text-center">Hours (Done/Sched)</th>
                             <th className="px-4 py-3 text-right">Attendance</th>
-                            <th className="px-4 py-3 text-right">Shifts</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -831,10 +829,10 @@ const HoursTracking = () => {
                               const formatTime = (ts: string | null) => formatUTCTime(ts);
 
                               const statusConfig: Record<string, { icon: React.ReactNode; cls: string; dot: string }> = {
-                                'Clocked In':  { icon: <LogIn className="w-3 h-3" />,   cls: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', dot: 'bg-emerald-500 animate-pulse' },
-                                'On Break':    { icon: <Coffee className="w-3 h-3" />,   cls: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800',     dot: 'bg-amber-400 animate-pulse' },
-                                'Clocked Out': { icon: <LogOut className="w-3 h-3" />,  cls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800',       dot: 'bg-blue-400' },
-                                'Off Duty':    { icon: <ShieldOff className="w-3 h-3" />, cls: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700', dot: 'bg-slate-400' },
+                                'Clocked In': { icon: <LogIn className="w-3 h-3" />, cls: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', dot: 'bg-emerald-500 animate-pulse' },
+                                'On Break': { icon: <Coffee className="w-3 h-3" />, cls: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800', dot: 'bg-amber-400 animate-pulse' },
+                                'Clocked Out': { icon: <LogOut className="w-3 h-3" />, cls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800', dot: 'bg-blue-400' },
+                                'Off Duty': { icon: <ShieldOff className="w-3 h-3" />, cls: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700', dot: 'bg-slate-400' },
                               };
                               const sc = statusConfig[guard.status] || statusConfig['Off Duty'];
 
@@ -871,9 +869,8 @@ const HoursTracking = () => {
 
                                   {/* Clock Out */}
                                   <td className="px-4 py-3 text-center">
-                                    <span className={`inline-flex items-center gap-1 font-semibold ${
-                                      guard.clockOut ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'
-                                    }`}>
+                                    <span className={`inline-flex items-center gap-1 font-semibold ${guard.clockOut ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'
+                                      }`}>
                                       <LogOut className="w-3 h-3" />
                                       {formatTime(guard.clockOut)}
                                     </span>
@@ -886,19 +883,10 @@ const HoursTracking = () => {
 
                                   {/* Attendance Rate */}
                                   <td className="px-4 py-3 text-right">
-                                    <span className={`font-bold text-xs ${
-                                      guard.attendancePct >= 90 ? 'text-emerald-500' : guard.attendancePct >= 75 ? 'text-amber-500' : 'text-rose-500'
-                                    }`}>
+                                    <span className={`font-bold text-xs ${guard.attendancePct >= 90 ? 'text-emerald-500' : guard.attendancePct >= 75 ? 'text-amber-500' : 'text-rose-500'
+                                      }`}>
                                       {guard.attendancePct}%
                                     </span>
-                                  </td>
-
-                                  {/* Completed vs missed shifts */}
-                                  <td className="px-4 py-3 text-right">
-                                    <span className="font-semibold text-slate-700 dark:text-slate-350">{guard.completedShifts} done</span>
-                                    {guard.missedShifts > 0 && (
-                                      <span className="text-rose-500 font-semibold ml-1">({guard.missedShifts} missed)</span>
-                                    )}
                                   </td>
                                 </tr>
                               );
