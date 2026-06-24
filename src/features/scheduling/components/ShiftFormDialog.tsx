@@ -2,13 +2,35 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { ScheduleEntry } from "@/data/dummyData";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Search, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import TimeSelect from "@/components/common/TimeSelect";
 import FormField from "@/components/common/FormField";
 import DateSelect from "@/components/common/DateSelect";
+
+const timeToMinutes = (time: string): number => {
+  if (!time) return 0;
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+};
+
+const minutesToTime = (mins: number): string => {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+};
+
+const getShiftDurationMinutes = (start: string, end: string): number => {
+  if (!start || !end) return 0;
+  const startMins = timeToMinutes(start);
+  let endMins = timeToMinutes(end);
+  if (endMins < startMins) {
+    endMins += 24 * 60; // Crosses midnight
+  }
+  return endMins - startMins;
+};
 
 interface Props {
   open: boolean;
@@ -34,13 +56,16 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
   const [errors, setErrors] = useState<Record<string, string>>({});
   // Tracks the active preset offset (days) so startDate changes keep the same duration
   const [activePresetDays, setActivePresetDays] = useState<number | null>(null);
+  const [guardSelectOpen, setGuardSelectOpen] = useState(false);
+  const [guardSearchQuery, setGuardSearchQuery] = useState("");
+  const [activePresetTimeMins, setActivePresetTimeMins] = useState<number | null>(null);
 
   // Fetch verified guards from API
   const { data: guards = [], isLoading: isLoadingGuards } = useQuery({
     queryKey: ["guards", "verified"],
     queryFn: async () => {
       try {
-        const response = await api.guards.list({ verified: true });
+        const response = await api.guards.list({ verified: true, fields: "id,firstName,middleName,lastName,name,verified,managerId" });
         const raw = response.data as any;
 
         let list: any[] = [];
@@ -74,7 +99,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
     queryKey: ["sites", "active"],
     queryFn: async () => {
       try {
-        const response = await api.sites.list({ status: "active" });
+        const response = await api.sites.list({ status: "active", fields: "id,name,status,managerid,managerIds" });
         const raw = response.data as any;
 
         let list: any[] = [];
@@ -126,6 +151,8 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
 
         const siteId = editEntry.siteId || sites.find(s => s.name === editEntry.site)?.id || "";
         const managerId = editEntry.managerId || "";
+        const start = editEntry.shiftStart.substring(0, 5);
+        const end = editEntry.shiftEnd.substring(0, 5);
 
         setForm({
           selectedGuards: guardIds,
@@ -133,9 +160,10 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
           managerId: managerId,
           startDate: editEntry.date,
           endDate: editEntry.date,
-          shiftStart: editEntry.shiftStart.substring(0, 5),
-          shiftEnd: editEntry.shiftEnd.substring(0, 5),
+          shiftStart: start,
+          shiftEnd: end,
         });
+        setActivePresetTimeMins(getShiftDurationMinutes(start, end));
       } else {
         setForm({
           selectedGuards: [],
@@ -146,6 +174,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
           shiftStart: "",
           shiftEnd: ""
         });
+        setActivePresetTimeMins(null);
       }
     }
   }, [editEntry, open, sites, guards, existingEntries]);
@@ -275,46 +304,126 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
             </FormField>
 
             <FormField label="Guards" required error={errors.selectedGuards}>
-              <div className={`border rounded-lg bg-secondary max-h-40 overflow-y-auto ${errors.selectedGuards ? "border-destructive" : "border-border"
-                }`}>
-                {filteredGuards.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      selectAllGuards();
-                      setErrors(prev => ({ ...prev, selectedGuards: undefined }));
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-primary hover:bg-accent transition-colors border-b border-border"
-                  >
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${form.selectedGuards.length === filteredGuards.length ? "bg-primary border-primary" : "border-border"}`}>
-                      {form.selectedGuards.length === filteredGuards.length && filteredGuards.length > 0 && <Check className="w-3 h-3 text-primary-foreground" />}
-                    </div>
-                    Select All Verified Guards
-                  </button>
+              <div
+                onClick={() => setGuardSelectOpen(true)}
+                className={`w-full min-h-[38px] px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground flex flex-wrap gap-1.5 items-center cursor-pointer hover:border-primary/50 transition-colors ${errors.selectedGuards ? "border-destructive focus:ring-destructive/20" : "border-border"
+                  }`}
+              >
+                {form.selectedGuards.length === 0 ? (
+                  <span className="text-slate-400">Click to assign guards...</span>
+                ) : (
+                  form.selectedGuards.map(id => {
+                    const guard = guards.find((g: any) => g.id === id);
+                    return (
+                      <span
+                        key={id}
+                        className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                      >
+                        {guard ? guard.name : id}
+                      </span>
+                    );
+                  })
                 )}
-                {filteredGuards.length === 0 ? (
-                  <div className="p-4 text-center text-xs text-muted-foreground">
-                    No verified guards found
-                  </div>
-                ) : filteredGuards.map((g: any) => (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => {
-                      toggleGuard(g.id);
-                      setErrors(prev => ({ ...prev, selectedGuards: undefined }));
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors text-left"
-                  >
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${form.selectedGuards.includes(g.id) ? "bg-primary border-primary" : "border-border"}`}>
-                      {form.selectedGuards.includes(g.id) && <Check className="w-3 h-3 text-primary-foreground" />}
-                    </div>
-                    <span className="text-foreground">{g.name}</span>
-                    <span className="text-muted-foreground text-xs ml-auto">{g.site}</span>
-                  </button>
-                ))}
               </div>
             </FormField>
+
+            <Dialog open={guardSelectOpen} onOpenChange={setGuardSelectOpen}>
+              <DialogContent className="sm:max-w-md border border-slate-100 dark:border-slate-800 shadow-2xl rounded-xl">
+                <DialogTitle className="text-lg font-bold text-foreground">Assign Guards</DialogTitle>
+                <div className="space-y-4 mt-2">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                      <input
+                        value={guardSearchQuery}
+                        onChange={(e) => setGuardSearchQuery(e.target.value)}
+                        placeholder="Search guards..."
+                        className="pl-9 pr-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 h-[38px] rounded-lg text-sm w-full placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      />
+                    </div>
+                    {filteredGuards.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allSelected = form.selectedGuards.length === filteredGuards.length;
+                          setForm(f => ({
+                            ...f,
+                            selectedGuards: allSelected ? [] : filteredGuards.map((g: any) => g.id),
+                          }));
+                          if (errors.selectedGuards) setErrors(prev => ({ ...prev, selectedGuards: undefined }));
+                        }}
+                        className="px-3 h-[38px] bg-secondary hover:bg-slate-100 dark:hover:bg-slate-800 border border-border rounded-lg text-xs font-semibold active:scale-95 transition-all"
+                      >
+                        {form.selectedGuards.length === filteredGuards.length ? "Deselect All" : "Select All"}
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                    {filteredGuards.filter((g: any) => g.name.toLowerCase().includes(guardSearchQuery.toLowerCase())).length === 0 ? (
+                      <div className="text-center py-8">
+                        <Search className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+                        <p className="text-xs text-muted-foreground">No guards found</p>
+                      </div>
+                    ) : (
+                      filteredGuards
+                        .filter((g: any) => g.name.toLowerCase().includes(guardSearchQuery.toLowerCase()))
+                        .map((g: any) => {
+                          const isSelected = form.selectedGuards.includes(g.id);
+                          const initials = g.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+                          return (
+                            <div
+                              key={g.id}
+                              onClick={() => {
+                                toggleGuard(g.id);
+                                if (errors.selectedGuards) setErrors(prev => ({ ...prev, selectedGuards: undefined }));
+                              }}
+                              className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-all duration-150 border ${isSelected
+                                ? "bg-primary/10 text-primary border-primary/25 font-medium shadow-sm"
+                                : "bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900 text-foreground border-slate-300 dark:border-slate-700"
+                                }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${isSelected
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-primary/10 text-primary"
+                                  }`}>
+                                  {initials}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-foreground">{g.name}</span>
+                                  {/* {g.site && (
+                                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
+                                      <MapPin className="w-3 h-3 text-slate-400" />
+                                      {g.site}
+                                    </span>
+                                  )} */}
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                                  <Check className="w-3.5 h-3.5 text-primary-foreground stroke-[3]" />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                    )}
+                  </div>
+                  <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGuardSelectOpen(false);
+                        setGuardSearchQuery("");
+                      }}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Quick Duration Presets */}
             <div className="space-y-2">
@@ -342,17 +451,27 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
                       type="button"
                       onClick={() => {
                         setActivePresetDays(preset.days);
-                        setForm(f => ({
-                          ...f,
-                          startDate: start,
-                          endDate: end,
-                          ...(preset.fullDay ? { shiftStart: "00:00", shiftEnd: "23:59" } : {}),
-                        }));
+                        if (preset.fullDay) {
+                          setActivePresetTimeMins(1439); // 23h 59m offset
+                          setForm(f => ({
+                            ...f,
+                            startDate: start,
+                            endDate: end,
+                            shiftStart: "00:00",
+                            shiftEnd: "23:59",
+                          }));
+                        } else {
+                          setForm(f => ({
+                            ...f,
+                            startDate: start,
+                            endDate: end,
+                          }));
+                        }
                         setErrors(prev => ({ ...prev, startDate: undefined, endDate: undefined, shiftStart: undefined, shiftEnd: undefined }));
                       }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isActive
-                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                          : "bg-secondary text-foreground border-border hover:bg-accent hover:border-primary/40"
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-secondary text-foreground border-border hover:bg-accent hover:border-primary/40"
                         }`}
                     >
                       {preset.label}
@@ -404,7 +523,15 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
                 <TimeSelect
                   value={form.shiftStart}
                   onChange={(val) => {
-                    setForm((f) => ({ ...f, shiftStart: val }));
+                    setForm((f) => {
+                      let newEnd = f.shiftEnd;
+                      if (activePresetTimeMins !== null && val) {
+                        const startMins = timeToMinutes(val);
+                        const endMins = (startMins + activePresetTimeMins) % (24 * 60);
+                        newEnd = minutesToTime(endMins);
+                      }
+                      return { ...f, shiftStart: val, shiftEnd: newEnd };
+                    });
                     // Clear shiftEnd error if shiftStart changes — user will re-validate on submit
                     if (errors.shiftStart || errors.shiftEnd) setErrors(prev => ({ ...prev, shiftStart: undefined, shiftEnd: undefined }));
                   }}
@@ -414,6 +541,8 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
                 <TimeSelect
                   value={form.shiftEnd}
                   onChange={(val) => {
+                    // Manual shiftEnd change breaks the preset lock
+                    setActivePresetTimeMins(null);
                     setForm((f) => ({ ...f, shiftEnd: val }));
                     if (errors.shiftEnd) setErrors(prev => ({ ...prev, shiftEnd: undefined }));
                   }}

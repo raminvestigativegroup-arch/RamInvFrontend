@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import { Site } from "@/data/dummyData";
-import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, UserCheck, Locate, Search, Filter, Mail, Phone, Loader2, Calendar, Clock, MoreHorizontal, CalendarClock, CalendarClockIcon } from "lucide-react";
+import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, UserCheck, Locate, Search, Filter, Mail, Phone, Loader2, Calendar, Clock, MoreHorizontal, CalendarClock, CalendarClockIcon, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -82,6 +82,8 @@ const SiteManagement = () => {
   const [viewingGuardsSite, setViewingGuardsSite] = useState<any | null>(null);
   const [guardSearch, setGuardSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"guards" | "schedules" | "managers">("managers");
+  const [managerSelectOpen, setManagerSelectOpen] = useState(false);
+  const [managerSearchQuery, setManagerSearchQuery] = useState("");
 
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -113,7 +115,7 @@ const SiteManagement = () => {
   const { data: managersList = [] } = useQuery({
     queryKey: ["managers", "select"],
     queryFn: async () => {
-      const response = await api.managers.list();
+      const response = await api.managers.list({ fields: "id,firstName,middleName,lastName,verified" });
       return normalizeManagersResponse(response.data).map(normalizeManager);
     },
   });
@@ -451,33 +453,104 @@ const SiteManagement = () => {
           />
         </FormField>
         <FormField label="Assigned Managers" error={errors.managers}>
-          <div className="space-y-2 max-h-48 overflow-y-auto p-3 bg-secondary/50 border border-border rounded-lg mb-2">
-            {managersList.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-2">No managers available</p>
-            ) : managersList.map((m: any) => {
-              const isChecked = form.managerIds.includes(m.id);
-              return (
-                <label key={m.id} className="flex items-center gap-2 text-sm text-foreground cursor-pointer hover:bg-secondary p-1 rounded">
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => {
-                      setForm(f => {
-                        const newIds = isChecked
-                          ? f.managerIds.filter(id => id !== m.id)
-                          : [...f.managerIds, m.id];
-                        return { ...f, managerIds: newIds };
-                      });
-                      if (errors.managers) setErrors(prev => ({ ...prev, managers: undefined }));
-                    }}
-                    className="rounded border-border text-primary focus:ring-primary h-4 w-4"
-                  />
-                  <span>{m.name}</span>
-                </label>
-              );
-            })}
+          <div
+            onClick={() => setManagerSelectOpen(true)}
+            className={`w-full min-h-[38px] px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground flex flex-wrap gap-1.5 items-center cursor-pointer hover:border-primary/50 transition-colors ${errors.managers ? "border-destructive focus:ring-destructive/20" : "border-border"
+              }`}
+          >
+            {form.managerIds.length === 0 ? (
+              <span className="text-slate-400">Click to assign managers...</span>
+            ) : (
+              form.managerIds.map(id => {
+                const manager = managersList.find((m: any) => m.id === id);
+                return (
+                  <span
+                    key={id}
+                    className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                  >
+                    {manager ? manager.name : id}
+                  </span>
+                );
+              })
+            )}
           </div>
         </FormField>
+        <Dialog open={managerSelectOpen} onOpenChange={setManagerSelectOpen}>
+          <DialogContent className="sm:max-w-md border border-slate-100 dark:border-slate-800 shadow-2xl rounded-xl">
+            <DialogTitle className="text-lg font-bold text-foreground">Assign Managers</DialogTitle>
+            <div className="space-y-4 mt-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <input
+                  value={managerSearchQuery}
+                  onChange={(e) => setManagerSearchQuery(e.target.value)}
+                  placeholder="Search managers..."
+                  className="pl-9 pr-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 h-[38px] rounded-lg text-sm w-full placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+              <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                {managersList.filter((m: any) => m.name.toLowerCase().includes(managerSearchQuery.toLowerCase())).length === 0 ? (
+                  <div className="text-center py-8">
+                    <Search className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">No managers found</p>
+                  </div>
+                ) : (
+                  managersList
+                    .filter((m: any) => m.name.toLowerCase().includes(managerSearchQuery.toLowerCase()))
+                    .map((m: any) => {
+                      const isSelected = form.managerIds.includes(m.id);
+                      const initials = m.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+                      return (
+                        <div
+                          key={m.id}
+                          onClick={() => {
+                            setForm(f => {
+                              const newIds = isSelected
+                                ? f.managerIds.filter(id => id !== m.id)
+                                : [...f.managerIds, m.id];
+                              return { ...f, managerIds: newIds };
+                            });
+                            if (errors.managers) setErrors(prev => ({ ...prev, managers: undefined }));
+                          }}
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-all duration-150 border ${isSelected
+                              ? "bg-primary/10 text-primary border-primary/25 font-medium shadow-sm"
+                              : "bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900 text-foreground border-slate-300 dark:border-slate-700"
+                            }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-primary/10 text-primary"
+                              }`}>
+                              {initials}
+                            </div>
+                            <span className="font-medium">{m.name}</span>
+                          </div>
+                          {isSelected && (
+                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                              <Check className="w-3.5 h-3.5 text-primary-foreground stroke-[3]" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+              <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManagerSelectOpen(false);
+                    setManagerSearchQuery("");
+                  }}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
         <FormField label="Status">
           <SelectDropdown
             value={form.status}
