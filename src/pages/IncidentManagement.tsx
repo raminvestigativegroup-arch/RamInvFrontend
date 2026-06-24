@@ -120,9 +120,11 @@ const IncidentManagement = () => {
   const applyRefinedDescriptionMutation = useMutation({
     mutationFn: (data: { id: string; description: string }) =>
       api.incidents.update(data.id, { description: data.description }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["incidents"] });
-      queryClient.invalidateQueries({ queryKey: ["incidents", selectedIncidentId] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["incidents"] }),
+        queryClient.invalidateQueries({ queryKey: ["incidents", selectedIncidentId] })
+      ]);
       setAiIncidentId(null);
       toast({ title: "AI Refinement Saved", description: "Incident description has been updated with the refined report." });
     },
@@ -208,8 +210,11 @@ const IncidentManagement = () => {
       api.incidents.update(data.id, { 
         solved: data.status 
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["incidents"] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["incidents"] }),
+        queryClient.invalidateQueries({ queryKey: ["incidents", selectedIncidentId] })
+      ]);
       toast({ title: "Status Updated", description: "Incident status has been successfully updated." });
     },
     onError: (err: any) => {

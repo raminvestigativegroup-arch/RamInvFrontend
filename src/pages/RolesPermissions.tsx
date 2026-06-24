@@ -270,8 +270,8 @@ const RolesPermissions = () => {
       const response = await api.roles.create({ name });
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["roles"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["roles"] });
       toast({ title: "Success", description: "Role created successfully." });
       setCreateModalOpen(false);
       setNewRoleName("");
@@ -291,8 +291,8 @@ const RolesPermissions = () => {
       const response = await api.roles.update(payload.id, { name: payload.name });
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["roles"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["roles"] });
       toast({ title: "Success", description: "Role name updated successfully." });
       setCreateModalOpen(false);
       setEditingRole(null);
@@ -313,8 +313,8 @@ const RolesPermissions = () => {
       const response = await api.roles.delete(id);
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["roles"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["roles"] });
       toast({ title: "Success", description: "Role deleted successfully." });
       setDeletingRole(null);
     },
@@ -335,8 +335,8 @@ const RolesPermissions = () => {
       const response = await api.roles.assignPermissions(payload);
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["roles"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["roles"] });
       toast({ title: "Success", description: "Permissions updated successfully." });
       setAssignModalOpen(false);
       setSelectedRole(null);

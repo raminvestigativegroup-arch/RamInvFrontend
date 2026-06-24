@@ -209,8 +209,8 @@ const SiteManagement = () => {
       const response = await api.sites.create(payload);
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sites"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["sites"] });
       toast({ title: "Success", description: "Site created successfully." });
       setOpen(false);
       setForm({ name: "", address: "", manager: "", managerIds: [], status: "active", lat: "", lng: "" });
@@ -227,8 +227,8 @@ const SiteManagement = () => {
       const response = await api.sites.update(id, data);
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sites"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["sites"] });
       toast({ title: "Success", description: "Site updated successfully." });
       setOpen(false);
       setEditingSite(null);
@@ -245,8 +245,8 @@ const SiteManagement = () => {
       const response = await api.sites.delete(id);
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sites"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["sites"] });
       toast({ title: "Success", description: "Site deleted successfully." });
       setDeletingSite(null);
     },

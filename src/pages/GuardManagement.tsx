@@ -266,8 +266,8 @@ const GuardManagement = () => {
   const createMutation = useMutation({
     mutationFn: (data: { firstName: string; middleName?: string; lastName: string; email: string; phoneNumber: string; roleType: string; profilePhoto?: string; managerId?: string }) =>
       api.guards.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["guards"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["guards"] });
       setOpen(false);
       setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "", managerId: "" });
       toast({ title: "Guard Added", description: "The new guard has been registered successfully." });
@@ -281,8 +281,8 @@ const GuardManagement = () => {
   const updateMutation = useMutation({
     mutationFn: (data: { id: string; firstName?: string; middleName?: string; lastName?: string; phoneNumber?: string; roleType?: string; verified?: string; profilePhoto?: string; managerId?: string | null }) =>
       api.guards.update(data.id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["guards"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["guards"] });
       setOpen(false);
       setEditingGuard(null);
       setVerifyingGuard(null);
@@ -297,8 +297,8 @@ const GuardManagement = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.guards.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["guards"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["guards"] });
       setDeletingGuard(null);
       toast({ title: "Guard Deleted", description: "The guard has been removed successfully." });
     },

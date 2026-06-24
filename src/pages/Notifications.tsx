@@ -31,16 +31,16 @@ const Notifications = () => {
   // 2. Mutation to mark all notifications as read
   const markAllReadMutation = useMutation({
     mutationFn: () => api.notifications.markAllAsRead(),
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      await refetch();
     },
   });
 
   // 3. Mutation to mark a single notification as read
   const markReadMutation = useMutation({
     mutationFn: (id: string) => api.notifications.markAsRead(id),
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      await refetch();
     },
   });
 

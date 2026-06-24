@@ -281,8 +281,8 @@ const ManagerManagement = () => {
       const response = await api.managers.create(payload);
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["managers"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["managers"] });
       toast({ title: "Success", description: "Manager created successfully." });
       setOpen(false);
       setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", roleId: "", selectedSites: [], status: "active", licenseExpiry: "2027-01-01", image: "" });
@@ -299,8 +299,8 @@ const ManagerManagement = () => {
       const response = await api.managers.update(id, data);
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["managers"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["managers"] });
       toast({ title: "Success", description: "Manager updated successfully." });
       setOpen(false);
       setEditingManager(null);
@@ -319,8 +319,8 @@ const ManagerManagement = () => {
       const response = await api.managers.delete(id);
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["managers"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["managers"] });
       toast({ title: "Success", description: "Manager deleted successfully." });
       setDeletingManager(null);
     },

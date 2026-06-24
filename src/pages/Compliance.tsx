@@ -147,7 +147,8 @@ const Compliance = () => {
       const response = await api.documents.create(formData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
       toast({
         title: "Success",
         description: "Document uploaded successfully.",
@@ -159,8 +160,6 @@ const Compliance = () => {
       setCustomDocType("");
       setUploadExpiryDate("");
       setUploadFile(null);
-      // Refetch
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
     onError: (err: any) => {
       const errMsg = err?.response?.data?.message || err?.message || "Failed to upload document.";
@@ -177,14 +176,14 @@ const Compliance = () => {
       const response = await api.documents.update(id, { name, expiryDate });
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
       toast({
         title: "Success",
         description: "Document updated successfully.",
       });
       setIsEditOpen(false);
       setSelectedDoc(null);
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
     onError: (err: any) => {
       const errMsg = err?.response?.data?.message || err?.message || "Failed to update document.";
@@ -201,7 +200,8 @@ const Compliance = () => {
       const response = await api.documents.delete(id);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
       toast({
         title: "Success",
         description: "Document deleted successfully.",
@@ -209,7 +209,6 @@ const Compliance = () => {
       setSelectedDoc(null);
       setIsDeleteConfirmOpen(false);
       setDocToDelete(null);
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
     onError: (err: any) => {
       const errMsg = err?.response?.data?.message || err?.message || "Failed to delete document.";

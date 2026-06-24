@@ -209,8 +209,8 @@ const Scheduling = () => {
 
   const createMutation = useMutation({
     mutationFn: (payload: any) => api.scheduling.create(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scheduling"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["scheduling"] });
       toast({ title: "Schedule Created", description: "The shifts have been successfully scheduled." });
       setOpen(false);
     }
@@ -218,8 +218,8 @@ const Scheduling = () => {
 
   const updateMutation = useMutation({
     mutationFn: (data: { id: string, payload: any }) => api.scheduling.update(data.id, data.payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scheduling"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["scheduling"] });
       toast({ title: "Shift Updated", description: "The shift information has been updated." });
       setOpen(false);
       setEditEntry(null);
@@ -228,8 +228,8 @@ const Scheduling = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.scheduling.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["scheduling"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["scheduling"] });
       toast({ title: "Shift Deleted", description: "The shift has been removed." });
       setDeletingId(null);
     },
