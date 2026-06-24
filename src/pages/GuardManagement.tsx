@@ -297,10 +297,14 @@ const GuardManagement = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.guards.delete(id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["guards"] });
+    onSuccess: async (data, id) => {
+      queryClient.setQueriesData({ queryKey: ["guards"] }, (oldData: any) => {
+        if (!Array.isArray(oldData)) return oldData;
+        return oldData.filter((g: any) => g.id !== id);
+      });
       setDeletingGuard(null);
       toast({ title: "Guard Deleted", description: "The guard has been removed successfully." });
+      await queryClient.invalidateQueries({ queryKey: ["guards"] });
     },
     onError: (error: any) => {
       toast({

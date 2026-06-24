@@ -313,10 +313,14 @@ const RolesPermissions = () => {
       const response = await api.roles.delete(id);
       return response.data;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["roles"] });
-      toast({ title: "Success", description: "Role deleted successfully." });
+    onSuccess: async (data, id) => {
+      queryClient.setQueriesData({ queryKey: ["roles"] }, (oldData: any) => {
+        if (!Array.isArray(oldData)) return oldData;
+        return oldData.filter((r: any) => r.id !== id);
+      });
       setDeletingRole(null);
+      toast({ title: "Success", description: "Role deleted successfully." });
+      await queryClient.invalidateQueries({ queryKey: ["roles"] });
     },
     onError: (err: any) => {
       toast({

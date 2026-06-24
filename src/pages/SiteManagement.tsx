@@ -245,10 +245,14 @@ const SiteManagement = () => {
       const response = await api.sites.delete(id);
       return response.data;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["sites"] });
-      toast({ title: "Success", description: "Site deleted successfully." });
+    onSuccess: async (data, id) => {
+      queryClient.setQueriesData({ queryKey: ["sites"] }, (oldData: any) => {
+        if (!Array.isArray(oldData)) return oldData;
+        return oldData.filter((s: any) => s.id !== id);
+      });
       setDeletingSite(null);
+      toast({ title: "Success", description: "Site deleted successfully." });
+      await queryClient.invalidateQueries({ queryKey: ["sites"] });
     },
     onError: (error: any) => {
       toast({

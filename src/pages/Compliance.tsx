@@ -200,15 +200,27 @@ const Compliance = () => {
       const response = await api.documents.delete(id);
       return response.data;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["documents"] });
-      toast({
-        title: "Success",
-        description: "Document deleted successfully.",
+    onSuccess: async (data, id) => {
+      queryClient.setQueriesData({ queryKey: ["documents"] }, (oldData: any) => {
+        if (!oldData || !Array.isArray(oldData.documents)) return oldData;
+        const updatedDocs = oldData.documents.filter((d: any) => d.id !== id);
+        return {
+          ...oldData,
+          documents: updatedDocs,
+          counts: {
+            ...oldData.counts,
+            all: updatedDocs.length
+          }
+        };
       });
       setSelectedDoc(null);
       setIsDeleteConfirmOpen(false);
       setDocToDelete(null);
+      toast({
+        title: "Success",
+        description: "Document deleted successfully.",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
     onError: (err: any) => {
       const errMsg = err?.response?.data?.message || err?.message || "Failed to delete document.";

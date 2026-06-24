@@ -408,7 +408,7 @@ const IncidentManagement = () => {
                         {hasEditPermission ? (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" disabled={updateStatusMutation.isPending}>
                                 <MoreVertical className="w-4 h-4 text-muted-foreground" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -459,7 +459,7 @@ const IncidentManagement = () => {
                           { value: "in-progress", label: "In-Progress" },
                           { value: "resolved", label: "Resolved" },
                         ]}
-                        disabled={!hasEditPermission}
+                        disabled={!hasEditPermission || updateStatusMutation.isPending}
                         className={`status-badge-${selectedIncident.status === 'resolved' ? 'active' : selectedIncident.status === 'open' ? 'danger' : 'warning'} h-[28px] py-0 mb-0`}
                       />
                     </div>

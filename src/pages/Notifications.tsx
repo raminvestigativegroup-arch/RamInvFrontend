@@ -80,7 +80,8 @@ const Notifications = () => {
         {hasEditPermission && (
           <Button
             onClick={() => markAllReadMutation.mutate()}
-            disabled={isLoading || unreadCount === 0}
+            disabled={isLoading || unreadCount === 0 || markAllReadMutation.isPending}
+            loading={markAllReadMutation.isPending}
             variant="secondary"
           >
             Mark All Read
@@ -129,7 +130,7 @@ const Notifications = () => {
                 <div
                   key={notif.id}
                   onClick={() => {
-                    if (!notif.read && hasEditPermission) {
+                    if (!notif.read && hasEditPermission && !markReadMutation.isPending) {
                       markReadMutation.mutate(notif.id);
                     }
                   }}

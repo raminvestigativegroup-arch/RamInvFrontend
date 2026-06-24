@@ -228,10 +228,14 @@ const Scheduling = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.scheduling.delete(id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["scheduling"] });
-      toast({ title: "Shift Deleted", description: "The shift has been removed." });
+    onSuccess: async (data, id) => {
+      queryClient.setQueriesData({ queryKey: ["scheduling"] }, (oldData: any) => {
+        if (!Array.isArray(oldData)) return oldData;
+        return oldData.filter((s: any) => s.id !== id);
+      });
       setDeletingId(null);
+      toast({ title: "Shift Deleted", description: "The shift has been removed." });
+      await queryClient.invalidateQueries({ queryKey: ["scheduling"] });
     },
     onError: (error: any) => {
       toast({

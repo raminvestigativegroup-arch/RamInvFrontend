@@ -319,10 +319,14 @@ const ManagerManagement = () => {
       const response = await api.managers.delete(id);
       return response.data;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["managers"] });
-      toast({ title: "Success", description: "Manager deleted successfully." });
+    onSuccess: async (data, id) => {
+      queryClient.setQueriesData({ queryKey: ["managers"] }, (oldData: any) => {
+        if (!Array.isArray(oldData)) return oldData;
+        return oldData.filter((m: any) => m.id !== id);
+      });
       setDeletingManager(null);
+      toast({ title: "Success", description: "Manager deleted successfully." });
+      await queryClient.invalidateQueries({ queryKey: ["managers"] });
     },
     onError: (error: any) => {
       toast({
