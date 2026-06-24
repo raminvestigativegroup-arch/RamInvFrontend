@@ -273,19 +273,16 @@ const HoursTracking = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6 bg-slate-50/50 dark:bg-slate-950/20 min-h-screen text-slate-900 dark:text-slate-100">
+    <div className="p-6 space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
+      <div className="module-page-header">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-primary" />
-            Hours & Attendance
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="module-page-title">Hours & Attendance</h1>
+          <p className="text-sm text-muted-foreground">
             Site-centric dashboard tracking shift coverage, scheduled hours, and attendance KPIs.
           </p>
         </div>
-        <div className="flex gap-2.5 w-full sm:w-auto">
+        <div className="flex gap-2.5 items-center">
           <SelectDropdown
             value={period}
             onChange={(val) => setPeriod(val as any)}

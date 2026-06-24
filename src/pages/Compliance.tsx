@@ -482,7 +482,7 @@ const Compliance = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="module-page-header">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="module-page-title">Compliance &amp; Documents</h1>
@@ -490,7 +490,7 @@ const Compliance = () => {
               <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
             )}
           </div>
-          <p className="text-sm text-muted-foreground font-medium">Track licenses, certifications, and required documents</p>
+          <p className="text-sm text-muted-foreground">Track licenses, certifications, and required documents</p>
         </div>
         {hasCreatePermission && (
           <Button
