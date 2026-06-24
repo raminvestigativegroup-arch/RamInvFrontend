@@ -306,7 +306,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
               <SelectDropdown
                 value={form.siteId}
                 onChange={val => {
-                  setForm(f => ({ ...f, siteId: val, managerId: "", selectedGuards: [] }));
+                  setForm(f => ({ ...f, siteId: val, managerId: "" }));
                   if (errors.siteId) setErrors(prev => ({ ...prev, siteId: undefined }));
                 }}
                 options={sites.map((s: any) => ({ value: s.id, label: s.name }))}
@@ -319,7 +319,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
               <SelectDropdown
                 value={form.managerId}
                 onChange={val => {
-                  setForm(f => ({ ...f, managerId: val, selectedGuards: [] }));
+                  setForm(f => ({ ...f, managerId: val }));
                   if (errors.managerId) setErrors(prev => ({ ...prev, managerId: undefined }));
                 }}
                 options={siteManagers.map((m: any) => ({ value: m.id, label: m.name }))}
@@ -451,70 +451,8 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
               </DialogContent>
             </Dialog>
 
-            {editEntry && isMultiDay && (
-              <div className="space-y-2">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Apply Changes to</span>
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Option 1: Only This Day */}
-                  <div
-                    onClick={() => {
-                      setEditScope("single");
-                      setForm(f => ({
-                        ...f,
-                        startDate: editEntry.date,
-                        endDate: editEntry.date,
-                      }));
-                      setActivePresetDays(null);
-                    }}
-                    className={`relative p-3 rounded-xl border-2 cursor-pointer flex flex-col justify-between transition-all duration-200 select-none shadow-sm ${editScope === "single"
-                        ? "bg-primary/5 border-primary text-primary"
-                        : "bg-secondary/40 border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-secondary/70 text-foreground"
-                      }`}
-                  >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold">Only this day</span>
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${editScope === "single" ? "border-primary bg-primary" : "border-slate-300"
-                        }`}>
-                        {editScope === "single" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                      </div>
-                    </div>
-                    <span className={`text-xs font-semibold ${editScope === "single" ? "text-primary" : "text-muted-foreground"}`}>
-                      {formatDateFriendly(editEntry.date)}
-                    </span>
-                  </div>
-
-                  {/* Option 2: All Days in Series */}
-                  <div
-                    onClick={() => {
-                      setEditScope("all");
-                      setForm(f => ({
-                        ...f,
-                        startDate: minDate,
-                        endDate: maxDate,
-                      }));
-                    }}
-                    className={`relative p-3 rounded-xl border-2 cursor-pointer flex flex-col justify-between transition-all duration-200 select-none shadow-sm ${editScope === "all"
-                        ? "bg-primary/5 border-primary text-primary"
-                        : "bg-secondary/40 border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-secondary/70 text-foreground"
-                      }`}
-                  >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold">All days in series</span>
-                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${editScope === "all" ? "border-primary bg-primary" : "border-slate-300"
-                        }`}>
-                        {editScope === "all" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                      </div>
-                    </div>
-                    <span className={`text-xs font-semibold ${editScope === "all" ? "text-primary" : "text-muted-foreground"} truncate`}>
-                      {formatDateRangeFriendly(minDate, maxDate)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Quick Duration Presets */}
-            {editScope === "all" && (
+            {(
               <div className="space-y-2">
                 <span className="text-xs font-medium text-muted-foreground">Quick Duration</span>
                 <div className="flex flex-wrap gap-2">

@@ -606,11 +606,7 @@ const HoursTracking = () => {
                       </DialogDescription>
                     </div>
 
-                    <div className="flex gap-2 items-center mr-4">
-                      <span className="bg-blue-50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/20 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                        <Briefcase className="w-3.5 h-3.5" />
-                        {activeSelectedSite.client}
-                      </span>
+                    <div className="flex gap-2 items-center mr-6">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${activeSelectedSite.status === "active"
                         ? 'bg-emerald-500/5 text-emerald-600 border border-emerald-500/10'
                         : 'bg-slate-100 text-slate-500 border border-slate-200'
@@ -832,15 +828,14 @@ const HoursTracking = () => {
 
                                 {/* Live Status Badge */}
                                 <td className="px-4 py-3 text-center">
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                    guard.status === 'Clocked In'
-                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                      : guard.status === 'On Break'
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${guard.status === 'Clocked In'
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                    : guard.status === 'On Break'
                                       ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
                                       : guard.status === 'Clocked Out'
-                                      ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                                      : 'bg-slate-500/10 text-slate-600 dark:text-slate-400'
-                                  }`}>
+                                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                                        : 'bg-slate-500/10 text-slate-600 dark:text-slate-400'
+                                    }`}>
                                     {guard.status || 'Off Duty'}
                                   </span>
                                 </td>
