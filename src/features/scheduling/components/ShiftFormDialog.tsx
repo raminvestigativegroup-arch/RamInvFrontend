@@ -212,12 +212,8 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
   const selectedSite = sites.find((s: any) => s.id === form.siteId);
   const siteManagers = selectedSite ? selectedSite.managers || [] : [];
 
-  // Filter guards: show guards who are unassigned or assigned to this manager.
-  // If no manager is selected yet, show all verified guards.
-  const filteredGuards = guards.filter((g: any) => {
-    if (!form.managerId) return true;
-    return !g.managerId || String(g.managerId) === String(form.managerId);
-  });
+  // Filter guards: show all verified guards as they are independent of managers
+  const filteredGuards = guards;
 
   const toggleGuard = (id: string) => {
     setForm((f) => ({
