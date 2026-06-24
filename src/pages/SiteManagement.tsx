@@ -22,6 +22,7 @@ import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { formatDateOnly } from "@/lib/dateUtils";
 
 const normalizeSitesResponse = (response: any): any[] => {
   if (Array.isArray(response)) return response;
@@ -1105,9 +1106,9 @@ const SiteManagement = () => {
                                   <div className="flex items-center gap-2">
                                     <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
                                     <span className="text-foreground">
-                                      {new Date(sch.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                      {formatDateOnly(sch.startDate)}
                                       {sch.endDate && sch.endDate !== sch.startDate && (
-                                        <> - {new Date(sch.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</>
+                                        <> - {formatDateOnly(sch.endDate)}</>
                                       )}
                                     </span>
                                   </div>

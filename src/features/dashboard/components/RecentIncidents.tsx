@@ -4,6 +4,7 @@ import { api } from "@/config/api";
 import { useNavigate } from "react-router-dom";
 import { Eye, Sparkles, X, Camera, Download, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { formatUTCTime } from "@/lib/dateUtils";
 
 interface Incident {
   id: string;
@@ -41,13 +42,13 @@ const normalizeIncident = (inc: any, index: number): Incident => {
     const d = new Date(data.time);
     if (!isNaN(d.getTime())) {
       date = d.toISOString().split('T')[0];
-      time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      time = formatUTCTime(d.toISOString());
     }
   } else if (data.createdAt) {
     const d = new Date(data.createdAt);
     if (!isNaN(d.getTime())) {
       date = d.toISOString().split('T')[0];
-      time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      time = formatUTCTime(d.toISOString());
     }
   }
 

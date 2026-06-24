@@ -9,6 +9,7 @@ import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import DateSelect from "@/components/common/DateSelect";
 import { Button } from "@/components/ui/button";
+import { formatUTCTime } from "@/lib/dateUtils";
 interface Incident {
   id: string;
   title: string;
@@ -46,13 +47,13 @@ const normalizeIncident = (inc: any, index: number): Incident => {
     const d = new Date(data.time);
     if (!isNaN(d.getTime())) {
       date = d.toISOString().split('T')[0];
-      time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      time = formatUTCTime(d.toISOString());
     }
   } else if (data.createdAt) {
     const d = new Date(data.createdAt);
     if (!isNaN(d.getTime())) {
       date = d.toISOString().split('T')[0];
-      time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      time = formatUTCTime(d.toISOString());
     }
   }
 

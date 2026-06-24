@@ -10,6 +10,7 @@ import TimeSelect from "@/components/common/TimeSelect";
 import FormField from "@/components/common/FormField";
 import DateSelect from "@/components/common/DateSelect";
 import { Button } from "@/components/ui/button";
+import { formatDateOnly } from "@/lib/dateUtils";
 
 const timeToMinutes = (time: string): number => {
   if (!time) return 0;
@@ -34,10 +35,7 @@ const getShiftDurationMinutes = (start: string, end: string): number => {
 };
 
 const formatDateFriendly = (dateStr: string) => {
-  if (!dateStr) return "";
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return formatDateOnly(dateStr);
 };
 
 const formatDateRangeFriendly = (startStr: string, endStr: string) => {

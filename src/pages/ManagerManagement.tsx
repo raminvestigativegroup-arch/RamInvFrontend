@@ -22,6 +22,7 @@ import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import { Button } from "@/components/ui/button";
+import { formatDateOnly } from "@/lib/dateUtils";
 
 type ManagerApiResponse =
   | Manager[]
@@ -115,13 +116,10 @@ const getComplianceDetails = (personId: string, documents: any[]) => {
   if (licenseDoc) {
     expiryDateStr = licenseDoc.expiryDate || "N/A";
     if (licenseDoc.expiryDate) {
-      const expDate = new Date(licenseDoc.expiryDate);
-      if (!isNaN(expDate.getTime())) {
-        expiryDateStr = expDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-      } else {
-        expiryDateStr = String(licenseDoc.expiryDate).split("T")[0];
-      }
+      const formatted = formatDateOnly(licenseDoc.expiryDate);
+      expiryDateStr = formatted !== '—' ? formatted : String(licenseDoc.expiryDate).split("T")[0];
 
+      const expDate = new Date(licenseDoc.expiryDate + (licenseDoc.expiryDate.includes('T') ? '' : 'T00:00:00Z'));
       const today = new Date();
       const diffMs = expDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));

@@ -22,6 +22,7 @@ import SelectDropdown from "@/components/common/SelectDropdown";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import { Button } from "@/components/ui/button";
+import { formatDateOnly } from "@/lib/dateUtils";
 
 type GuardApiResponse =
   | Guard[]
@@ -140,13 +141,10 @@ const getComplianceDetails = (personId: string, documents: any[]) => {
   if (licenseDoc) {
     expiryDateStr = licenseDoc.expiryDate || "N/A";
     if (licenseDoc.expiryDate) {
-      const expDate = new Date(licenseDoc.expiryDate);
-      if (!isNaN(expDate.getTime())) {
-        expiryDateStr = expDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-      } else {
-        expiryDateStr = String(licenseDoc.expiryDate).split("T")[0];
-      }
+      const formatted = formatDateOnly(licenseDoc.expiryDate);
+      expiryDateStr = formatted !== '—' ? formatted : String(licenseDoc.expiryDate).split("T")[0];
 
+      const expDate = new Date(licenseDoc.expiryDate + (licenseDoc.expiryDate.includes('T') ? '' : 'T00:00:00Z'));
       const today = new Date();
       const diffMs = expDate.getTime() - today.getTime();
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
@@ -1135,9 +1133,9 @@ const GuardManagement = () => {
                               <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
                                 <Calendar className="w-3 h-3 text-primary shrink-0" />
                                 <span className="truncate">
-                                  {new Date(shift.startDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                  {formatDateOnly(shift.startDate)}
                                   {shift.endDate && shift.endDate !== shift.startDate && (
-                                    <> – {new Date(shift.endDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</>
+                                    <> – {formatDateOnly(shift.endDate)}</>
                                   )}
                                 </span>
                               </div>

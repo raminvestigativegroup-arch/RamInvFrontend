@@ -10,7 +10,6 @@ import {
   MapPin,
   TrendingUp,
   ShieldAlert,
-  Briefcase,
   UserCheck,
   Mail,
   Phone,
@@ -20,7 +19,11 @@ import {
   MoveLeft,
   ArrowLeft,
   ArrowLeftIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  LogIn,
+  LogOut,
+  Coffee,
+  ShieldOff
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/config/api";
@@ -30,6 +33,7 @@ import DateSelect from "@/components/common/DateSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { formatUTCTime } from "@/lib/dateUtils";
 
 const resolveImageUrl = (pathOrData: string | undefined | null) => {
   if (!pathOrData) return "";
@@ -467,7 +471,14 @@ const HoursTracking = () => {
 
                         {/* Active/Inactive Status */}
                         <td className="px-6 py-4 text-center">
-                          <span className={`inline-block w-2 h-2 rounded-full ${site.status === "active" ? "bg-emerald-500" : "bg-slate-300"}`} />
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            site.status === "active"
+                              ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                              : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${site.status === "active" ? "bg-emerald-500" : "bg-slate-400"}`} />
+                            {site.status === "active" ? "Active" : "Inactive"}
+                          </span>
                         </td>
 
                         {/* View action button */}
@@ -790,12 +801,13 @@ const HoursTracking = () => {
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                            <th className="px-4 py-3">Guard Name</th>
-                            <th className="px-4 py-3 text-center">Status</th>
-                            <th className="px-4 py-3 text-center">Hours (Completed/Scheduled)</th>
-                            <th className="px-4 py-3 text-right">Remaining</th>
-                            <th className="px-4 py-3 text-right">Attendance Rate</th>
-                            <th className="px-4 py-3 text-right">Completed/Missed Shifts</th>
+                            <th className="px-4 py-3">Guard</th>
+                            <th className="px-4 py-3 text-center">Live Status</th>
+                            <th className="px-4 py-3 text-center">Clock In</th>
+                            <th className="px-4 py-3 text-center">Clock Out</th>
+                            <th className="px-4 py-3 text-center">Hours (Done/Sched)</th>
+                            <th className="px-4 py-3 text-right">Attendance</th>
+                            <th className="px-4 py-3 text-right">Shifts</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -814,57 +826,82 @@ const HoursTracking = () => {
                               );
                             }
 
-                            return filtered.map((guard: any, index: number) => (
-                              <tr key={guard.id || index} className="hover:bg-slate-50 dark:hover:bg-slate-800/10 transition-colors">
-                                {/* Name with initials avatar */}
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 text-[10px] font-bold shadow-xs overflow-hidden">
-                                      {guard.avatar}
+                            return filtered.map((guard: any, index: number) => {
+                              const formatTime = (ts: string | null) => formatUTCTime(ts);
+
+                              const statusConfig: Record<string, { icon: React.ReactNode; cls: string; dot: string }> = {
+                                'Clocked In':  { icon: <LogIn className="w-3 h-3" />,   cls: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', dot: 'bg-emerald-500 animate-pulse' },
+                                'On Break':    { icon: <Coffee className="w-3 h-3" />,   cls: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800',     dot: 'bg-amber-400 animate-pulse' },
+                                'Clocked Out': { icon: <LogOut className="w-3 h-3" />,  cls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800',       dot: 'bg-blue-400' },
+                                'Off Duty':    { icon: <ShieldOff className="w-3 h-3" />, cls: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700', dot: 'bg-slate-400' },
+                              };
+                              const sc = statusConfig[guard.status] || statusConfig['Off Duty'];
+
+                              return (
+                                <tr key={guard.id || index} className="hover:bg-slate-50 dark:hover:bg-slate-800/10 transition-colors">
+                                  {/* Name with initials avatar */}
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className="relative">
+                                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 text-[11px] font-bold shadow-xs">
+                                          {guard.avatar}
+                                        </div>
+                                        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-950 ${sc.dot}`} />
+                                      </div>
+                                      <span className="font-semibold text-slate-900 dark:text-white">{guard.name}</span>
                                     </div>
-                                    <span className="font-semibold text-slate-900 dark:text-white text-sm">{guard.name}</span>
-                                  </div>
-                                </td>
+                                  </td>
 
-                                {/* Live Status Badge */}
-                                <td className="px-4 py-3 text-center">
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${guard.status === 'Clocked In'
-                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                    : guard.status === 'On Break'
-                                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                                      : guard.status === 'Clocked Out'
-                                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                                        : 'bg-slate-500/10 text-slate-600 dark:text-slate-400'
+                                  {/* Live Status Badge */}
+                                  <td className="px-4 py-3 text-center">
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${sc.cls}`}>
+                                      {sc.icon}
+                                      {guard.status || 'Off Duty'}
+                                    </span>
+                                  </td>
+
+                                  {/* Clock In */}
+                                  <td className="px-4 py-3 text-center">
+                                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                      <LogIn className="w-3 h-3" />
+                                      {formatTime(guard.clockIn)}
+                                    </span>
+                                  </td>
+
+                                  {/* Clock Out */}
+                                  <td className="px-4 py-3 text-center">
+                                    <span className={`inline-flex items-center gap-1 font-semibold ${
+                                      guard.clockOut ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'
                                     }`}>
-                                    {guard.status || 'Off Duty'}
-                                  </span>
-                                </td>
+                                      <LogOut className="w-3 h-3" />
+                                      {formatTime(guard.clockOut)}
+                                    </span>
+                                  </td>
 
-                                {/* Direct Completed/Scheduled Hours value with requested color coding */}
-                                <td className="px-4 py-3 text-center">
-                                  {formatHoursText(guard.completedHours, guard.assignedHours)}
-                                </td>
+                                  {/* Completed / Scheduled Hours */}
+                                  <td className="px-4 py-3 text-center">
+                                    {formatHoursText(guard.completedHours, guard.assignedHours)}
+                                  </td>
 
-                                {/* Remaining hours */}
-                                <td className="px-4 py-3 text-right font-medium text-slate-500">{guard.remainingHours}h</td>
-
-                                {/* Attendance percentage indicator (without progress bar) */}
-                                <td className="px-4 py-3 text-right">
-                                  <span className={`font-bold text-xs ${guard.attendancePct >= 90 ? 'text-emerald-500' : guard.attendancePct >= 75 ? 'text-amber-500' : 'text-rose-500'
+                                  {/* Attendance Rate */}
+                                  <td className="px-4 py-3 text-right">
+                                    <span className={`font-bold text-xs ${
+                                      guard.attendancePct >= 90 ? 'text-emerald-500' : guard.attendancePct >= 75 ? 'text-amber-500' : 'text-rose-500'
                                     }`}>
-                                    {guard.attendancePct}%
-                                  </span>
-                                </td>
+                                      {guard.attendancePct}%
+                                    </span>
+                                  </td>
 
-                                {/* Completed vs missed count */}
-                                <td className="px-4 py-3 text-right text-slate-500">
-                                  <span className="font-semibold text-slate-700 dark:text-slate-350">{guard.completedShifts} completed</span>
-                                  {guard.missedShifts > 0 && (
-                                    <span className="text-rose-500 font-semibold ml-1">({guard.missedShifts} missed)</span>
-                                  )}
-                                </td>
-                              </tr>
-                            ));
+                                  {/* Completed vs missed shifts */}
+                                  <td className="px-4 py-3 text-right">
+                                    <span className="font-semibold text-slate-700 dark:text-slate-350">{guard.completedShifts} done</span>
+                                    {guard.missedShifts > 0 && (
+                                      <span className="text-rose-500 font-semibold ml-1">({guard.missedShifts} missed)</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            });
                           })()}
                         </tbody>
                       </table>

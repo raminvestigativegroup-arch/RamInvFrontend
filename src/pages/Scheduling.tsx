@@ -11,6 +11,7 @@ import ScheduleSiteView from "@/features/scheduling/components/ScheduleSiteView"
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import { Button } from "@/components/ui/button";
+import { formatDateOnly } from "@/lib/dateUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,17 +42,18 @@ const Scheduling = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [weekStart, setWeekStart] = useState(() => {
     const d = new Date();
-    d.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1)); // Start of current week (Monday)
-    return d;
+    const utcDay = d.getUTCDay();
+    const diffToMonday = utcDay === 0 ? -6 : 1 - utcDay;
+    const monday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + diffToMonday));
+    return monday;
   });
   const [filterSite, setFilterSite] = useState("all");
 
   useEffect(() => {
-    const d = new Date(selectedDate + "T00:00");
-    const day = d.getDay();
+    const d = new Date(selectedDate + "T00:00:00Z");
+    const day = d.getUTCDay();
     const diffToMonday = day === 0 ? -6 : 1 - day;
-    const monday = new Date(d);
-    monday.setDate(d.getDate() + diffToMonday);
+    const monday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + diffToMonday));
     setWeekStart(monday);
   }, [selectedDate]);
 
@@ -249,14 +251,14 @@ const Scheduling = () => {
 
   const handlePrevWeek = () => {
     const prev = new Date(weekStart);
-    prev.setDate(prev.getDate() - 7);
+    prev.setUTCDate(prev.getUTCDate() - 7);
     setWeekStart(prev);
     setSelectedDate(prev.toISOString().split('T')[0]);
   };
 
   const handleNextWeek = () => {
     const next = new Date(weekStart);
-    next.setDate(next.getDate() + 7);
+    next.setUTCDate(next.getUTCDate() + 7);
     setWeekStart(next);
     setSelectedDate(next.toISOString().split('T')[0]);
   };
@@ -264,10 +266,10 @@ const Scheduling = () => {
   const getWeekRangeText = () => {
     const start = new Date(weekStart);
     const end = new Date(weekStart);
-    end.setDate(end.getDate() + 6);
+    end.setUTCDate(end.getUTCDate() + 6);
 
-    const startOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-    const endOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    const startOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+    const endOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' };
 
     return `Week of ${start.toLocaleDateString('en-US', startOptions)} – ${end.toLocaleDateString('en-US', endOptions)}`;
   };
@@ -426,8 +428,8 @@ const Scheduling = () => {
               <div className="flex items-center gap-4">
                 <Button
                   onClick={() => {
-                    const prev = new Date(selectedDate + "T00:00");
-                    prev.setDate(prev.getDate() - 1);
+                    const prev = new Date(selectedDate + "T00:00:00Z");
+                    prev.setUTCDate(prev.getUTCDate() - 1);
                     setSelectedDate(prev.toISOString().split('T')[0]);
                   }}
                   variant="secondary"
@@ -437,12 +439,12 @@ const Scheduling = () => {
                   <ChevronLeft className="w-4 h-4 text-foreground" />
                 </Button>
                 <h2 className="text-base font-semibold text-foreground">
-                  {new Date(selectedDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  {formatDateOnly(selectedDate)}
                 </h2>
                 <Button
                   onClick={() => {
-                    const next = new Date(selectedDate + "T00:00");
-                    next.setDate(next.getDate() + 1);
+                    const next = new Date(selectedDate + "T00:00:00Z");
+                    next.setUTCDate(next.getUTCDate() + 1);
                     setSelectedDate(next.toISOString().split('T')[0]);
                   }}
                   variant="secondary"
@@ -468,7 +470,7 @@ const Scheduling = () => {
         <div className="bg-card rounded-xl border border-border overflow-hidden">
           <div className="p-4 border-b border-border flex items-center justify-between">
             <h2 className="text-base font-semibold text-foreground">
-              Shifts for {new Date(selectedDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              Shifts for {formatDateOnly(selectedDate)}
             </h2>
             <span className="text-xs text-muted-foreground">{todayShifts.length} shift(s)</span>
           </div>

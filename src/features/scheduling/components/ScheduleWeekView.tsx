@@ -37,15 +37,17 @@ const ScheduleWeekView = ({ entries, guards, onEdit, onDelete, filterSite, weekS
     return guards.filter((g) => g.isVerified && guardNamesWithShifts.has(g.name));
   }, [guards, filterSite, entries]);
 
-  // Generate the 7 days of the week based on weekStart
+  // Generate the 7 days of the week based on weekStart (enforces UTC timezone alignment)
   const weekDays = daysOfWeek.map((day, i) => {
     const date = new Date(weekStart);
-    date.setDate(date.getDate() + i);
+    date.setUTCDate(date.getUTCDate() + i);
+    const dateStr = date.toISOString().split("T")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
     return {
       day,
-      label: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      dateStr: date.toISOString().split("T")[0],
-      isToday: date.toDateString() === new Date().toDateString(),
+      label: date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
+      dateStr,
+      isToday: dateStr === todayStr,
     };
   });
 
