@@ -555,18 +555,11 @@ const IncidentManagement = () => {
                           description: refinedData.refined,
                         })
                       }
-                      disabled={applyRefinedDescriptionMutation.isPending}
-                      className="w-full"
+                      loading={applyRefinedDescriptionMutation.isPending}
+                      className="w-full gap-2"
                     >
-                      {applyRefinedDescriptionMutation.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" /> Saving...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-4 h-4" /> Approve & Update Description
-                        </>
-                      )}
+                      {!applyRefinedDescriptionMutation.isPending && <CheckCircle2 className="w-4 h-4" />}
+                      Approve & Update Description
                     </Button>
                   )}
                 </>

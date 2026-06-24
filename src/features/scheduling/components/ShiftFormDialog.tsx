@@ -9,6 +9,7 @@ import SelectDropdown from "@/components/common/SelectDropdown";
 import TimeSelect from "@/components/common/TimeSelect";
 import FormField from "@/components/common/FormField";
 import DateSelect from "@/components/common/DateSelect";
+import { Button } from "@/components/ui/button";
 
 const timeToMinutes = (time: string): number => {
   if (!time) return 0;
@@ -30,6 +31,18 @@ const getShiftDurationMinutes = (start: string, end: string): number => {
     endMins += 24 * 60; // Crosses midnight
   }
   return endMins - startMins;
+};
+
+const formatDateFriendly = (dateStr: string) => {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+const formatDateRangeFriendly = (startStr: string, endStr: string) => {
+  if (!startStr || !endStr) return "";
+  return `${formatDateFriendly(startStr)} – ${formatDateFriendly(endStr)}`;
 };
 
 interface Props {
@@ -59,6 +72,21 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
   const [guardSelectOpen, setGuardSelectOpen] = useState(false);
   const [guardSearchQuery, setGuardSearchQuery] = useState("");
   const [activePresetTimeMins, setActivePresetTimeMins] = useState<number | null>(null);
+  const [editScope, setEditScope] = useState<"single" | "all">("all");
+
+  // Determine if it is a multi-day series
+  const scheduleId = editEntry ? editEntry.id.split("-")[0] : "";
+  const scheduleEntries = editEntry ? existingEntries.filter(e => e.id.startsWith(scheduleId + "-")) : [];
+  const uniqueDates = Array.from(new Set(scheduleEntries.map(e => e.date)));
+  const isMultiDay = uniqueDates.length > 1;
+
+  let minDate = editEntry ? editEntry.date : "";
+  let maxDate = editEntry ? editEntry.date : "";
+  if (scheduleEntries.length > 0) {
+    const dates = scheduleEntries.map(e => e.date).sort();
+    minDate = dates[0];
+    maxDate = dates[dates.length - 1];
+  }
 
   // Fetch verified guards from API
   const { data: guards = [], isLoading: isLoadingGuards } = useQuery({
@@ -131,17 +159,18 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
   useEffect(() => {
     if (open) {
       setErrors({});
+      setEditScope("all");
       if (editEntry) {
-        // Extract the scheduleId prefix (first UUID part before the guard UUID)
-        const scheduleId = editEntry.id.split("-")[0];
+        const assignedGuards = scheduleEntries.map(e => e.guard);
 
-        // Find all guards currently assigned to this schedule from existingEntries
-        const assignedGuards = existingEntries
-          .filter(e => e.id.startsWith(scheduleId + "-"))
-          .map(e => e.guard);
-
-        // Map guard names to their corresponding guard IDs
-        const guardIds = assignedGuards.map(name => guards.find(g => g.name === name)?.id).filter(Boolean) as string[];
+        // Map guard names to their corresponding guard IDs and deduplicate them
+        const guardIds = Array.from(
+          new Set(
+            assignedGuards
+              .map(name => guards.find(g => g.name === name)?.id)
+              .filter(Boolean)
+          )
+        ) as string[];
 
         // Fallback to the single guard if no other matching composite entries are found
         if (guardIds.length === 0) {
@@ -158,8 +187,8 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
           selectedGuards: guardIds,
           siteId: siteId,
           managerId: managerId,
-          startDate: editEntry.date,
-          endDate: editEntry.date,
+          startDate: minDate,
+          endDate: maxDate,
           shiftStart: start,
           shiftEnd: end,
         });
@@ -251,6 +280,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
       endDate: form.endDate,
       shiftStart: `${form.shiftStart}:00`,
       shiftEnd: `${form.shiftEnd}:00`,
+      onlyThisDay: editScope === "single",
     };
 
     onSave(payload as any);
@@ -425,66 +455,131 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
               </DialogContent>
             </Dialog>
 
-            {/* Quick Duration Presets */}
-            <div className="space-y-2">
-              <span className="text-xs font-medium text-muted-foreground">Quick Duration</span>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { label: "24 Hours", days: 0, fullDay: true },
-                  { label: "3 Days", days: 2, fullDay: false },
-                  { label: "1 Week", days: 6, fullDay: false },
-                  { label: "2 Weeks", days: 13, fullDay: false },
-                  { label: "1 Month", days: 29, fullDay: false },
-                ].map(preset => {
-                  const today = new Date();
-                  const start = today.toISOString().split("T")[0];
-                  const endD = new Date(today);
-                  endD.setDate(today.getDate() + preset.days);
-                  const end = endD.toISOString().split("T")[0];
+            {editEntry && isMultiDay && (
+              <div className="space-y-2">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Apply Changes to</span>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Option 1: Only This Day */}
+                  <div
+                    onClick={() => {
+                      setEditScope("single");
+                      setForm(f => ({
+                        ...f,
+                        startDate: editEntry.date,
+                        endDate: editEntry.date,
+                      }));
+                      setActivePresetDays(null);
+                    }}
+                    className={`relative p-3 rounded-xl border-2 cursor-pointer flex flex-col justify-between transition-all duration-200 select-none shadow-sm ${editScope === "single"
+                        ? "bg-primary/5 border-primary text-primary"
+                        : "bg-secondary/40 border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-secondary/70 text-foreground"
+                      }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-bold">Only this day</span>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${editScope === "single" ? "border-primary bg-primary" : "border-slate-300"
+                        }`}>
+                        {editScope === "single" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                    </div>
+                    <span className={`text-xs font-semibold ${editScope === "single" ? "text-primary" : "text-muted-foreground"}`}>
+                      {formatDateFriendly(editEntry.date)}
+                    </span>
+                  </div>
 
-                  const isActive = activePresetDays === preset.days &&
-                    (preset.fullDay ? form.shiftStart === "00:00" && form.shiftEnd === "23:59" : true);
-
-                  return (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => {
-                        setActivePresetDays(preset.days);
-                        if (preset.fullDay) {
-                          setActivePresetTimeMins(1439); // 23h 59m offset
-                          setForm(f => ({
-                            ...f,
-                            startDate: start,
-                            endDate: end,
-                            shiftStart: "00:00",
-                            shiftEnd: "23:59",
-                          }));
-                        } else {
-                          setForm(f => ({
-                            ...f,
-                            startDate: start,
-                            endDate: end,
-                          }));
-                        }
-                        setErrors(prev => ({ ...prev, startDate: undefined, endDate: undefined, shiftStart: undefined, shiftEnd: undefined }));
-                      }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isActive
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-secondary text-foreground border-border hover:bg-accent hover:border-primary/40"
-                        }`}
-                    >
-                      {preset.label}
-                    </button>
-                  );
-                })}
+                  {/* Option 2: All Days in Series */}
+                  <div
+                    onClick={() => {
+                      setEditScope("all");
+                      setForm(f => ({
+                        ...f,
+                        startDate: minDate,
+                        endDate: maxDate,
+                      }));
+                    }}
+                    className={`relative p-3 rounded-xl border-2 cursor-pointer flex flex-col justify-between transition-all duration-200 select-none shadow-sm ${editScope === "all"
+                        ? "bg-primary/5 border-primary text-primary"
+                        : "bg-secondary/40 border-border hover:border-slate-300 dark:hover:border-slate-700 hover:bg-secondary/70 text-foreground"
+                      }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-bold">All days in series</span>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${editScope === "all" ? "border-primary bg-primary" : "border-slate-300"
+                        }`}>
+                        {editScope === "all" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                    </div>
+                    <span className={`text-xs font-semibold ${editScope === "all" ? "text-primary" : "text-muted-foreground"} truncate`}>
+                      {formatDateRangeFriendly(minDate, maxDate)}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Quick Duration Presets */}
+            {editScope === "all" && (
+              <div className="space-y-2">
+                <span className="text-xs font-medium text-muted-foreground">Quick Duration</span>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: "24 Hours", days: 0, fullDay: true },
+                    { label: "3 Days", days: 2, fullDay: false },
+                    { label: "1 Week", days: 6, fullDay: false },
+                    { label: "2 Weeks", days: 13, fullDay: false },
+                    { label: "1 Month", days: 29, fullDay: false },
+                  ].map(preset => {
+                    const today = new Date();
+                    const start = today.toISOString().split("T")[0];
+                    const endD = new Date(today);
+                    endD.setDate(today.getDate() + preset.days);
+                    const end = endD.toISOString().split("T")[0];
+
+                    const isActive = activePresetDays === preset.days &&
+                      (preset.fullDay ? form.shiftStart === "00:00" && form.shiftEnd === "23:59" : true);
+
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          setActivePresetDays(preset.days);
+                          if (preset.fullDay) {
+                            setActivePresetTimeMins(1439); // 23h 59m offset
+                            setForm(f => ({
+                              ...f,
+                              startDate: start,
+                              endDate: end,
+                              shiftStart: "00:00",
+                              shiftEnd: "23:59",
+                            }));
+                          } else {
+                            setForm(f => ({
+                              ...f,
+                              startDate: start,
+                              endDate: end,
+                            }));
+                          }
+                          setErrors(prev => ({ ...prev, startDate: undefined, endDate: undefined, shiftStart: undefined, shiftEnd: undefined }));
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isActive
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                          : "bg-secondary text-foreground border-border hover:bg-accent hover:border-primary/40"
+                          }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Start Date" required error={errors.startDate}>
                 <DateSelect
                   value={form.startDate}
+                  disabled={editScope === "single"}
                   onChange={(val) => {
                     setForm((f) => {
                       // If a preset is active, keep the same duration offset
@@ -507,6 +602,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
               <FormField label="End Date" required error={errors.endDate}>
                 <DateSelect
                   value={form.endDate}
+                  disabled={editScope === "single"}
                   onChange={(val) => {
                     // Manual end-date change breaks the preset lock
                     setActivePresetDays(null);
@@ -550,22 +646,20 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
               </FormField>
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 disabled={isLoadingSave}
                 onClick={() => onOpenChange(false)}
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                disabled={isLoadingSave}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                loading={isLoadingSave}
               >
-                {isLoadingSave && <Loader2 className="w-4.5 h-4.5 animate-spin" />}
-                {editEntry ? (isLoadingSave ? "Updating..." : "Update Shift") : (isLoadingSave ? "Creating..." : `Create ${form.selectedGuards.length > 0 ? `${form.selectedGuards.length} Shift(s)` : "Shift"}`)}
-              </button>
+                {editEntry ? "Update Shift" : `Create ${form.selectedGuards.length > 0 ? `${form.selectedGuards.length} Shift(s)` : "Shift"}`}
+              </Button>
             </div>
           </form>
         )}

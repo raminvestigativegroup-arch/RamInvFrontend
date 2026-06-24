@@ -795,6 +795,7 @@ const HoursTracking = () => {
                         <thead>
                           <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                             <th className="px-4 py-3">Guard Name</th>
+                            <th className="px-4 py-3 text-center">Status</th>
                             <th className="px-4 py-3 text-center">Hours (Completed/Scheduled)</th>
                             <th className="px-4 py-3 text-right">Remaining</th>
                             <th className="px-4 py-3 text-right">Attendance Rate</th>
@@ -827,6 +828,21 @@ const HoursTracking = () => {
                                     </div>
                                     <span className="font-semibold text-slate-900 dark:text-white text-sm">{guard.name}</span>
                                   </div>
+                                </td>
+
+                                {/* Live Status Badge */}
+                                <td className="px-4 py-3 text-center">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                    guard.status === 'Clocked In'
+                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                      : guard.status === 'On Break'
+                                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                      : guard.status === 'Clocked Out'
+                                      ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                                      : 'bg-slate-500/10 text-slate-600 dark:text-slate-400'
+                                  }`}>
+                                    {guard.status || 'Off Duty'}
+                                  </span>
                                 </td>
 
                                 {/* Direct Completed/Scheduled Hours value with requested color coding */}

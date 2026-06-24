@@ -449,10 +449,10 @@ const Scheduling = () => {
                 </Button>
               </div>
 
-              <ScheduleSiteView 
-                entries={entries} 
-                selectedDate={selectedDate} 
-                sites={filterSite === "all" ? activeSites : activeSites.filter((s: any) => s.name === filterSite)} 
+              <ScheduleSiteView
+                entries={entries}
+                selectedDate={selectedDate}
+                sites={filterSite === "all" ? activeSites : activeSites.filter((s: any) => s.name === filterSite)}
               />
             </div>
           )}
@@ -462,75 +462,75 @@ const Scheduling = () => {
       {/* Selected Day Detail */}
       {viewMode !== "week" && (
         <div className="bg-card rounded-xl border border-border overflow-hidden">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">
-            Shifts for {new Date(selectedDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-          </h2>
-          <span className="text-xs text-muted-foreground">{todayShifts.length} shift(s)</span>
-        </div>
-        {todayShifts.length === 0 ? (
-          <div className="p-4">
-            <StateMessage type="empty" message="No shifts scheduled for this date" />
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-base font-semibold text-foreground">
+              Shifts for {new Date(selectedDate + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            </h2>
+            <span className="text-xs text-muted-foreground">{todayShifts.length} shift(s)</span>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-secondary">
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">GUARD</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SITE</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SCHEDULED</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTUAL START</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">STATUS</th>
-                  <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {todayShifts.map((entry) => (
-                  <tr key={entry.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
-                    <td className="px-5 py-3 text-sm font-medium text-foreground">{entry.guard}</td>
-                    <td className="px-5 py-3 text-sm text-muted-foreground">{entry.site}</td>
-                    <td className="px-5 py-3 text-sm text-foreground">{entry.shiftStart} – {entry.shiftEnd}</td>
-                    <td className="px-5 py-3 text-sm text-foreground">{entry.actualStart || "—"}</td>
-                    <td className="px-5 py-3">
-                      <span className={
-                        entry.status === "in-progress" ? "status-badge-active" :
-                          entry.status === "completed" ? "status-badge-active" :
-                            entry.status === "missed" ? "status-badge-danger" : "status-badge-inactive"
-                      }>{entry.status}</span>
-                    </td>
-                    <td className="px-5 py-3 flex gap-2">
-                      {hasEditPermission && (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => handleEdit(entry)}
-                          className="h-auto p-0 hover:underline"
-                        >
-                          Edit
-                        </Button>
-                      )}
-                      {hasDeletePermission && (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => handleDelete(entry.id)}
-                          className="h-auto p-0 hover:underline text-destructive"
-                        >
-                          Delete
-                        </Button>
-                      )}
-                      {!hasEditPermission && !hasDeletePermission && (
-                        <span className="text-xs text-muted-foreground">None</span>
-                      )}
-                    </td>
+          {todayShifts.length === 0 ? (
+            <div className="p-4">
+              <StateMessage type="empty" message="No shifts scheduled for this date" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-secondary">
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">GUARD</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SITE</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SCHEDULED</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTUAL START</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">STATUS</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTIONS</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {todayShifts.map((entry) => (
+                    <tr key={entry.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
+                      <td className="px-5 py-3 text-sm font-medium text-foreground">{entry.guard}</td>
+                      <td className="px-5 py-3 text-sm text-muted-foreground">{entry.site}</td>
+                      <td className="px-5 py-3 text-sm text-foreground">{entry.shiftStart} – {entry.shiftEnd}</td>
+                      <td className="px-5 py-3 text-sm text-foreground">{entry.actualStart || "—"}</td>
+                      <td className="px-5 py-3">
+                        <span className={
+                          entry.status === "in-progress" ? "status-badge-active" :
+                            entry.status === "completed" ? "status-badge-active" :
+                              entry.status === "missed" ? "status-badge-danger" : "status-badge-inactive"
+                        }>{entry.status}</span>
+                      </td>
+                      <td className="px-5 py-3 flex gap-2">
+                        {hasEditPermission && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => handleEdit(entry)}
+                            className="h-auto p-0 hover:underline"
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        {hasDeletePermission && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => handleDelete(entry.id)}
+                            className="h-auto p-0 hover:underline text-destructive"
+                          >
+                            Delete
+                          </Button>
+                        )}
+                        {!hasEditPermission && !hasDeletePermission && (
+                          <span className="text-xs text-muted-foreground">None</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
       <ShiftFormDialog
         open={open}
@@ -538,7 +538,7 @@ const Scheduling = () => {
         onSave={handleSave}
         editEntry={editEntry}
         existingEntries={entries}
-        isLoading={createMutation.isPending || updateMutation.isPending}
+        isLoadingSave={createMutation.isPending || updateMutation.isPending}
         error={createMutation.error?.response?.data?.message || createMutation.error?.message || updateMutation.error?.response?.data?.message || updateMutation.error?.message}
       />
 
@@ -556,13 +556,19 @@ const Scheduling = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deletingId && deleteMutation.mutate(deletingId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Deleting..." : "Delete Shift"}
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={deleteMutation.isPending}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={() => deletingId && deleteMutation.mutate(deletingId)}
+                loading={deleteMutation.isPending}
+              >
+                Delete Shift
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

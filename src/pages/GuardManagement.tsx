@@ -285,6 +285,7 @@ const GuardManagement = () => {
       queryClient.invalidateQueries({ queryKey: ["guards"] });
       setOpen(false);
       setEditingGuard(null);
+      setVerifyingGuard(null);
       setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", site: sites[0]?.name || "", licenseExpiry: "2027-01-01", image: "", roleType: "", managerId: "" });
       toast({ title: "Guard Updated", description: "The guard information has been updated successfully." });
     },
@@ -721,6 +722,7 @@ const GuardManagement = () => {
         title={editingGuard ? "Update Guard Profile" : "Add New Guard"}
         onSubmit={handleSubmit}
         submitLabel={editingGuard ? (updateMutation.isPending ? "Updating..." : "Update Profile") : (createMutation.isPending ? "Adding..." : "Add Guard")}
+        isLoading={createMutation.isPending || updateMutation.isPending}
       >
 
         {errors.form && (
@@ -869,12 +871,19 @@ const GuardManagement = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deletingGuard && deleteMutation.mutate(deletingGuard.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? "Deleting..." : "Delete Account"}
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={deleteMutation.isPending}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={() => deletingGuard && deleteMutation.mutate(deletingGuard.id)}
+                loading={deleteMutation.isPending}
+              >
+                Delete Account
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1021,6 +1030,7 @@ const GuardManagement = () => {
                             setImageError(false);
                           }}
                           size="sm"
+                          disabled={updateMutation.isPending}
                         >
                           Cancel
                         </Button>
@@ -1028,16 +1038,12 @@ const GuardManagement = () => {
                           disabled={!isVerifiedChecked || updateMutation.isPending}
                           onClick={() => {
                             updateMutation.mutate({ id: verifyingGuard.id, verified: "true" });
-                            setVerifyingGuard(null);
-                            setIsVerifiedChecked(false);
-                            setSelectedDocIndex(0);
-                            setImageError(false);
                           }}
                           size="sm"
+                          loading={updateMutation.isPending}
                           className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
                         >
-                          {updateMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                          {updateMutation.isPending ? "Verifying..." : "Verify Guard"}
+                          Verify Guard
                         </Button>
                       </div>
                     </div>

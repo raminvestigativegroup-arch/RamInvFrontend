@@ -776,12 +776,19 @@ const RolesPermissions = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deletingRole && deleteRoleMutation.mutate(deletingRole.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteRoleMutation.isPending ? "Deleting..." : "Delete Role"}
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={deleteRoleMutation.isPending}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={() => deletingRole && deleteRoleMutation.mutate(deletingRole.id)}
+                loading={deleteRoleMutation.isPending}
+              >
+                Delete Role
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

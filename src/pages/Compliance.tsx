@@ -821,7 +821,7 @@ const Compliance = () => {
                         setDocToDelete(selectedDoc.id);
                         setIsDeleteConfirmOpen(true);
                       }}
-                      disabled={deleteMutation.isPending}
+                      loading={deleteMutation.isPending}
                       variant="destructive"
                       size="sm"
                     >
@@ -1002,17 +1002,10 @@ const Compliance = () => {
               </Button>
               <Button
                 type="submit"
-                disabled={uploadMutation.isPending}
+                loading={uploadMutation.isPending}
                 size="sm"
               >
-                {uploadMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  "Upload & Verify"
-                )}
+                Upload & Verify
               </Button>
             </div>
           </form>
@@ -1084,17 +1077,10 @@ const Compliance = () => {
               </Button>
               <Button
                 type="submit"
-                disabled={editMutation.isPending}
+                loading={editMutation.isPending}
                 size="sm"
               >
-                {editMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
+                Save Changes
               </Button>
             </div>
           </form>
@@ -1111,16 +1097,23 @@ const Compliance = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDocToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (docToDelete) {
-                  deleteMutation.mutate(docToDelete);
-                }
-              }}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-            >
-              Delete
+            <AlertDialogCancel asChild onClick={() => setDocToDelete(null)}>
+              <Button variant="outline" disabled={deleteMutation.isPending}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (docToDelete) {
+                    deleteMutation.mutate(docToDelete);
+                  }
+                }}
+                loading={deleteMutation.isPending}
+              >
+                Delete
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -804,12 +804,19 @@ const SiteManagement = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deletingSite && deleteSiteMutation.mutate(deletingSite.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteSiteMutation.isPending ? "Deleting..." : "Delete Site"}
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={deleteSiteMutation.isPending}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={() => deletingSite && deleteSiteMutation.mutate(deletingSite.id)}
+                loading={deleteSiteMutation.isPending}
+              >
+                Delete Site
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

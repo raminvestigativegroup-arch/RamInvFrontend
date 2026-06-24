@@ -304,6 +304,8 @@ const ManagerManagement = () => {
       toast({ title: "Success", description: "Manager updated successfully." });
       setOpen(false);
       setEditingManager(null);
+      setVerifyingManager(null);
+      setIsVerifiedChecked(false);
       setForm({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", roleId: "", selectedSites: [], status: "active", licenseExpiry: "2027-01-01", image: "" });
     },
     onError: (error: any) => {
@@ -803,12 +805,19 @@ const ManagerManagement = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deletingManager && deleteManagerMutation.mutate(deletingManager.id)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteManagerMutation.isPending ? "Deleting..." : "Delete Account"}
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={deleteManagerMutation.isPending}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={() => deletingManager && deleteManagerMutation.mutate(deletingManager.id)}
+                loading={deleteManagerMutation.isPending}
+              >
+                Delete Account
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -846,19 +855,24 @@ const ManagerManagement = () => {
             </label>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={!isVerifiedChecked || updateManagerMutation.isPending}
-              onClick={() => {
-                if (verifyingManager) {
-                  updateManagerMutation.mutate({ id: verifyingManager.id, verified: "true" });
-                  setVerifyingManager(null);
-                  setIsVerifiedChecked(false);
-                }
-              }}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {updateManagerMutation.isPending ? "Verifying..." : "Verify Manager"}
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={updateManagerMutation.isPending}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                disabled={!isVerifiedChecked}
+                onClick={() => {
+                  if (verifyingManager) {
+                    updateManagerMutation.mutate({ id: verifyingManager.id, verified: "true" });
+                  }
+                }}
+                loading={updateManagerMutation.isPending}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Verify Manager
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
