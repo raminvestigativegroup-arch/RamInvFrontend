@@ -845,7 +845,7 @@ const GuardManagement = () => {
             className={errors.roleType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
           />
         </FormField>
-        
+
         {/* <FormField label="Assigned Site">
           <select value={form.site} onChange={(e) => setForm((f) => ({ ...f, site: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
             {sites.filter((s) => s.status === "active").map((s) => (
@@ -920,7 +920,6 @@ const GuardManagement = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-0 min-h-[400px]">
-                  {/* Left Column: Documents List */}
                   <div className="col-span-1 md:col-span-4 border-r border-border/50 p-4 space-y-3 bg-secondary/10">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Guard Documents</h3>
                     {guardDocs.length === 0 ? (
