@@ -124,6 +124,12 @@ export const api = {
     markAllAsRead: () => httpClient.put("/notifications/read-all"),
   },
 
+  // Alert Configuration
+  alerts: {
+    list: (params?: any) => httpClient.get("/alerts", { params }),
+    upsert: (data: any) => httpClient.post("/alerts", data),
+  },
+
   // Roles & Permissions
   roles: {
     list: (params?: any) => httpClient.get("/role", { params }),

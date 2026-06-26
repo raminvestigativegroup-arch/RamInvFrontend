@@ -178,15 +178,15 @@ const Reports = () => {
         </div>
         <table className="w-full">
           <thead>
-            <tr className="bg-secondary">
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">REPORT NAME</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">TYPE</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">FORMAT</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">LAST GENERATED</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTIONS</th>
+            <tr className="bg-secondary/50 border-b border-border">
+              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">REPORT NAME</th>
+              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">TYPE</th>
+              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">FORMAT</th>
+              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">LAST GENERATED</th>
+              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">ACTIONS</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border">
             {listLoading ? (
               <tr>
                 <td colSpan={5} className="p-4">
@@ -197,24 +197,24 @@ const Reports = () => {
               <tr>
                 <td colSpan={5} className="p-4">
                   <StateMessage
-                    type="error"
-                    title="Load Failure"
-                    message="Failed to load report templates."
+                     type="error"
+                     title="Load Failure"
+                     message="Failed to load report templates."
                   />
                 </td>
               </tr>
             ) : listResponse?.reports && listResponse.reports.length > 0 ? (
               listResponse.reports.map((r: any) => (
-                <tr key={r.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
-                  <td className="px-5 py-3 text-sm font-medium text-foreground">{r.name}</td>
-                  <td className="px-5 py-3 text-sm text-muted-foreground">{r.type}</td>
-                  <td className="px-5 py-3">
+                <tr key={r.id} className="hover:bg-secondary/30 transition-colors">
+                  <td className="px-5 py-4 text-sm font-medium text-foreground">{r.name}</td>
+                  <td className="px-5 py-4 text-sm text-muted-foreground">{r.type}</td>
+                  <td className="px-5 py-4">
                     <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded font-medium">
                       {r.format}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-sm text-muted-foreground">{r.lastGenerated}</td>
-                  <td className="px-5 py-3 flex gap-3">
+                  <td className="px-5 py-4 text-sm text-muted-foreground">{r.lastGenerated}</td>
+                  <td className="px-5 py-4 flex gap-3">
                     <Button
                       variant="link"
                       size="sm"

@@ -305,13 +305,13 @@ const HoursTracking = () => {
 
       {/* Date Pickers for Custom Range */}
       {period === "custom" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-card rounded-xl border border-border shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="space-y-1.5">
-            <span className="text-xs font-semibold text-slate-500">Start Date</span>
+            <span className="text-xs font-semibold text-muted-foreground">Start Date</span>
             <DateSelect value={customStartDate} onChange={setCustomStartDate} />
           </div>
           <div className="space-y-1.5">
-            <span className="text-xs font-semibold text-slate-500">End Date</span>
+            <span className="text-xs font-semibold text-muted-foreground">End Date</span>
             <DateSelect value={customEndDate} onChange={setCustomEndDate} />
           </div>
         </div>
@@ -319,46 +319,46 @@ const HoursTracking = () => {
 
       {/* Key KPI Metrics Grid — always visible, shows 0s while loading */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-1 hover:border-slate-300 transition-colors">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Sites</span>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{summary.totalSites}</p>
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-1 hover:border-border/80 transition-colors">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Total Sites</span>
+          <p className="text-2xl font-bold text-foreground mt-1">{summary.totalSites}</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-1 hover:border-slate-300 transition-colors">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Scheduled Hours</span>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{summary.totalScheduled}h</p>
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-1 hover:border-border/80 transition-colors">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Scheduled Hours</span>
+          <p className="text-2xl font-bold text-foreground mt-1">{summary.totalScheduled}h</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-1 hover:border-slate-300 transition-colors">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Completed Hours</span>
-          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{summary.totalWorked}h</p>
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-1 hover:border-border/80 transition-colors">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Completed Hours</span>
+          <p className="text-2xl font-bold text-success mt-1">{summary.totalWorked}h</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-1 hover:border-slate-300 transition-colors">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Remaining Hours</span>
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-1 hover:border-border/80 transition-colors">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Remaining Hours</span>
           <p className="text-2xl font-bold text-amber-500 mt-1">{summary.remainingHours}h</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-1 hover:border-slate-300 transition-colors">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Overall Attendance</span>
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-1 hover:border-border/80 transition-colors">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Overall Attendance</span>
           <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">{summary.overallAttendancePct}%</p>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-1 hover:border-slate-300 transition-colors">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Active Guards</span>
-          <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{summary.activeGuards}</p>
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-1 hover:border-border/80 transition-colors">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Active Guards</span>
+          <p className="text-2xl font-bold text-foreground mt-1">{summary.activeGuards}</p>
         </div>
       </div>
 
       {/* Search, Filters and Sort Toolbar — always visible */}
-      <div className="flex flex-col md:flex-row gap-3 items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
+      <div className="flex flex-col md:flex-row gap-3 items-center justify-between p-4 bg-card rounded-xl border border-border shadow-xs">
         <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by site, client, or supervisor..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 h-[38px] rounded-lg text-sm"
+            className="pl-9 bg-secondary border-border h-[38px] rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
 
@@ -402,61 +402,61 @@ const HoursTracking = () => {
         <>
           {/* Sites Data Table */}
           {processedSites.length > 0 ? (
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="data-table">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                      <th className="px-6 py-4">Site & Client</th>
-                      <th className="px-6 py-4">Supervisor</th>
-                      <th className="px-6 py-4 text-right">Guards</th>
-                      <th className="px-6 py-4 text-center">Hours (Completed/Scheduled)</th>
-                      <th className="px-6 py-4 text-right">Remaining</th>
-                      <th className="px-6 py-4 text-right">Attendance</th>
-                      <th className="px-6 py-4 text-center">Status</th>
-                      <th className="px-6 py-4 text-right">Action</th>
+                    <tr className="bg-secondary/50 border-b border-border">
+                      <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Site & Client</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Supervisor</th>
+                      <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Guards</th>
+                      <th className="text-center text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Hours (Completed/Scheduled)</th>
+                      <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Remaining</th>
+                      <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Attendance</th>
+                      <th className="text-center text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Status</th>
+                      <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tbody className="divide-y divide-border">
                     {processedSites.map((site: any, index: number) => (
                       <tr
                         key={site.id || index}
                         onClick={() => setSelectedSite(site)}
-                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/10 transition-colors cursor-pointer text-sm font-medium"
+                        className="hover:bg-secondary/30 transition-colors cursor-pointer text-sm font-medium"
                       >
                         {/* Site Name and Client */}
-                        <td className="px-6 py-4">
+                        <td className="px-5 py-4">
                           <div className="space-y-0.5">
-                            <span className="font-semibold text-slate-900 dark:text-white text-sm block">{site.name}</span>
-                            <span className="text-xs text-slate-400 flex items-center gap-1">
-                              <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="font-semibold text-foreground text-sm block">{site.name}</span>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
                               {site.client}
                             </span>
                           </div>
                         </td>
 
                         {/* Supervisor name */}
-                        <td className="px-6 py-4 text-slate-650 dark:text-slate-300">
+                        <td className="px-5 py-4 text-foreground">
                           {site.manager}
                         </td>
 
                         {/* Assigned guards count */}
-                        <td className="px-6 py-4 text-right font-semibold text-slate-700 dark:text-slate-200">
+                        <td className="px-5 py-4 text-right font-semibold text-foreground">
                           {site.totalGuardsAssigned}
                         </td>
 
                         {/* Hours coverage status (Direct value, no progress bar) */}
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-5 py-4 text-center">
                           {formatHoursText(site.completedHours, site.totalScheduledHours)}
                         </td>
 
                         {/* Remaining hours */}
-                        <td className="px-6 py-4 text-right font-semibold text-slate-900 dark:text-slate-100">
+                        <td className="px-5 py-4 text-right font-semibold text-foreground">
                           {site.remainingHours}h
                         </td>
 
                         {/* Attendance Rate */}
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-5 py-4 text-right">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${site.attendancePct >= 90
                             ? 'bg-emerald-500/5 text-emerald-600 border border-emerald-500/10'
                             : site.attendancePct >= 75
@@ -468,22 +468,22 @@ const HoursTracking = () => {
                         </td>
 
                         {/* Active/Inactive Status */}
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-5 py-4 text-center">
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${site.status === "active"
-                              ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
-                              : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                              ? "bg-success/5 text-success border border-success/15"
+                              : "bg-secondary text-muted-foreground border border-border"
                             }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${site.status === "active" ? "bg-emerald-500" : "bg-slate-400"}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${site.status === "active" ? "bg-success" : "bg-muted-foreground"}`} />
                             {site.status === "active" ? "Active" : "Inactive"}
                           </span>
                         </td>
 
                         {/* View action button */}
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-5 py-4 text-right">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-primary hover:text-primary/90 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs flex gap-1 items-center ml-auto"
+                            className="text-primary hover:text-primary hover:bg-secondary font-semibold text-xs flex gap-1 items-center ml-auto"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedSite(site);
@@ -500,7 +500,7 @@ const HoursTracking = () => {
 
               {/* Pagination Controls */}
               {response?.pagination && totalItems > 0 && (
-                <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4">
+                <div className="flex items-center justify-between border-t border-border bg-secondary/30 px-6 py-4">
                   <div className="flex-1 flex justify-between sm:hidden">
                     <Button
                       variant="outline"
@@ -532,7 +532,7 @@ const HoursTracking = () => {
                         variant="outline"
                         onClick={() => setPage(1)}
                         disabled={page === 1}
-                        className="px-2.5 h-8 text-xs font-semibold rounded-lg text-slate-650 dark:text-slate-300"
+                        className="px-2.5 h-8 text-xs font-semibold rounded-lg text-muted-foreground"
                       >
                         <ArrowLeftIcon />
                       </Button>
@@ -540,7 +540,7 @@ const HoursTracking = () => {
                         variant="outline"
                         onClick={() => setPage(prev => Math.max(prev - 1, 1))}
                         disabled={page === 1}
-                        className="px-3 h-8 text-xs font-semibold rounded-lg text-slate-650 dark:text-slate-300"
+                        className="px-3 h-8 text-xs font-semibold rounded-lg text-muted-foreground"
                       >
                         Previous
                       </Button>
@@ -551,13 +551,13 @@ const HoursTracking = () => {
                           const showDots = idx > 0 && p - arr[idx - 1] > 1;
                           return (
                             <div key={p} className="flex items-center gap-1.5">
-                              {showDots && <span className="text-slate-400 px-1 text-xs font-semibold">...</span>}
+                              {showDots && <span className="text-muted-foreground px-1 text-xs font-semibold">...</span>}
                               <Button
                                 variant={page === p ? "default" : "outline"}
                                 onClick={() => setPage(p)}
                                 className={`w-8 h-8 p-0 text-xs font-bold rounded-lg ${page === p
                                   ? "bg-primary text-white border-primary"
-                                  : "text-slate-600 dark:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                  : "text-muted-foreground hover:bg-secondary"
                                   }`}
                               >
                                 {p}
@@ -570,7 +570,7 @@ const HoursTracking = () => {
                         variant="outline"
                         onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
                         disabled={page === totalPages}
-                        className="px-3 h-8 text-xs font-semibold rounded-lg text-slate-650 dark:text-slate-300"
+                        className="px-3 h-8 text-xs font-semibold rounded-lg text-muted-foreground"
                       >
                         Next
                       </Button>
@@ -578,7 +578,7 @@ const HoursTracking = () => {
                         variant="outline"
                         onClick={() => setPage(totalPages)}
                         disabled={page === totalPages}
-                        className="px-2.5 h-8 text-xs font-semibold rounded-lg text-slate-650 dark:text-slate-300"
+                        className="px-2.5 h-8 text-xs font-semibold rounded-lg text-muted-foreground"
                       >
                         <ArrowRightIcon />
                       </Button>
@@ -588,27 +588,27 @@ const HoursTracking = () => {
               )}
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center flex flex-col items-center justify-center gap-2 shadow-sm">
-              <ShieldAlert className="w-8 h-8 text-slate-300 animate-pulse" />
-              <span className="font-semibold text-slate-900 dark:text-white text-sm">No matching sites found</span>
-              <span className="text-xs text-slate-400">Adjust your search or filter options.</span>
+            <div className="bg-card rounded-xl border border-border p-12 text-center flex flex-col items-center justify-center gap-2 shadow-sm">
+              <ShieldAlert className="w-8 h-8 text-muted-foreground animate-pulse" />
+              <span className="font-semibold text-foreground text-sm">No matching sites found</span>
+              <span className="text-xs text-muted-foreground">Adjust your search or filter options.</span>
             </div>
           )}
 
           {/* Premium Details Modal */}
           <Dialog open={!!activeSelectedSite} onOpenChange={(open) => { if (!open) { setSelectedSite(null); setSelectedModalManagerId(null); } }}>
             {activeSelectedSite && (
-              <DialogContent className="max-w-7xl max-h-[85vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl">
+              <DialogContent className="max-w-7xl max-h-[85vh] flex flex-col bg-card border border-border p-6 rounded-2xl shadow-xl">
 
                 {/* Modal Header */}
-                <DialogHeader className="border-b border-slate-100 dark:border-slate-800 pb-4 shrink-0">
+                <DialogHeader className="border-b border-border pb-4 shrink-0">
                   <div className="flex items-start justify-between flex-wrap gap-3">
                     <div className="space-y-1">
-                      <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
                         <Building2 className="w-5 h-5 text-primary" />
                         {activeSelectedSite.name}
                       </DialogTitle>
-                      <DialogDescription className="text-xs text-slate-400 flex items-center gap-1">
+                      <DialogDescription className="text-xs text-muted-foreground flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5" />
                         {activeSelectedSite.address}
                       </DialogDescription>
@@ -616,8 +616,8 @@ const HoursTracking = () => {
 
                     <div className="flex gap-2 items-center mr-6">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${activeSelectedSite.status === "active"
-                        ? 'bg-emerald-500/5 text-emerald-600 border border-emerald-500/10'
-                        : 'bg-slate-100 text-slate-500 border border-slate-200'
+                        ? 'bg-success/5 text-success border border-success/15'
+                        : 'bg-secondary text-muted-foreground border border-border'
                         }`}>
                         {activeSelectedSite.status === "active" ? "Active" : "Inactive"}
                       </span>
@@ -628,33 +628,33 @@ const HoursTracking = () => {
                 {/* Scrollable Container */}
                 <div className="flex-1 overflow-y-auto py-4 space-y-6 pr-1">
                   {/* Site KPIs Summary Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-                    <div className="space-y-1 md:border-r border-slate-200/50 dark:border-slate-800/50 pr-0 md:pr-4">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-slate-400" /> Scheduled
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-secondary/35 rounded-xl border border-border shadow-xs">
+                    <div className="space-y-1 md:border-r border-border/50 pr-0 md:pr-4">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-muted-foreground" /> Scheduled
                       </span>
-                      <p className="text-lg font-bold text-slate-900 dark:text-white mt-1">{activeSelectedSite.totalScheduledHours}h</p>
+                      <p className="text-lg font-bold text-foreground mt-1">{activeSelectedSite.totalScheduledHours}h</p>
                     </div>
 
-                    <div className="space-y-1 md:border-r border-slate-200/50 dark:border-slate-800/50 pl-0 md:pl-4 pr-0 md:pr-4">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-emerald-500" /> Completed
+                    <div className="space-y-1 md:border-r border-border/50 pl-0 md:pl-4 pr-0 md:pr-4">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-success" /> Completed
                       </span>
-                      <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-1">{activeSelectedSite.completedHours}h</p>
+                      <p className="text-lg font-bold text-success mt-1">{activeSelectedSite.completedHours}h</p>
                     </div>
 
-                    <div className="space-y-1 md:border-r border-slate-200/50 dark:border-slate-800/50 pl-0 md:pl-4 pr-0 md:pr-4">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    <div className="space-y-1 md:border-r border-border/50 pl-0 md:pl-4 pr-0 md:pr-4">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                         <TrendingUp className="w-3 h-3 text-amber-500" /> Remaining
                       </span>
                       <p className="text-lg font-bold text-amber-500 mt-1">{activeSelectedSite.remainingHours}h</p>
                     </div>
 
                     <div className="space-y-1 pl-0 md:pl-4">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                         <UserCheck className="w-3 h-3 text-indigo-500" /> Attendance
                       </span>
-                      <p className={`text-lg font-bold mt-1 ${activeSelectedSite.attendancePct >= 90 ? 'text-emerald-500' : activeSelectedSite.attendancePct >= 75 ? 'text-amber-500' : 'text-rose-500'
+                      <p className={`text-lg font-bold mt-1 ${activeSelectedSite.attendancePct >= 90 ? 'text-success' : activeSelectedSite.attendancePct >= 75 ? 'text-amber-500' : 'text-destructive'
                         }`}>
                         {activeSelectedSite.attendancePct}%
                       </p>
@@ -664,8 +664,8 @@ const HoursTracking = () => {
                   {/* Supervisor & Operational Overview */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Supervisor Details card */}
-                    <div className="p-5 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-                      <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5 mb-4">
+                    <div className="p-5 bg-card rounded-xl border border-border shadow-xs">
+                      <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5 mb-4">
                         <Users className="w-3.5 h-3.5 text-primary" />
                         Assigned Managers
                       </h4>
@@ -712,8 +712,8 @@ const HoursTracking = () => {
                                   }
                                   className={`cursor-pointer rounded-xl border transition-all duration-200 p-4  flex flex-row justify-between
                 ${isSelected
-                                      ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-sm"
-                                      : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900"
+                                      ? "border-primary bg-primary/5 shadow-sm"
+                                      : "border-border hover:bg-secondary/30"
                                     }`}
                                 >
                                   {/* Top Section */}
@@ -723,23 +723,23 @@ const HoursTracking = () => {
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                      <h5 className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                                      <h5 className="text-sm font-semibold text-foreground truncate">
                                         {mgr.name}
                                       </h5>
                                     </div>
                                   </div>
 
                                   {/* Contact Info */}
-                                  <div className=" space-y-2 text-xs text-slate-600 dark:text-slate-400">
+                                  <div className=" space-y-2 text-xs text-muted-foreground">
                                     <div className="flex items-center gap-2">
-                                      <Mail className="w-4 h-4 shrink-0 text-slate-400" />
+                                      <Mail className="w-4 h-4 shrink-0 text-muted-foreground" />
                                       <span className="truncate">
                                         {mgr.email || "No email assigned"}
                                       </span>
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                      <Phone className="w-4 h-4 shrink-0 text-slate-400" />
+                                      <Phone className="w-4 h-4 shrink-0 text-muted-foreground" />
                                       <span>
                                         {mgr.phoneNumber || "No phone assigned"}
                                       </span>
@@ -754,8 +754,8 @@ const HoursTracking = () => {
                     </div>
 
                     {/* Operational stats card */}
-                    <div className="p-5 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3 shadow-xs">
-                      <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <div className="p-5 bg-card rounded-xl border border-border space-y-3 shadow-xs">
+                      <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                         <CheckCircle className="w-3.5 h-3.5 text-indigo-500" />
                         Operational Shift Overview
                       </h4>
@@ -765,12 +765,12 @@ const HoursTracking = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4 flex-1">
                           <div className="space-y-0.5">
-                            <span className="text-[10px] text-slate-400 font-medium block">Total Completed</span>
-                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{activeSelectedSite.completedShifts} / {activeSelectedSite.scheduledShifts} shifts</span>
+                            <span className="text-[10px] text-muted-foreground font-medium block">Total Completed</span>
+                            <span className="text-sm font-bold text-foreground">{activeSelectedSite.completedShifts} / {activeSelectedSite.scheduledShifts} shifts</span>
                           </div>
                           <div className="space-y-0.5">
-                            <span className="text-[10px] text-slate-400 font-medium block">Guards Assigned</span>
-                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{activeSelectedSite.totalGuardsAssigned} guards</span>
+                            <span className="text-[10px] text-muted-foreground font-medium block">Guards Assigned</span>
+                            <span className="text-sm font-bold text-foreground">{activeSelectedSite.totalGuardsAssigned} guards</span>
                           </div>
                         </div>
                       </div>
@@ -794,11 +794,11 @@ const HoursTracking = () => {
                       )}
                     </div>
 
-                    <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs bg-white dark:bg-slate-950">
-                      <table className="w-full text-left border-collapse text-xs">
+                    <div className="border border-border rounded-xl overflow-hidden shadow-xs bg-card">
+                      <table className="w-full text-xs">
                         <thead>
-                          <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                            <th className="px-4 py-3">Guard</th>
+                          <tr className="bg-secondary/50 border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left">Guard</th>
                             <th className="px-4 py-3 text-center">Live Status</th>
                             <th className="px-4 py-3 text-center">Clock In</th>
                             <th className="px-4 py-3 text-center">Clock Out</th>
@@ -806,7 +806,7 @@ const HoursTracking = () => {
                             <th className="px-4 py-3 text-right">Attendance</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        <tbody className="divide-y divide-border">
                           {(() => {
                             const filtered = selectedModalManagerId
                               ? (activeSelectedSite.guardsDetail || []).filter((g: any) => String(g.managerId) === String(selectedModalManagerId))
@@ -815,7 +815,7 @@ const HoursTracking = () => {
                             if (filtered.length === 0) {
                               return (
                                 <tr>
-                                  <td colSpan={6} className="text-center py-12 text-slate-400">
+                                  <td colSpan={6} className="text-center py-12 text-muted-foreground">
                                     No guard assignments registered for this period {selectedModalManagerId ? "for the selected manager" : ""}.
                                   </td>
                                 </tr>
@@ -826,25 +826,25 @@ const HoursTracking = () => {
                               const formatTime = (ts: string | null) => formatUTCTime(ts);
 
                               const statusConfig: Record<string, { icon: React.ReactNode; cls: string; dot: string }> = {
-                                'Clocked In': { icon: <LogIn className="w-3 h-3" />, cls: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800', dot: 'bg-emerald-500 animate-pulse' },
-                                'On Break': { icon: <Coffee className="w-3 h-3" />, cls: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800', dot: 'bg-amber-400 animate-pulse' },
-                                'Clocked Out': { icon: <LogOut className="w-3 h-3" />, cls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800', dot: 'bg-blue-400' },
-                                'Off Duty': { icon: <ShieldOff className="w-3 h-3" />, cls: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700', dot: 'bg-slate-400' },
+                                'Clocked In': { icon: <LogIn className="w-3 h-3" />, cls: 'bg-success/5 text-success border border-success/15', dot: 'bg-success animate-pulse' },
+                                'On Break': { icon: <Coffee className="w-3 h-3" />, cls: 'bg-warning/5 text-warning border border-warning/15', dot: 'bg-warning animate-pulse' },
+                                'Clocked Out': { icon: <LogOut className="w-3 h-3" />, cls: 'bg-info/5 text-info border border-info/15', dot: 'bg-info' },
+                                'Off Duty': { icon: <ShieldOff className="w-3 h-3" />, cls: 'bg-secondary text-muted-foreground border border-border', dot: 'bg-muted-foreground' },
                               };
                               const sc = statusConfig[guard.status] || statusConfig['Off Duty'];
 
                               return (
-                                <tr key={guard.id || index} className="hover:bg-slate-50 dark:hover:bg-slate-800/10 transition-colors">
+                                <tr key={guard.id || index} className="hover:bg-secondary/30 transition-colors">
                                   {/* Name with initials avatar */}
                                   <td className="px-4 py-3">
                                     <div className="flex items-center gap-2">
                                       <div className="relative">
-                                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 text-[11px] font-bold shadow-xs">
+                                        <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-foreground text-[11px] font-bold shadow-xs">
                                           {guard.avatar}
                                         </div>
-                                        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-950 ${sc.dot}`} />
+                                        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background ${sc.dot}`} />
                                       </div>
-                                      <span className="font-semibold text-slate-900 dark:text-white">{guard.name}</span>
+                                      <span className="font-semibold text-foreground">{guard.name}</span>
                                     </div>
                                   </td>
 
@@ -858,7 +858,7 @@ const HoursTracking = () => {
 
                                   {/* Clock In */}
                                   <td className="px-4 py-3 text-center">
-                                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                    <span className="inline-flex items-center gap-1 text-success font-semibold">
                                       <LogIn className="w-3 h-3" />
                                       {formatTime(guard.clockIn)}
                                     </span>
@@ -866,7 +866,7 @@ const HoursTracking = () => {
 
                                   {/* Clock Out */}
                                   <td className="px-4 py-3 text-center">
-                                    <span className={`inline-flex items-center gap-1 font-semibold ${guard.clockOut ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'
+                                    <span className={`inline-flex items-center gap-1 font-semibold ${guard.clockOut ? 'text-info' : 'text-muted-foreground'
                                       }`}>
                                       <LogOut className="w-3 h-3" />
                                       {formatTime(guard.clockOut)}
@@ -880,7 +880,7 @@ const HoursTracking = () => {
 
                                   {/* Attendance Rate */}
                                   <td className="px-4 py-3 text-right">
-                                    <span className={`font-bold text-xs ${guard.attendancePct >= 90 ? 'text-emerald-500' : guard.attendancePct >= 75 ? 'text-amber-500' : 'text-rose-500'
+                                    <span className={`font-bold text-xs ${guard.attendancePct >= 90 ? 'text-success' : guard.attendancePct >= 75 ? 'text-amber-500' : 'text-destructive'
                                       }`}>
                                       {guard.attendancePct}%
                                     </span>

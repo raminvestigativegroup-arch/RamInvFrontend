@@ -239,6 +239,7 @@ const IncidentManagement = () => {
     });
   }, [incidentList, search, priorityFilter, siteFilter, guardFilter, dateFilter]);
 
+  const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
   const showLoader = isLoading;
   const showEmpty = !isLoading && (filtered.length === 0 || isNotFound);
   const showError = isError && !isNotFound;
@@ -375,27 +376,27 @@ const IncidentManagement = () => {
             {!showLoader && !showError && !showEmpty && (
               <table className="w-full">
                 <thead>
-                  <tr className="bg-secondary">
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">INCIDENT</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SITE</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">GUARD</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">PRIORITY</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">STATUS</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">DATE</th>
-                    <th className="text-right text-xs font-medium text-muted-foreground px-5 py-3">ACTIONS</th>
+                  <tr className="bg-secondary/50 border-b border-border">
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">INCIDENT</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">SITE</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">GUARD</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">PRIORITY</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">STATUS</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">DATE</th>
+                    <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">ACTIONS</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border">
                   {filtered.map((inc) => (
-                    <tr key={inc.id} className={`border-b border-border cursor-pointer transition-colors ${selectedIncidentId === inc.id ? "bg-accent" : "hover:bg-secondary/50"}`} onClick={() => setSelectedIncidentId(inc.id)}>
-                      <td className="px-5 py-3">
+                    <tr key={inc.id} className={`hover:bg-secondary/30 transition-colors cursor-pointer ${selectedIncidentId === inc.id ? "bg-accent" : ""}`} onClick={() => setSelectedIncidentId(inc.id)}>
+                      <td className="px-5 py-4">
                         <p className="text-sm font-medium text-foreground">{inc.title}</p>
                         <p className="text-xs text-muted-foreground">{inc.type}</p>
                       </td>
-                      <td className="px-5 py-3 text-sm text-muted-foreground">{inc.site}</td>
-                      <td className="px-5 py-3 text-sm text-foreground">{guardMap[inc.guard] || inc.guard}</td>
-                      <td className="px-5 py-3"><span className={`priority-${inc.priority}`}>{inc.priority.toUpperCase()}</span></td>
-                      <td className="px-5 py-3">
+                      <td className="px-5 py-4 text-sm text-muted-foreground">{inc.site}</td>
+                      <td className="px-5 py-4 text-sm text-foreground">{guardMap[inc.guard] || inc.guard}</td>
+                      <td className="px-5 py-4"><span className={`priority-${inc.priority}`}>{inc.priority.toUpperCase()}</span></td>
+                      <td className="px-5 py-4">
                         <span className={
                           inc.status === "resolved" ? "status-badge-active" : 
                           inc.status === "open" ? "status-badge-danger" : 
@@ -404,8 +405,8 @@ const IncidentManagement = () => {
                           {inc.status}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-sm text-muted-foreground whitespace-nowrap">{inc.date}<br /><span className="text-xs">{inc.time}</span></td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-5 py-4 text-sm text-muted-foreground whitespace-nowrap">{inc.date}<br /><span className="text-xs">{inc.time}</span></td>
+                      <td className="px-5 py-4 text-right">
                         {hasEditPermission ? (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

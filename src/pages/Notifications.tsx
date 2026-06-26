@@ -44,6 +44,34 @@ const Notifications = () => {
     },
   });
 
+  // 4. Query for alert configurations
+  const { data: configsResponse, refetch: refetchConfigs } = useQuery({
+    queryKey: ["alert-configs"],
+    queryFn: () => api.alerts.list().then(res => res.data),
+    enabled: hasViewPermission,
+  });
+
+  const configs = configsResponse?.configs || [];
+
+  // 5. Mutation to toggle configuration
+  const toggleConfigMutation = useMutation({
+    mutationFn: (data: { alertType: string; enabled: boolean }) => api.alerts.upsert(data),
+    onSuccess: () => {
+      refetchConfigs();
+    },
+  });
+
+  const isEnabled = (key: string) => {
+    const config = configs.find((c: any) => c.alertType === key);
+    return config ? config.enabled : true; // Default to true
+  };
+
+  const handleToggle = (key: string) => {
+    if (!hasEditPermission) return;
+    const currentVal = isEnabled(key);
+    toggleConfigMutation.mutate({ alertType: key, enabled: !currentVal });
+  };
+
   if (!hasViewPermission) {
     return (
       <div className="p-6">
@@ -94,21 +122,29 @@ const Notifications = () => {
         <h2 className="text-lg font-semibold text-foreground mb-4">Alert Configuration</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            { label: "High Priority Incidents", desc: "Instant email + in-app alert", enabled: true },
-            { label: "License Expirations", desc: "30 days before expiry", enabled: true },
-            { label: "Shift Discrepancies", desc: "When actual differs from scheduled", enabled: true },
-            { label: "System Updates", desc: "Platform announcements", enabled: false },
-          ].map(item => (
-            <div key={item.label} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-foreground">{item.label}</p>
-                <p className="text-xs text-muted-foreground">{item.desc}</p>
+            { key: "incident_priority", label: "High Priority Incidents", desc: "Instant email + in-app alert" },
+            { key: "document_expiry", label: "License Expirations", desc: "30 days before expiry" },
+            { key: "assignment_rejected", label: "Shift Discrepancies", desc: "When actual differs from scheduled" },
+            { key: "password_change", label: "System Updates", desc: "Platform announcements" },
+          ].map(item => {
+            const enabled = isEnabled(item.key);
+            return (
+              <div key={item.key} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+                </div>
+                <button
+                  onClick={() => handleToggle(item.key)}
+                  disabled={!hasEditPermission || toggleConfigMutation.isPending}
+                  className={`w-10 h-6 rounded-full flex items-center transition-colors focus:outline-none ${enabled ? "bg-primary justify-end" : "bg-muted-foreground/30 justify-start"
+                    }`}
+                >
+                  <div className="w-4 h-4 rounded-full bg-card mx-1 shadow" />
+                </button>
               </div>
-              <div className={`w-10 h-6 rounded-full flex items-center transition-colors ${item.enabled ? "bg-primary justify-end" : "bg-muted-foreground/30 justify-start"}`}>
-                <div className="w-4 h-4 rounded-full bg-card mx-1 shadow" />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -138,19 +174,35 @@ const Notifications = () => {
                     }`}
                 >
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${notif.priority === "high" ? "bg-destructive/10 text-destructive" :
-                      notif.priority === "medium" ? "bg-warning/10 text-warning" : "bg-secondary text-muted-foreground"
+                    notif.priority === "medium" ? "bg-warning/10 text-warning" : "bg-secondary text-muted-foreground"
                     }`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className={`text-sm font-medium ${!notif.read ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
-                        {notif.title}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p
+                            className={`text-sm ${!notif.read ? "font-semibold text-foreground" : "font-medium text-foreground"
+                              }`}
+                          >
+                            {notif.title}
+                          </p>
+
+                          {!notif.read && (
+                            <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                          )}
+                        </div>
+
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {notif.message}
+                        </p>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDate(notif.createdAt)}
                       </p>
-                      {!notif.read && <div className="w-2 h-2 rounded-full bg-primary shrink-0" />}
                     </div>
-                    <p className="text-sm text-muted-foreground mt-0.5">{notif.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{formatDate(notif.createdAt)}</p>
                   </div>
                 </div>
               );

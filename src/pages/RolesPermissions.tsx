@@ -550,36 +550,36 @@ const RolesPermissions = () => {
             </div>
             <table className="w-full min-w-[700px]">
               <thead>
-                <tr className="bg-secondary/50">
-                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-3.5">MODULE / PERMISSION</th>
+                <tr className="bg-secondary/50 border-b border-border">
+                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">MODULE / PERMISSION</th>
                   {rolesList.map(r => (
-                    <th key={r.id} className="text-center text-xs font-semibold text-muted-foreground px-4 py-3.5 capitalize">{r.name}</th>
+                    <th key={r.id} className="text-center text-xs font-semibold text-muted-foreground px-4 py-4 uppercase tracking-wider capitalize">{r.name}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border">
                 {PERMISSION_MODULES.map(mod => {
                   const items = getModulePermissions(mod);
                   return (
                     <React.Fragment key={mod.title}>
                       {/* Category Header Row */}
                       <tr className="bg-secondary/20 border-b border-border/80">
-                        <td colSpan={rolesList.length + 1} className="px-5 py-2 text-xs font-extrabold uppercase tracking-wider text-primary bg-muted select-none">
+                        <td colSpan={rolesList.length + 1} className="px-5 py-3 text-xs font-extrabold uppercase tracking-wider text-primary bg-muted select-none">
                           {mod.title}
                         </td>
                       </tr>
 
                       {/* Permission Rows */}
                       {items.map(perm => (
-                        <tr key={perm.key} className="border-b border-border hover:bg-muted/30 transition-colors">
-                          <td className="pl-9 pr-5 py-3 text-sm text-foreground">
+                        <tr key={perm.key} className="hover:bg-secondary/30 transition-colors">
+                          <td className="pl-9 pr-5 py-4 text-sm text-foreground">
                             <div className="flex flex-col">
                               <span className="font-semibold text-foreground/90">{perm.label}</span>
                               <span className="text-[11px] text-muted-foreground/80 font-normal leading-normal mt-0.5">{perm.desc}</span>
                             </div>
                           </td>
                           {rolesList.map(r => (
-                            <td key={r.id} className="text-center px-4 py-3">
+                            <td key={r.id} className="text-center px-4 py-4">
                               {hasPermission(r, perm.key) ? (
                                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-success/10" title={`${r.name}: Enabled`}>
                                   <Check className="w-3.5 h-3.5 text-success font-bold" />

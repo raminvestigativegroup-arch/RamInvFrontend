@@ -482,30 +482,30 @@ const Scheduling = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-secondary">
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">GUARD</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SITE</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">SCHEDULED</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTUAL START</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">STATUS</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-5 py-3">ACTIONS</th>
+                  <tr className="bg-secondary/50 border-b border-border">
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">GUARD</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">SITE</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">SCHEDULED</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">ACTUAL START</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">STATUS</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">ACTIONS</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border">
                   {todayShifts.map((entry) => (
-                    <tr key={entry.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
-                      <td className="px-5 py-3 text-sm font-medium text-foreground">{entry.guard}</td>
-                      <td className="px-5 py-3 text-sm text-muted-foreground">{entry.site}</td>
-                      <td className="px-5 py-3 text-sm text-foreground">{entry.shiftStart} – {entry.shiftEnd}</td>
-                      <td className="px-5 py-3 text-sm text-foreground">{entry.actualStart || "—"}</td>
-                      <td className="px-5 py-3">
+                    <tr key={entry.id} className="hover:bg-secondary/30 transition-colors">
+                      <td className="px-5 py-4 text-sm font-medium text-foreground">{entry.guard}</td>
+                      <td className="px-5 py-4 text-sm text-muted-foreground">{entry.site}</td>
+                      <td className="px-5 py-4 text-sm text-foreground">{entry.shiftStart} – {entry.shiftEnd}</td>
+                      <td className="px-5 py-4 text-sm text-foreground">{entry.actualStart || "—"}</td>
+                      <td className="px-5 py-4">
                         <span className={
                           entry.status === "in-progress" ? "status-badge-active" :
                             entry.status === "completed" ? "status-badge-active" :
                               entry.status === "missed" ? "status-badge-danger" : "status-badge-inactive"
                         }>{entry.status}</span>
                       </td>
-                      <td className="px-5 py-3 flex gap-2">
+                      <td className="px-5 py-4 flex gap-2">
                         {hasEditPermission && (
                           <Button
                             variant="link"
