@@ -60,7 +60,7 @@ const Scheduling = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   // Fetch Guards
-  const { data: rawGuards = [] } = useQuery({
+  const { data: rawGuards = [], isLoading: isLoadingGuards } = useQuery({
     queryKey: ["guards", "all"],
     queryFn: async () => {
       try {
@@ -89,7 +89,7 @@ const Scheduling = () => {
   }, [rawGuards]);
 
   // Fetch Sites
-  const { data: sites = [] } = useQuery({
+  const { data: sites = [], isLoading: isLoadingSites } = useQuery({
     queryKey: ["sites", "all"],
     queryFn: async () => {
       try {
@@ -205,8 +205,8 @@ const Scheduling = () => {
 
 
   const isNotFound = isErrorEntries && ((errorEntries as any)?.response?.status === 404 || (errorEntries as any)?.message?.includes("404"));
-  const showLoader = isLoadingEntries;
-  const showEmpty = !isLoadingEntries && (entries.length === 0 || isNotFound);
+  const showLoader = isLoadingEntries || isLoadingGuards || isLoadingSites;
+  const showEmpty = !showLoader && (entries.length === 0 || isNotFound);
   const showError = isErrorEntries && !isNotFound;
 
   const createMutation = useMutation({

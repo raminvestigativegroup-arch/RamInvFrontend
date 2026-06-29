@@ -29,7 +29,7 @@ const normalizeIncidentsResponse = (response: any): Incident[] => {
   // The user confirmed the data is in the "incidents" key
   const list = response.incidents || (response.data && response.data.incidents) || [];
   if (Array.isArray(list)) return list;
-  
+
   if (Array.isArray(response)) return response;
   if (Array.isArray(response.data)) return response.data;
   const data = response.data || response;
@@ -39,7 +39,7 @@ const normalizeIncidentsResponse = (response: any): Incident[] => {
 const normalizeIncident = (inc: any, index: number): Incident => {
   if (!inc) return {} as Incident;
   const data = inc.data || inc;
-  
+
   // Parse date and time from ISO string "2026-05-07T10:30:00.000Z"
   let date = "N/A";
   let time = "N/A";
@@ -65,8 +65,8 @@ const normalizeIncident = (inc: any, index: number): Incident => {
     guard: String(data.guardId || data.guard || "Unknown Guard"),
     priority: (data.priority === "high" || data.priority === "medium" || data.priority === "low") ? data.priority : "medium",
     // Use the 'solved' string field as the source of truth for status
-    status: (data.solved === "resolved" || data.solved === "in-progress" || data.solved === "open") 
-      ? data.solved 
+    status: (data.solved === "resolved" || data.solved === "in-progress" || data.solved === "open")
+      ? data.solved
       : (data.status || "open"),
     date,
     time,
@@ -207,9 +207,9 @@ const IncidentManagement = () => {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: (data: { id: string; status: string }) => 
-      api.incidents.update(data.id, { 
-        solved: data.status 
+    mutationFn: (data: { id: string; status: string }) =>
+      api.incidents.update(data.id, {
+        solved: data.status
       }),
     onSuccess: async () => {
       await Promise.all([
@@ -219,18 +219,18 @@ const IncidentManagement = () => {
       toast({ title: "Status Updated", description: "Incident status has been successfully updated." });
     },
     onError: (err: any) => {
-      toast({ 
-        title: "Error", 
-        description: err.response?.data?.message || "Failed to update incident status.", 
-        variant: "destructive" 
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Failed to update incident status.",
+        variant: "destructive"
       });
     }
   });
 
   const filtered = useMemo(() => {
     return incidentList.filter((i) => {
-      const matchSearch = i.title.toLowerCase().includes(search.toLowerCase()) || 
-                          i.guard.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = i.title.toLowerCase().includes(search.toLowerCase()) ||
+        i.guard.toLowerCase().includes(search.toLowerCase());
       const matchPriority = priorityFilter === "all" || i.priority === priorityFilter;
       const matchSite = siteFilter === "all" || i.site === siteFilter;
       const matchGuard = guardFilter === "all" || i.guard === guardFilter;
@@ -398,9 +398,9 @@ const IncidentManagement = () => {
                       <td className="px-5 py-4"><span className={`priority-${inc.priority}`}>{inc.priority.toUpperCase()}</span></td>
                       <td className="px-5 py-4">
                         <span className={
-                          inc.status === "resolved" ? "status-badge-active" : 
-                          inc.status === "open" ? "status-badge-danger" : 
-                          "status-badge-warning"
+                          inc.status === "resolved" ? "status-badge-active" :
+                            inc.status === "open" ? "status-badge-danger" :
+                              "status-badge-warning"
                         }>
                           {inc.status}
                         </span>

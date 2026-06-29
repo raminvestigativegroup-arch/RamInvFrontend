@@ -518,8 +518,8 @@ const SiteManagement = () => {
                             if (errors.managers) setErrors(prev => ({ ...prev, managers: undefined }));
                           }}
                           className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-all duration-150 border ${isSelected
-                              ? "bg-primary/10 text-primary border-primary/25 font-medium shadow-sm"
-                              : "bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900 text-foreground border-slate-300 dark:border-slate-700"
+                            ? "bg-primary/10 text-primary border-primary/25 font-medium shadow-sm"
+                            : "bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900 text-foreground border-slate-300 dark:border-slate-700"
                             }`}
                         >
                           <div className="flex items-center gap-3">
@@ -925,7 +925,7 @@ const SiteManagement = () => {
                                     </div>
                                     <div className="min-w-0">
                                       <p className="text-sm font-bold text-foreground truncate">{m.name}</p>
-                                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">Manager ID: {m.id}</p>
+                                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">Email: {m.email}</p>
                                     </div>
                                   </div>
                                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-primary/10 text-primary border-primary/20">
@@ -1005,7 +1005,7 @@ const SiteManagement = () => {
                                     </div>
                                     <div className="min-w-0">
                                       <p className="text-sm font-bold text-foreground truncate">{g.name}</p>
-                                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">ID: {g.id}</p>
+                                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">Email: {g.email}</p>
                                     </div>
                                   </div>
 
