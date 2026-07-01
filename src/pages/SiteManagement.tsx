@@ -4,7 +4,7 @@ import { api } from "@/config/api";
 import { Site } from "@/data/dummyData";
 import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, UserCheck, Locate, Search, Filter, Mail, Phone, Loader2, Calendar, Clock, MoreHorizontal, CalendarClock, CalendarClockIcon, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -482,22 +482,24 @@ const SiteManagement = () => {
           </div>
         </FormField>
         <Dialog open={managerSelectOpen} onOpenChange={setManagerSelectOpen}>
-          <DialogContent className="sm:max-w-md border border-slate-100 dark:border-slate-800 shadow-2xl rounded-xl">
-            <DialogTitle className="text-lg font-bold text-foreground">Assign Managers</DialogTitle>
-            <div className="space-y-4 mt-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Assign Managers</DialogTitle>
+            </DialogHeader>
+            <DialogBody>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <input
                   value={managerSearchQuery}
                   onChange={(e) => setManagerSearchQuery(e.target.value)}
                   placeholder="Search managers..."
-                  className="pl-9 pr-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 h-[38px] rounded-lg text-sm w-full placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                  className="pl-9 pr-4 bg-secondary border border-border h-[38px] rounded-lg text-sm w-full placeholder:text-muted-foreground focus:outline-none"
                 />
               </div>
-              <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+              <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
                 {managersList.filter((m: any) => m.name.toLowerCase().includes(managerSearchQuery.toLowerCase())).length === 0 ? (
                   <div className="text-center py-8">
-                    <Search className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+                    <Search className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
                     <p className="text-xs text-muted-foreground">No managers found</p>
                   </div>
                 ) : (
@@ -520,7 +522,7 @@ const SiteManagement = () => {
                           }}
                           className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-all duration-150 border ${isSelected
                             ? "bg-primary/10 text-primary border-primary/25 font-medium shadow-sm"
-                            : "bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900 text-foreground border-slate-300 dark:border-slate-700"
+                            : "bg-transparent hover:bg-secondary text-foreground border-border"
                             }`}
                         >
                           <div className="flex items-center gap-3">
@@ -542,19 +544,19 @@ const SiteManagement = () => {
                     })
                 )}
               </div>
-              <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setManagerSelectOpen(false);
-                    setManagerSearchQuery("");
-                  }}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
+            </DialogBody>
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => {
+                  setManagerSelectOpen(false);
+                  setManagerSearchQuery("");
+                }}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+              >
+                Done
+              </button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
         <FormField label="Status">
@@ -837,7 +839,7 @@ const SiteManagement = () => {
           setActiveTab("managers");
         }
       }}>
-        <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-background">
+        <DialogContent className="sm:max-w-4xl flex flex-col max-h-[90vh]">
           {viewingGuardsSite && (() => {
             const assignedIds = Array.from(siteGuardIdsMap.get(viewingGuardsSite.id) || []);
             const assignedGuards = assignedIds

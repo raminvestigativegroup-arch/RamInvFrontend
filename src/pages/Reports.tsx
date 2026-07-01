@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Download, FileText, BarChart3, Eye, TrendingUp, Shield, Clock, AlertTriangle, Users, Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import StateMessage from "@/components/common/StateMessage";
@@ -254,46 +254,50 @@ const Reports = () => {
 
       {/* Report Preview Dialog */}
       <Dialog open={!!previewReport} onOpenChange={() => setPreviewReport(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{previewResponse?.title || "Report Preview"}</DialogTitle>
           </DialogHeader>
 
-          {previewLoading ? (
-            <StateMessage type="loading" message="Generating preview dynamically..." className="my-6" />
-          ) : previewResponse ? (
-            <div className="space-y-5 mt-2">
-              {previewResponse.sections.map((section: any, i: number) => (
-                <div key={i}>
-                  <h3 className="text-sm font-semibold text-foreground mb-1.5">{section.heading}</h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
-                    {section.content}
-                  </p>
-                </div>
-              ))}
-              <div className="flex justify-end gap-3 pt-3 border-t border-border">
-                <Button
-                  onClick={() => setPreviewReport(null)}
-                  variant="secondary"
-                  size="sm"
-                >
-                  Close
-                </Button>
-                <Button
-                  onClick={() => {
-                    downloadReport(previewResponse.title, previewResponse.sections);
-                    setPreviewReport(null);
-                  }}
-                  size="sm"
-                >
-                  <Download className="w-4 h-4" />Download Report
-                </Button>
+          <DialogBody>
+            {previewLoading ? (
+              <StateMessage type="loading" message="Generating preview dynamically..." className="my-6" />
+            ) : previewResponse ? (
+              <div className="space-y-5">
+                {previewResponse.sections.map((section: any, i: number) => (
+                  <div key={i}>
+                    <h3 className="text-sm font-semibold text-foreground mb-1.5">{section.heading}</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                      {section.content}
+                    </p>
+                  </div>
+                ))}
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-10 text-muted-foreground text-sm">
-              Failed to load preview for this report.
-            </div>
+            ) : (
+              <div className="text-center py-10 text-muted-foreground text-sm">
+                Failed to load preview for this report.
+              </div>
+            )}
+          </DialogBody>
+
+          {previewResponse && (
+            <DialogFooter>
+              <button
+                onClick={() => setPreviewReport(null)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold border border-border hover:bg-secondary transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  downloadReport(previewResponse.title, previewResponse.sections);
+                  setPreviewReport(null);
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />Download Report
+              </button>
+            </DialogFooter>
           )}
         </DialogContent>
       </Dialog>

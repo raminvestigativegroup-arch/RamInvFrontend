@@ -2,8 +2,8 @@ import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { sites, Guard } from "@/data/dummyData";
-import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, Users, Loader2, FileText, Calendar, MapPin, Clock } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, Users, Loader2, FileText, Calendar, MapPin, Clock, ExternalLink } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -924,25 +924,27 @@ const GuardManagement = () => {
           setImageError(false);
         }
       }}>
-        <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-background">
+        <DialogContent className="sm:max-w-4xl">
           {verifyingGuard && (() => {
             const guardDocs = rawDocuments.filter((doc: any) => doc.ownerId === verifyingGuard.id && doc.ownerType === "Guard");
             const selectedDoc = guardDocs[selectedDocIndex];
 
             return (
-              <div className="flex flex-col">
-                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-4 border-b border-border/50 flex items-center justify-between">
-                  <div>
-                    <DialogTitle className="text-lg font-bold text-foreground">Document Details</DialogTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record for {verifyingGuard.name}</p>
+              <>
+                <DialogHeader>
+                  <div className="flex items-start justify-between flex-wrap gap-3 pr-6">
+                    <div>
+                      <DialogTitle>Document Details</DialogTitle>
+                      <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record for {verifyingGuard.name}</p>
+                    </div>
+                    <Badge variant={verifyingGuard.isVerified ? "success" : "inactive"} showDot>
+                      {verifyingGuard.isVerified ? "Verified Guard" : "Pending Verification"}
+                    </Badge>
                   </div>
-                  <Badge variant={verifyingGuard.isVerified ? "success" : "inactive"} showDot>
-                    {verifyingGuard.isVerified ? "Verified Guard" : "Pending Verification"}
-                  </Badge>
-                </div>
+                </DialogHeader>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-0 min-h-[400px]">
-                  <div className="col-span-1 md:col-span-4 border-r border-border/50 p-4 space-y-3 bg-secondary/10">
+                <DialogBody className="p-0 flex flex-col md:flex-row min-h-[400px] overflow-hidden">
+                  <div className="w-full md:w-1/3 border-r border-border/50 p-4 space-y-3 bg-secondary/10 overflow-y-auto">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Guard Documents</h3>
                     {guardDocs.length === 0 ? (
                       <div className="py-8 text-center text-xs text-muted-foreground">
@@ -972,20 +974,25 @@ const GuardManagement = () => {
                                 setSelectedDocIndex(idx);
                                 setImageError(false);
                               }}
-                              className={`w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between ${selectedDocIndex === idx
-                                ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
-                                : "bg-card border-border hover:bg-secondary/40 text-muted-foreground"
+                              className={`group relative w-full text-left pl-5 pr-3 py-3 rounded-xl border transition-all flex items-center justify-between overflow-hidden ${selectedDocIndex === idx
+                                ? "bg-card border-border shadow-xs text-foreground font-semibold"
+                                : "bg-card/50 border-border hover:bg-secondary/40 text-muted-foreground"
                                 }`}
                             >
+                              {selectedDocIndex === idx && (
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
+                              )}
                               <div className="truncate pr-2">
                                 <p className="text-xs font-bold text-foreground truncate">{doc.type || doc.name}</p>
                                 <p className="text-[10px] text-muted-foreground mt-0.5">Exp: {doc.expiryDate || "N/A"}</p>
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
-                                {doc.isApproved && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" title="Verified" />
-                                )}
-                                <span className={`w-2 h-2 rounded-full shrink-0 ${status === "valid" ? "bg-success" : status === "expiring" ? "bg-warning" : "bg-destructive"
+                                {/* {doc.isApproved && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0 status-pulse-success" title="Verified" />
+                                )} */}
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${status === "valid" ? "bg-success status-pulse-success" :
+                                    status === "expiring" ? "bg-warning status-pulse-warning" :
+                                      "bg-destructive status-pulse-danger"
                                   }`} />
                               </div>
                             </button>
@@ -996,17 +1003,38 @@ const GuardManagement = () => {
                   </div>
 
                   {/* Right Column: Selected Document Preview & Details */}
-                  <div className="col-span-1 md:col-span-8 p-6 flex flex-col justify-between">
+                  <div className="w-full md:w-2/3 p-6 flex flex-col justify-between overflow-y-auto">
                     {selectedDoc ? (
                       <div className="space-y-4">
                         <div className="relative aspect-[16/9] w-full bg-secondary/50 rounded-2xl overflow-hidden border border-border">
                           {selectedDoc.documentImage && !imageError ? (
-                            <img
-                              src={resolveImageUrl(selectedDoc.documentImage)}
-                              alt={selectedDoc.type || selectedDoc.name}
-                              className="w-full h-full object-contain"
-                              onError={() => setImageError(true)}
-                            />
+                            resolveImageUrl(selectedDoc.documentImage).toLowerCase().split("?")[0].endsWith(".pdf") ? (
+                              <div className="w-full h-full relative">
+                                <iframe
+                                  src={resolveImageUrl(selectedDoc.documentImage)}
+                                  title="PDF Viewer"
+                                  className="w-full h-full border-0"
+                                />
+                                <div className="absolute bottom-3 right-3 z-10">
+                                  <a
+                                    href={resolveImageUrl(selectedDoc.documentImage)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-white bg-slate-900/85 hover:bg-slate-900 rounded-lg backdrop-blur-xs transition-all shadow-md"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    Open in New Tab
+                                  </a>
+                                </div>
+                              </div>
+                            ) : (
+                              <img
+                                src={resolveImageUrl(selectedDoc.documentImage)}
+                                alt={selectedDoc.type || selectedDoc.name}
+                                className="w-full h-full object-contain"
+                                onError={() => setImageError(true)}
+                              />
+                            )
                           ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
                               <FileText className="w-10 h-10 opacity-30 mb-2" />
@@ -1060,61 +1088,59 @@ const GuardManagement = () => {
                         <p className="text-sm font-medium">Select a document from the left to view details</p>
                       </div>
                     )}
-
-                    {/* Verification Action Panel */}
-                    <div className="mt-6 pt-4 border-t border-border flex flex-col gap-4">
-                      {!verifyingGuard.isVerified && (
-                        <div className="flex items-center gap-3 p-3 bg-secondary/40 rounded-xl border border-border">
-                          <input
-                            type="checkbox"
-                            id="verify-check-modal"
-                            checked={isVerifiedChecked}
-                            onChange={(e) => setIsVerifiedChecked(e.target.checked)}
-                            className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                          />
-                          <label htmlFor="verify-check-modal" className="text-xs font-semibold cursor-pointer select-none text-foreground">
-                            I confirm that documents are verified and authentic
-                          </label>
-                        </div>
-                      )}
-                      <div className="flex justify-end gap-3">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => {
-                            setVerifyingGuard(null);
-                            setIsVerifiedChecked(false);
-                            setSelectedDocIndex(0);
-                            setImageError(false);
-                          }}
-                          size="sm"
-                          disabled={updateMutation.isPending}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          disabled={(!isVerifiedChecked && !verifyingGuard.isVerified) || updateMutation.isPending}
-                          onClick={() => {
-                            updateMutation.mutate({
-                              id: verifyingGuard.id,
-                              verified: verifyingGuard.isVerified ? "false" : "true"
-                            });
-                          }}
-                          size="sm"
-                          loading={updateMutation.isPending}
-                          className={verifyingGuard.isVerified
-                            ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2 border border-transparent shadow-xs"
-                            : "bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
-                          }
-                        >
-                          {verifyingGuard.isVerified ? "Revoke Guard Verification" : "Verify Guard"}
-                        </Button>
-                      </div>
-                    </div>
-
                   </div>
-                </div>
-              </div>
+                </DialogBody>
+
+                <DialogFooter className="justify-between items-center w-full">
+                  <div className="flex-1 flex justify-start">
+                    {!verifyingGuard.isVerified && (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          id="verify-check-modal"
+                          checked={isVerifiedChecked}
+                          onChange={(e) => setIsVerifiedChecked(e.target.checked)}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                        />
+                        <label htmlFor="verify-check-modal" className="text-xs font-semibold cursor-pointer select-none text-foreground">
+                          I confirm that documents are verified and authentic
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-3 shrink-0">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        setVerifyingGuard(null);
+                        setIsVerifiedChecked(false);
+                        setSelectedDocIndex(0);
+                        setImageError(false);
+                      }}
+                      disabled={updateMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      disabled={(!isVerifiedChecked && !verifyingGuard.isVerified) || updateMutation.isPending}
+                      onClick={() => {
+                        updateMutation.mutate({
+                          id: verifyingGuard.id,
+                          verified: verifyingGuard.isVerified ? "false" : "true"
+                        });
+                      }}
+                      loading={updateMutation.isPending}
+                      className={verifyingGuard.isVerified
+                        ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2 border border-transparent shadow-xs"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
+                      }
+                    >
+                      {verifyingGuard.isVerified ? "Revoke Guard Verification" : "Verify Guard"}
+                    </Button>
+                  </div>
+                </DialogFooter>
+              </>
             );
           })()}
         </DialogContent>
@@ -1122,7 +1148,7 @@ const GuardManagement = () => {
 
       {/* Viewing Guard Schedules Dialog */}
       <Dialog open={!!viewingSchedulesGuard} onOpenChange={(val) => !val && setViewingSchedulesGuard(null)}>
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-background">
+        <DialogContent className="sm:max-w-2xl">
           {viewingSchedulesGuard && (() => {
             const { guard, assignments } = viewingSchedulesGuard;
 
@@ -1138,10 +1164,10 @@ const GuardManagement = () => {
             const totalShifts = assignments.length;
 
             return (
-              <div className="flex flex-col">
+              <>
                 {/* Header */}
-                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-5 border-b border-border/50">
-                  <DialogTitle className="text-lg font-bold text-foreground">Guard Schedule Overview</DialogTitle>
+                <DialogHeader>
+                  <DialogTitle>Guard Schedule Overview</DialogTitle>
                   <p className="text-xs text-muted-foreground mt-0.5">{guard.name}</p>
                   {/* Summary chips */}
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -1154,10 +1180,10 @@ const GuardManagement = () => {
                       {totalShifts} Active Schedule{totalShifts !== 1 ? "s" : ""}
                     </span>
                   </div>
-                </div>
+                </DialogHeader>
 
                 {/* Per-site sections */}
-                <div className="p-6 max-h-[480px] overflow-y-auto space-y-6">
+                <DialogBody className="space-y-6">
                   {siteNames.map((siteName) => {
                     const siteShifts = bySite[siteName];
                     const firstShift = siteShifts[0];
@@ -1223,19 +1249,18 @@ const GuardManagement = () => {
                       </div>
                     );
                   })}
-                </div>
+                </DialogBody>
 
-                <div className="px-6 py-4 bg-secondary/20 border-t border-border/50 flex justify-end">
+                <DialogFooter>
                   <Button
                     type="button"
                     variant="secondary"
                     onClick={() => setViewingSchedulesGuard(null)}
-                    size="sm"
                   >
                     Close
                   </Button>
-                </div>
-              </div>
+                </DialogFooter>
+              </>
             );
           })()}
         </DialogContent>

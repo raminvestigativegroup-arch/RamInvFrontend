@@ -1,13 +1,15 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
-import { Search, Download, Sparkles, Camera, X, CalendarDays, Loader2, AlertCircle, MoreVertical, CheckCircle2, Clock, AlertTriangle, FileWarning } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Download, Sparkles, Camera, X, AlertCircle, MoreVertical, CheckCircle2, Clock, AlertTriangle, FileWarning } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import DateSelect from "@/components/common/DateSelect";
+import TableToolbar from "@/components/common/TableToolbar";
+import DataTable from "@/components/common/DataTable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatUTCTime } from "@/lib/dateUtils";
@@ -326,161 +328,123 @@ const IncidentManagement = () => {
       </div>
 
       {/* Search, Filters and Sort Toolbar */}
-      <div className="flex flex-col md:flex-row gap-3 items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search incidents..."
-            className="pl-9 pr-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 h-[38px] rounded-lg text-sm w-full placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary"
+      <TableToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search incidents..."
+        hasActiveFilters={activeFilters > 0}
+        onResetFilters={() => {
+          setPriorityFilter("all");
+          setSiteFilter("all");
+          setGuardFilter("all");
+          setDateFilter("all");
+        }}
+      >
+        <SelectDropdown
+          value={priorityFilter}
+          onChange={setPriorityFilter}
+          options={[
+            { value: "all", label: "All Priorities" },
+            { value: "high", label: "High" },
+            { value: "medium", label: "Medium" },
+            { value: "low", label: "Low" }
+          ]}
+          placeholder="Priority"
+          className="w-full sm:w-[130px]"
+        />
+        <div className="w-full sm:w-[150px]">
+          <DateSelect
+            value={dateFilter === "all" ? "" : dateFilter}
+            onChange={(val) => setDateFilter(val || "all")}
+            placeholder="All Dates"
+            className="h-[38px] text-xs font-semibold"
           />
         </div>
-
-        <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end items-center">
-          {/* Priority */}
-          <SelectDropdown
-            value={priorityFilter}
-            onChange={setPriorityFilter}
-            options={[
-              { value: "all", label: "All Priorities" },
-              { value: "high", label: "High" },
-              { value: "medium", label: "Medium" },
-              { value: "low", label: "Low" }
-            ]}
-            placeholder="Priority"
-            className="w-full sm:w-[130px]"
-          />
-
-          {/* Date */}
-          <div className="w-full sm:w-[150px]">
-            <DateSelect
-              value={dateFilter === "all" ? "" : dateFilter}
-              onChange={(val) => setDateFilter(val || "all")}
-              placeholder="All Dates"
-              className="h-[38px] text-xs font-semibold"
-            />
-          </div>
-
-          {/* Site */}
-          <SelectDropdown
-            value={siteFilter}
-            onChange={setSiteFilter}
-            options={[{ value: "all", label: "All Sites" }, ...siteList.map((s) => ({ value: s.name, label: s.name }))] || []}
-            placeholder="Site"
-            className="w-full sm:w-[140px]"
-          />
-
-          {/* Guard */}
-          <SelectDropdown
-            value={guardFilter}
-            onChange={setGuardFilter}
-            options={[{ value: "all", label: "All Guards" }, ...guardList.map((g) => ({ value: g.id, label: g.name }))] || []}
-            placeholder="Guard"
-            className="w-full sm:w-[140px]"
-          />
-
-          {activeFilters > 0 && (
-            <Button
-              onClick={() => {
-                setPriorityFilter("all");
-                setSiteFilter("all");
-                setGuardFilter("all");
-                setDateFilter("all");
-              }}
-              variant="ghost"
-              size="sm"
-              className="text-xs h-[38px] font-semibold text-slate-500 hover:text-slate-700"
-            >
-              Reset
-            </Button>
-          )}
-        </div>
-      </div>
+        <SelectDropdown
+          value={siteFilter}
+          onChange={setSiteFilter}
+          options={[{ value: "all", label: "All Sites" }, ...siteList.map((s) => ({ value: s.name, label: s.name }))]}
+          placeholder="Site"
+          className="w-full sm:w-[140px]"
+        />
+        <SelectDropdown
+          value={guardFilter}
+          onChange={setGuardFilter}
+          options={[{ value: "all", label: "All Guards" }, ...guardList.map((g) => ({ value: g.id, label: g.name }))]}
+          placeholder="Guard"
+          className="w-full sm:w-[140px]"
+        />
+      </TableToolbar>
 
       <div className="flex gap-6">
         {/* Incident List */}
         <div className={`${selectedIncident ? "w-1/2" : "w-full"} transition-all`}>
-          <div className="data-table">
-            {showLoader && (
-              <StateMessage type="loading" message="Loading incidents..." className="p-4" />
+          <DataTable
+            columns={[
+              { key: "incident", label: "Incident" },
+              { key: "site", label: "Site" },
+              { key: "guard", label: "Guard" },
+              { key: "priority", label: "Priority" },
+              { key: "status", label: "Status" },
+              { key: "date", label: "Date" },
+              { key: "actions", label: "Actions", align: "right" },
+            ]}
+            data={filtered}
+            isLoading={showLoader}
+            isError={showError}
+            isEmpty={showEmpty}
+            loadingMessage="Loading incidents..."
+            emptyTitle="Incident not found"
+            emptyMessage="Create a new incident to get started."
+            emptyIcon={FileWarning}
+            renderRow={(inc) => (
+              <tr
+                key={inc.id}
+                className={`cursor-pointer ${selectedIncidentId === inc.id ? "bg-accent/60" : ""}`}
+                onClick={() => setSelectedIncidentId(inc.id)}
+              >
+                <td>
+                  <p className="font-medium text-foreground">{inc.title}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{inc.type}</p>
+                </td>
+                <td className="text-muted-foreground">{inc.site}</td>
+                <td>{guardMap[inc.guard] || inc.guard}</td>
+                <td><span className={`priority-${inc.priority}`}>{inc.priority.toUpperCase()}</span></td>
+                <td>
+                  <Badge variant={inc.status === "resolved" ? "success" : inc.status === "open" ? "danger" : "warning"} showDot>
+                    {inc.status}
+                  </Badge>
+                </td>
+                <td className="text-muted-foreground whitespace-nowrap">
+                  {inc.date}<br /><span className="text-xs">{inc.time}</span>
+                </td>
+                <td className="text-right">
+                  {hasEditPermission ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={updateStatusMutation.isPending}>
+                          <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'open' }); }}>
+                          <AlertTriangle className="w-4 h-4 mr-2 text-destructive" /> Mark Open
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'in-progress' }); }}>
+                          <Clock className="w-4 h-4 mr-2 text-warning" /> In Progress
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'resolved' }); }}>
+                          <CheckCircle2 className="w-4 h-4 mr-2 text-success" /> Resolved
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </td>
+              </tr>
             )}
-            {showError && (
-              <StateMessage
-                type="error"
-                title="Failed to load incidents"
-                message={error instanceof Error ? error.message : undefined}
-                className="p-4"
-              />
-            )}
-            {!showLoader && !showError && showEmpty && (
-              <StateMessage
-                type="empty"
-                title="Incident not found"
-                message="Create a new incident to get started."
-                icon={FileWarning}
-                className="p-4"
-              />
-            )}
-            {!showLoader && !showError && !showEmpty && (
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-secondary/50 border-b border-border">
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">INCIDENT</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">SITE</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">GUARD</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">PRIORITY</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">STATUS</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">DATE</th>
-                    <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {filtered.map((inc) => (
-                    <tr key={inc.id} className={`hover:bg-secondary/30 transition-colors cursor-pointer ${selectedIncidentId === inc.id ? "bg-accent" : ""}`} onClick={() => setSelectedIncidentId(inc.id)}>
-                      <td className="px-5 py-4">
-                        <p className="text-sm font-medium text-foreground">{inc.title}</p>
-                        <p className="text-xs text-muted-foreground">{inc.type}</p>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-muted-foreground">{inc.site}</td>
-                      <td className="px-5 py-4 text-sm text-foreground">{guardMap[inc.guard] || inc.guard}</td>
-                      <td className="px-5 py-4"><span className={`priority-${inc.priority}`}>{inc.priority.toUpperCase()}</span></td>
-                      <td className="px-5 py-4">
-                        <Badge variant={inc.status === "resolved" ? "success" : inc.status === "open" ? "danger" : "warning"} showDot>
-                          {inc.status}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-muted-foreground whitespace-nowrap">{inc.date}<br /><span className="text-xs">{inc.time}</span></td>
-                      <td className="px-5 py-4 text-right">
-                        {hasEditPermission ? (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" disabled={updateStatusMutation.isPending}>
-                                <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'open' }); }}>
-                                <AlertTriangle className="w-4 h-4 mr-2 text-destructive" /> Mark Open
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'in-progress' }); }}>
-                                <Clock className="w-4 h-4 mr-2 text-warning" /> In Progress
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'resolved' }); }}>
-                                <CheckCircle2 className="w-4 h-4 mr-2 text-success" /> Resolved
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">None</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          />
         </div>
 
         {/* Detail Panel */}
@@ -577,15 +541,15 @@ const IncidentManagement = () => {
       <Dialog open={!!aiIncidentId} onOpenChange={(open) => !open && setAiIncidentId(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
+            <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />AI Report Refiner
             </DialogTitle>
           </DialogHeader>
           {aiSelected && (
-            <div className="space-y-4">
+            <DialogBody>
               <div>
                 <p className="text-sm font-semibold text-foreground">{aiSelected.title}</p>
-                <p className="text-xs text-muted-foreground">{aiSelected.site} · {aiSelected.date} {aiSelected.time}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{aiSelected.site} · {aiSelected.date} {aiSelected.time}</p>
               </div>
 
               {isRefining ? (
@@ -625,25 +589,26 @@ const IncidentManagement = () => {
                     <span className={`priority-${aiSelected.priority}`}>{aiSelected.priority.toUpperCase()}</span>
                     <Badge variant={aiSelected.status === "resolved" ? "success" : "danger"} showDot>{aiSelected.status}</Badge>
                   </div>
-
-                  {aiActiveTab === "refined" && refinedData?.refined && (
-                    <Button
-                      onClick={() =>
-                        applyRefinedDescriptionMutation.mutate({
-                          id: aiSelected.id,
-                          description: refinedData.refined,
-                        })
-                      }
-                      loading={applyRefinedDescriptionMutation.isPending}
-                      className="w-full gap-2"
-                    >
-                      {!applyRefinedDescriptionMutation.isPending && <CheckCircle2 className="w-4 h-4" />}
-                      Approve & Update Description
-                    </Button>
-                  )}
                 </>
               )}
-            </div>
+            </DialogBody>
+          )}
+          {aiSelected && aiActiveTab === "refined" && refinedData?.refined && !isRefining && !isRefineError && (
+            <DialogFooter>
+              <Button
+                onClick={() =>
+                  applyRefinedDescriptionMutation.mutate({
+                    id: aiSelected.id,
+                    description: refinedData.refined,
+                  })
+                }
+                loading={applyRefinedDescriptionMutation.isPending}
+                className="gap-2"
+              >
+                {!applyRefinedDescriptionMutation.isPending && <CheckCircle2 className="w-4 h-4" />}
+                Approve & Update Description
+              </Button>
+            </DialogFooter>
           )}
         </DialogContent>
       </Dialog>

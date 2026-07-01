@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
-import { Search, Upload, AlertTriangle, CheckCircle, XCircle, Loader2, FileText, Calendar, ShieldCheck, Plus } from "lucide-react";
+import { Upload, AlertTriangle, CheckCircle, XCircle, Loader2, FileText, Calendar, ShieldCheck, Plus, ExternalLink } from "lucide-react";
 import { useState, useMemo } from "react";
 import authService from "@/services/authService";
 import {
@@ -8,6 +8,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -26,6 +28,8 @@ import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import DateSelect from "@/components/common/DateSelect";
 import FormField from "@/components/common/FormField";
+import TableToolbar from "@/components/common/TableToolbar";
+import DataTable from "@/components/common/DataTable";
 
 const normalizeImageUrl = (url?: string) => {
   if (!url) return undefined;
@@ -616,180 +620,131 @@ const Compliance = () => {
       </div>
 
       {/* Search, Filters and Sort Toolbar */}
-      <div className="flex flex-col md:flex-row gap-3 items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="relative w-full md:w-80">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="pl-9 pr-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 h-[38px] rounded-lg text-sm w-full placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2 w-full md:w-auto justify-end items-center">
-          {activeTab === "list" && (
-            <SelectDropdown
-              value={filter}
-              onChange={setFilter}
-              options={[
-                { value: "all", label: "All Statuses" },
-                { value: "valid", label: "Valid Only" },
-                { value: "expiring", label: "Expiring Soon" },
-                { value: "expired", label: "Expired Only" },
-              ]}
-              placeholder="Status"
-              className="w-full sm:w-[135px]"
-            />
-          )}
-
+      <TableToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search..."
+        hasActiveFilters={search !== "" || filter !== "all" || ownerTypeFilter !== "all"}
+        onResetFilters={() => {
+          setSearch("");
+          setFilter("all");
+          setOwnerTypeFilter("all");
+        }}
+      >
+        {activeTab === "list" && (
           <SelectDropdown
-            value={ownerTypeFilter}
-            onChange={setOwnerTypeFilter}
-            options={ownerTypeOptions}
-            placeholder="All Roles"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: "All Statuses" },
+              { value: "valid", label: "Valid Only" },
+              { value: "expiring", label: "Expiring Soon" },
+              { value: "expired", label: "Expired Only" },
+            ]}
+            placeholder="Status"
             className="w-full sm:w-[135px]"
           />
-
-          {(search !== "" || filter !== "all" || ownerTypeFilter !== "all") && (
-            <Button
-              onClick={() => {
-                setSearch("");
-                setFilter("all");
-                setOwnerTypeFilter("all");
-              }}
-              variant="ghost"
-              size="sm"
-              className="text-xs h-[38px] font-semibold text-slate-500 hover:text-slate-700"
-            >
-              Reset
-            </Button>
-          )}
-        </div>
-      </div>
+        )}
+        <SelectDropdown
+          value={ownerTypeFilter}
+          onChange={setOwnerTypeFilter}
+          options={ownerTypeOptions}
+          placeholder="All Roles"
+          className="w-full sm:w-[135px]"
+        />
+      </TableToolbar>
 
       {/* Main Content Area */}
-      <div className="data-table overflow-hidden">
-        {activeTab === "list" ? (
-          showLoader ? (
-            <StateMessage type="loading" message="Loading compliance records..." />
-          ) : showError ? (
-            <StateMessage
-              type="error"
-              title="Failed to load compliance records"
-              message="Error loading documents. Please try again."
-              className="m-4"
-            />
-          ) : showEmpty ? (
-            <StateMessage
-              type="empty"
-              title="No documents found"
-              message="Upload a compliance document to get started."
-              icon={ShieldCheck}
-              className="m-4"
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-secondary/50 border-b border-border">
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Person</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Role</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Document Type</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Expiry Date</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Status</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {documents.map(doc => (
-                    <tr
-                      key={doc.id}
-                      onClick={() => setSelectedDoc(doc)}
-                      className="hover:bg-secondary/30 transition-colors group cursor-pointer animate-fade-in"
-                    >
-                      <td className="px-5 py-4 text-sm font-medium text-foreground flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold overflow-hidden">
-                          {doc.personPhoto ? (
-                            <img src={doc.personPhoto} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            doc.personName.charAt(0).toUpperCase()
-                          )}
-                        </div>
-                        {doc.personName}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-[10px] font-bold uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                          {doc.personType}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-foreground font-medium">{doc.docType}</td>
-                      <td className="px-5 py-4 text-sm text-muted-foreground font-semibold">{doc.expiryDate}</td>
-                      <td className="px-5 py-4">
-                        <Badge variant={doc.status === "valid" ? "success" : doc.status === "expiring" ? "warning" : "danger"} showDot>
-                          {doc.status === "valid" ? "Verified" : doc.status === "expiring" ? "Expiring Soon" : "Expired"}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-4">
-                        <Button variant="link" size="sm" className="h-auto p-0 hover:underline">
-                          View details
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        ) : (
-          /* Compliance Summary Matrix Tab */
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-secondary/50 border-b border-border">
-                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Person</th>
-                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Role</th>
-                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">State ID</th>
-                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Security Licence</th>
-                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Pistol Licence</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filteredSummary.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center p-8 text-sm text-muted-foreground font-medium">
-                      No matching records found.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredSummary.map(person => (
-                    <tr key={person.id} className="hover:bg-secondary/30 transition-colors">
-                      <td className="px-5 py-4 text-sm font-medium text-foreground flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold overflow-hidden">
-                          {person.photo ? (
-                            <img src={person.photo} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            person.name.charAt(0).toUpperCase()
-                          )}
-                        </div>
-                        {person.name}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-[10px] font-bold uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                          {person.type}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">{renderSummaryBadge(person.stateId)}</td>
-                      <td className="px-5 py-4">{renderSummaryBadge(person.securityLicense)}</td>
-                      <td className="px-5 py-4">{renderSummaryBadge(person.pistolLicense)}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {activeTab === "list" ? (
+        <DataTable
+          columns={[
+            { key: "person", label: "Person" },
+            { key: "role", label: "Role" },
+            { key: "docType", label: "Document Type" },
+            { key: "expiry", label: "Expiry Date" },
+            { key: "status", label: "Status" },
+            { key: "actions", label: "Actions" },
+          ]}
+          data={documents}
+          isLoading={showLoader}
+          isError={showError}
+          isEmpty={showEmpty}
+          loadingMessage="Loading compliance records..."
+          emptyTitle="No documents found"
+          emptyMessage="Upload a compliance document to get started."
+          emptyIcon={ShieldCheck}
+          renderRow={(doc) => (
+            <tr key={doc.id} onClick={() => setSelectedDoc(doc)} className="cursor-pointer">
+              <td>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold overflow-hidden shrink-0">
+                    {doc.personPhoto ? (
+                      <img src={doc.personPhoto} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      doc.personName.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <span className="font-medium">{doc.personName}</span>
+                </div>
+              </td>
+              <td>
+                <span className="text-[10px] font-bold uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                  {doc.personType}
+                </span>
+              </td>
+              <td className="font-medium">{doc.docType}</td>
+              <td className="text-muted-foreground font-semibold">{doc.expiryDate}</td>
+              <td>
+                <Badge variant={doc.status === "valid" ? "success" : doc.status === "expiring" ? "warning" : "danger"} showDot>
+                  {doc.status === "valid" ? "Verified" : doc.status === "expiring" ? "Expiring Soon" : "Expired"}
+                </Badge>
+              </td>
+              <td>
+                <Button variant="link" size="sm" className="h-auto p-0 hover:underline">View details</Button>
+              </td>
+            </tr>
+          )}
+        />
+      ) : (
+        /* Compliance Summary Matrix Tab */
+        <DataTable
+          columns={[
+            { key: "person", label: "Person" },
+            { key: "role", label: "Role" },
+            { key: "stateId", label: "State ID" },
+            { key: "securityLicense", label: "Security Licence" },
+            { key: "pistolLicense", label: "Pistol Licence" },
+          ]}
+          data={filteredSummary}
+          isEmpty={filteredSummary.length === 0}
+          emptyTitle="No matching records found"
+          emptyMessage="Adjust your filters to see compliance data."
+          renderRow={(person) => (
+            <tr key={person.id}>
+              <td>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold overflow-hidden shrink-0">
+                    {person.photo ? (
+                      <img src={person.photo} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      person.name.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                  <span className="font-medium">{person.name}</span>
+                </div>
+              </td>
+              <td>
+                <span className="text-[10px] font-bold uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                  {person.type}
+                </span>
+              </td>
+              <td>{renderSummaryBadge(person.stateId)}</td>
+              <td>{renderSummaryBadge(person.securityLicense)}</td>
+              <td>{renderSummaryBadge(person.pistolLicense)}</td>
+            </tr>
+          )}
+        />
+      )}
 
       {/* Document Detail Dialog */}
       <Dialog
@@ -802,33 +757,56 @@ const Compliance = () => {
           }
         }}
       >
-        <DialogContent className="sm:max-w-xl p-0 overflow-hidden border-none shadow-2xl">
+        <DialogContent className="sm:max-w-xl">
           {selectedDoc && (
-            <div className="flex flex-col">
-              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-4 border-b border-border/50 flex items-center justify-between">
-                <div>
-                  <DialogTitle className="text-lg font-bold text-foreground">Document Details</DialogTitle>
-                  <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record</p>
+            <>
+              <DialogHeader>
+                <div className="flex items-start justify-between flex-wrap gap-3 pr-6">
+                  <div>
+                    <DialogTitle>Document Details</DialogTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Badge variant={selectedDoc.status === "valid" ? "success" : selectedDoc.status === "expiring" ? "warning" : "danger"} showDot>
+                      {selectedDoc.status === "valid" ? "Valid" : selectedDoc.status === "expiring" ? "Expiring Soon" : "Expired"}
+                    </Badge>
+                    <Badge variant={selectedDoc.isApproved ? "success" : "warning"} showDot>
+                      {selectedDoc.isApproved ? "Verified" : "Pending Verification"}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <Badge variant={selectedDoc.status === "valid" ? "success" : selectedDoc.status === "expiring" ? "warning" : "danger"} showDot>
-                    {selectedDoc.status === "valid" ? "Valid" : selectedDoc.status === "expiring" ? "Expiring Soon" : "Expired"}
-                  </Badge>
-                  <Badge variant={selectedDoc.isApproved ? "success" : "warning"} showDot>
-                    {selectedDoc.isApproved ? "Verified" : "Pending Verification"}
-                  </Badge>
-                </div>
-              </div>
+              </DialogHeader>
 
-              <div className="p-6 space-y-6">
+              <DialogBody className="space-y-6">
                 <div className="relative aspect-[16/9] w-full bg-secondary/50 rounded-2xl overflow-hidden border border-border group">
                   {currentImgUrl && !imageError ? (
-                    <img
-                      src={currentImgUrl}
-                      alt={selectedDoc.docType}
-                      className="w-full h-full object-contain"
-                      onError={handleImageError}
-                    />
+                    currentImgUrl.toLowerCase().split("?")[0].endsWith(".pdf") ? (
+                      <div className="w-full h-full relative">
+                        <iframe
+                          src={currentImgUrl}
+                          title="PDF Viewer"
+                          className="w-full h-full border-0"
+                        />
+                        <div className="absolute bottom-3 right-3 z-10">
+                          <a
+                            href={currentImgUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-white bg-slate-900/85 hover:bg-slate-900 rounded-lg backdrop-blur-xs transition-all shadow-md"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            Open in New Tab
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <img
+                        src={currentImgUrl}
+                        alt={selectedDoc.docType}
+                        className="w-full h-full object-contain"
+                        onError={handleImageError}
+                      />
+                    )
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
                       <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mb-3">
@@ -883,9 +861,9 @@ const Compliance = () => {
                     <p className="text-sm font-bold text-foreground">{selectedDoc.expiryDate}</p>
                   </div>
                 </div>
-              </div>
+              </DialogBody>
 
-              <div className="p-6 bg-secondary/10 border-t border-border/50 flex justify-between items-center">
+              <DialogFooter className="justify-between items-center w-full">
                 <div>
                   {hasDeletePermission && (
                     <Button
@@ -895,13 +873,12 @@ const Compliance = () => {
                       }}
                       loading={deleteMutation.isPending}
                       variant="destructive"
-                      size="sm"
                     >
                       Delete
                     </Button>
                   )}
                 </div>
-                 <div className="flex gap-2">
+                <div className="flex gap-2">
                   {hasEditPermission && (
                     <>
                       <Button
@@ -913,7 +890,6 @@ const Compliance = () => {
                         }}
                         loading={editMutation.isPending}
                         variant={selectedDoc.isApproved ? "outline" : "default"}
-                        size="sm"
                       >
                         {selectedDoc.isApproved ? "Revoke Verification" : "Verify Document"}
                       </Button>
@@ -926,7 +902,6 @@ const Compliance = () => {
                           setIsEditOpen(true);
                         }}
                         variant="secondary"
-                        size="sm"
                       >
                         Edit Details
                       </Button>
@@ -934,13 +909,12 @@ const Compliance = () => {
                   )}
                   <Button
                     onClick={() => setSelectedDoc(null)}
-                    size="sm"
                   >
                     Close Document
                   </Button>
                 </div>
-              </div>
-            </div>
+              </DialogFooter>
+            </>
           )}
         </DialogContent>
       </Dialog>
@@ -957,153 +931,153 @@ const Compliance = () => {
         }
         setUploadErrors({});
       }}>
-        <DialogContent className="sm:max-w-md p-6 border-none shadow-2xl rounded-2xl">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Upload Compliance Document</DialogTitle>
+            <DialogTitle>Upload Compliance Document</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleUploadSubmit} className="space-y-4 mt-2" noValidate>
-            {uploadErrors.form && (
-              <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
-                {uploadErrors.form}
-              </div>
-            )}
-            <FormField label="Upload For">
-              <div className="flex gap-2 p-1 bg-secondary/50 rounded-xl border border-border">
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setUploadUserType("Guard");
-                    setUploadOwnerId("");
-                  }}
-                  variant={uploadUserType === "Guard" ? "default" : "ghost"}
-                  size="sm"
-                  className="flex-1 rounded-full"
-                >
-                  Guard
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setUploadUserType("Manager");
-                    setUploadOwnerId("");
-                  }}
-                  variant={uploadUserType === "Manager" ? "default" : "ghost"}
-                  size="sm"
-                  className="flex-1 rounded-full"
-                >
-                  Manager
-                </Button>
-              </div>
-            </FormField>
+          <form onSubmit={handleUploadSubmit} noValidate className="flex flex-col flex-1 min-h-0">
+            <DialogBody>
+              {uploadErrors.form && (
+                <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                  {uploadErrors.form}
+                </div>
+              )}
+              <FormField label="Upload For">
+                <div className="flex gap-2 p-1 bg-secondary/50 rounded-xl border border-border">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setUploadUserType("Guard");
+                      setUploadOwnerId("");
+                    }}
+                    variant={uploadUserType === "Guard" ? "default" : "ghost"}
+                    size="sm"
+                    className="flex-1 rounded-full"
+                  >
+                    Guard
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setUploadUserType("Manager");
+                      setUploadOwnerId("");
+                    }}
+                    variant={uploadUserType === "Manager" ? "default" : "ghost"}
+                    size="sm"
+                    className="flex-1 rounded-full"
+                  >
+                    Manager
+                  </Button>
+                </div>
+              </FormField>
 
-            <FormField label="Select Person" required error={uploadErrors.ownerId}>
-              <SelectDropdown
-                value={uploadOwnerId}
-                onChange={(val) => {
-                  setUploadOwnerId(val);
-                  if (uploadErrors.ownerId) setUploadErrors(prev => ({ ...prev, ownerId: undefined }));
-                  if (val) {
-                    const submitted = rawDocuments
-                      .filter((doc: any) => doc.ownerId === val && doc.ownerType === uploadUserType)
-                      .map((doc: any) => (doc.type || doc.name || '').toLowerCase().trim());
-                    const available = docTypeOptions.find(opt => {
-                      const optValLower = opt.value.toLowerCase().trim();
-                      if (optValLower.includes('security licen')) {
-                        return !submitted.some(s => s.includes('security licen'));
+              <FormField label="Select Person" required error={uploadErrors.ownerId}>
+                <SelectDropdown
+                  value={uploadOwnerId}
+                  onChange={(val) => {
+                    setUploadOwnerId(val);
+                    if (uploadErrors.ownerId) setUploadErrors(prev => ({ ...prev, ownerId: undefined }));
+                    if (val) {
+                      const submitted = rawDocuments
+                        .filter((doc: any) => doc.ownerId === val && doc.ownerType === uploadUserType)
+                        .map((doc: any) => (doc.type || doc.name || '').toLowerCase().trim());
+                      const available = docTypeOptions.find(opt => {
+                        const optValLower = opt.value.toLowerCase().trim();
+                        if (optValLower.includes('security licen')) {
+                          return !submitted.some(s => s.includes('security licen'));
+                        }
+                        if (optValLower.includes('pistol licen')) {
+                          return !submitted.some(s => s.includes('pistol licen'));
+                        }
+                        return !submitted.includes(optValLower);
+                      });
+                      if (available) {
+                        setUploadDocType(available.value);
                       }
-                      if (optValLower.includes('pistol licen')) {
-                        return !submitted.some(s => s.includes('pistol licen'));
-                      }
-                      return !submitted.includes(optValLower);
-                    });
-                    if (available) {
-                      setUploadDocType(available.value);
+                    } else {
+                      setUploadDocType("State ID");
                     }
-                  } else {
-                    setUploadDocType("State ID");
-                  }
-                }}
-                options={personOptions}
-                placeholder="Select individual..."
-              />
-            </FormField>
-
-            <FormField label="Document Name" required>
-              <SelectDropdown
-                value={uploadDocType}
-                onChange={setUploadDocType}
-                options={filteredDocTypeOptions}
-                placeholder="Select document name..."
-              />
-            </FormField>
-
-            {uploadDocType === "Other" && (
-              <FormField label="Specify ID Name" required error={uploadErrors.customDocType}>
-                <input
-                  type="text"
-                  placeholder="e.g. Drivers License"
-                  value={customDocType}
-                  onChange={(e) => {
-                    setCustomDocType(e.target.value);
-                    if (uploadErrors.customDocType) setUploadErrors(prev => ({ ...prev, customDocType: undefined }));
                   }}
-                  className={`w-full px-3 py-2.5 bg-secondary border rounded-xl text-xs focus:outline-none focus:ring-2 ${uploadErrors.customDocType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
-                    }`}
+                  options={personOptions}
+                  placeholder="Select individual..."
                 />
               </FormField>
-            )}
 
-            <FormField label="Expiry Date" required error={uploadErrors.expiryDate}>
-              <DateSelect
-                value={uploadExpiryDate}
-                onChange={(val) => {
-                  setUploadExpiryDate(val);
-                  if (uploadErrors.expiryDate) setUploadErrors(prev => ({ ...prev, expiryDate: undefined }));
-                }}
-                placeholder="Select expiry date"
-              />
-            </FormField>
-
-            <FormField label="Document Image / File" required error={uploadErrors.file}>
-              <div className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer group ${uploadErrors.file ? "border-destructive" : "border-border"
-                }`}>
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) => {
-                    setUploadFile(e.target.files?.[0] || null);
-                    if (uploadErrors.file) setUploadErrors(prev => ({ ...prev, file: undefined }));
-                  }}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
+              <FormField label="Document Name" required>
+                <SelectDropdown
+                  value={uploadDocType}
+                  onChange={setUploadDocType}
+                  options={filteredDocTypeOptions}
+                  placeholder="Select document name..."
                 />
-                <Upload className={`w-8 h-8 group-hover:text-primary transition-colors mb-2 ${uploadErrors.file ? "text-destructive" : "text-muted-foreground"
-                  }`} />
-                <p className="text-xs font-bold text-foreground">
-                  {uploadFile ? uploadFile.name : "Click to select a file"}
-                </p>
-                <p className="text-[10px] text-muted-foreground font-medium mt-1">
-                  Supports Images and PDFs up to 45MB
-                </p>
-              </div>
-            </FormField>
+              </FormField>
 
-            <div className="pt-2 flex justify-end gap-2">
+              {uploadDocType === "Other" && (
+                <FormField label="Specify ID Name" required error={uploadErrors.customDocType}>
+                  <input
+                    type="text"
+                    placeholder="e.g. Drivers License"
+                    value={customDocType}
+                    onChange={(e) => {
+                      setCustomDocType(e.target.value);
+                      if (uploadErrors.customDocType) setUploadErrors(prev => ({ ...prev, customDocType: undefined }));
+                    }}
+                    className={`w-full px-3 py-2.5 bg-secondary border rounded-xl text-xs focus:outline-none focus:ring-2 ${uploadErrors.customDocType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                      }`}
+                  />
+                </FormField>
+              )}
+
+              <FormField label="Expiry Date" required error={uploadErrors.expiryDate}>
+                <DateSelect
+                  value={uploadExpiryDate}
+                  onChange={(val) => {
+                    setUploadExpiryDate(val);
+                    if (uploadErrors.expiryDate) setUploadErrors(prev => ({ ...prev, expiryDate: undefined }));
+                  }}
+                  placeholder="Select expiry date"
+                />
+              </FormField>
+
+              <FormField label="Document Image / File" required error={uploadErrors.file}>
+                <div className={`relative border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer group ${uploadErrors.file ? "border-destructive" : "border-border"
+                  }`}>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      setUploadFile(e.target.files?.[0] || null);
+                      if (uploadErrors.file) setUploadErrors(prev => ({ ...prev, file: undefined }));
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <Upload className={`w-8 h-8 group-hover:text-primary transition-colors mb-2 ${uploadErrors.file ? "text-destructive" : "text-muted-foreground"
+                    }`} />
+                  <p className="text-xs font-bold text-foreground">
+                    {uploadFile ? uploadFile.name : "Click to select a file"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground font-medium mt-1">
+                    Supports Images and PDFs up to 45MB
+                  </p>
+                </div>
+              </FormField>
+            </DialogBody>
+
+            <DialogFooter>
               <Button
                 type="button"
                 onClick={() => setIsUploadOpen(false)}
-                variant="outline"
-                size="sm"
+                variant="secondary"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 loading={uploadMutation.isPending}
-                size="sm"
               >
                 Upload & Verify
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
@@ -1116,69 +1090,69 @@ const Compliance = () => {
         }
         setEditErrors({});
       }}>
-        <DialogContent className="sm:max-w-md p-6 border-none shadow-2xl rounded-2xl">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Edit Compliance Document</DialogTitle>
+            <DialogTitle>Edit Compliance Document</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleEditSubmit} className="space-y-4 mt-2" noValidate>
-            {editErrors.form && (
-              <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
-                {editErrors.form}
-              </div>
-            )}
-            <FormField label="Document Name" required>
-              <SelectDropdown
-                value={editDocType}
-                onChange={setEditDocType}
-                options={docTypeOptions}
-                placeholder="Select document name..."
-              />
-            </FormField>
-
-            {editDocType === "Other" && (
-              <FormField label="Specify ID Name" required error={editErrors.customDocType}>
-                <input
-                  type="text"
-                  placeholder="e.g. Drivers License"
-                  value={editCustomDocType}
-                  onChange={(e) => {
-                    setEditCustomDocType(e.target.value);
-                    if (editErrors.customDocType) setEditErrors(prev => ({ ...prev, customDocType: undefined }));
-                  }}
-                  className={`w-full px-3 py-2.5 bg-secondary border rounded-xl text-xs focus:outline-none focus:ring-2 ${editErrors.customDocType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
-                    }`}
+          <form onSubmit={handleEditSubmit} noValidate className="flex flex-col flex-1 min-h-0">
+            <DialogBody>
+              {editErrors.form && (
+                <div className="p-3 text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                  {editErrors.form}
+                </div>
+              )}
+              <FormField label="Document Name" required>
+                <SelectDropdown
+                  value={editDocType}
+                  onChange={setEditDocType}
+                  options={docTypeOptions}
+                  placeholder="Select document name..."
                 />
               </FormField>
-            )}
 
-            <FormField label="Expiry Date" required error={editErrors.expiryDate}>
-              <DateSelect
-                value={editExpiryDate}
-                onChange={(val) => {
-                  setEditExpiryDate(val);
-                  if (editErrors.expiryDate) setEditErrors(prev => ({ ...prev, expiryDate: undefined }));
-                }}
-                placeholder="Select expiry date"
-              />
-            </FormField>
+              {editDocType === "Other" && (
+                <FormField label="Specify ID Name" required error={editErrors.customDocType}>
+                  <input
+                    type="text"
+                    placeholder="e.g. Drivers License"
+                    value={editCustomDocType}
+                    onChange={(e) => {
+                      setEditCustomDocType(e.target.value);
+                      if (editErrors.customDocType) setEditErrors(prev => ({ ...prev, customDocType: undefined }));
+                    }}
+                    className={`w-full px-3 py-2.5 bg-secondary border rounded-xl text-xs focus:outline-none focus:ring-2 ${editErrors.customDocType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                      }`}
+                  />
+                </FormField>
+              )}
 
-            <div className="pt-2 flex justify-end gap-2">
+              <FormField label="Expiry Date" required error={editErrors.expiryDate}>
+                <DateSelect
+                  value={editExpiryDate}
+                  onChange={(val) => {
+                    setEditExpiryDate(val);
+                    if (editErrors.expiryDate) setEditErrors(prev => ({ ...prev, expiryDate: undefined }));
+                  }}
+                  placeholder="Select expiry date"
+                />
+              </FormField>
+            </DialogBody>
+
+            <DialogFooter>
               <Button
                 type="button"
                 onClick={() => setIsEditOpen(false)}
-                variant="outline"
-                size="sm"
+                variant="secondary"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 loading={editMutation.isPending}
-                size="sm"
               >
                 Save Changes
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

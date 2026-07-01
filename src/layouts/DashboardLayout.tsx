@@ -63,6 +63,10 @@ const DashboardLayout = () => {
     (user?.securityLicenceUploaded && user?.stateIdUploaded);
 
   useEffect(() => {
+    if (!user) {
+      navigate("/", { replace: true });
+      return;
+    }
     if (user && !isCompliant && pathname !== "/dashboard/compliance") {
       navigate("/dashboard/compliance", { replace: true });
     }

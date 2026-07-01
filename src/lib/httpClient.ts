@@ -81,6 +81,19 @@ httpClient.interceptors.response.use(
       _retry?: boolean;
     };
 
+    const isPublicRoute =
+      originalRequest.url?.includes("/auth/admin") ||
+      originalRequest.url?.includes("/auth/login") ||
+      originalRequest.url?.includes("/auth/register") ||
+      originalRequest.url?.includes("/auth/forgot-password") ||
+      originalRequest.url?.includes("/auth/reset-password") ||
+      originalRequest.url?.includes("/auth/verify-otp") ||
+      originalRequest.url?.includes("/auth/resend-otp");
+
+    if (isPublicRoute) {
+      return Promise.reject(error);
+    }
+
     // Handle 401 Unauthorized (token expired or invalid)
     if (error.response?.status === 401 && !originalRequest._retry) {
       // If the request that failed is already the refresh token request, 
@@ -112,12 +125,8 @@ httpClient.interceptors.response.use(
       return new Promise((resolve, reject) => {
         console.log("Access token expired, attempting to refresh...");
         // Try to refresh token - browser will send the refresh token cookie
-        // Using direct axios call to avoid interceptor loop
-        axios.post(
-          `${API_BASE_URL}/auth/refresh-token`,
-          {}, // No body needed as it's in cookies
-          { withCredentials: true }
-        )
+        // Using httpClient call to leverage config
+        httpClient.post("/auth/refresh-token")
           .then(() => {
             console.log("Token refreshed successfully, scheduling retries...");
             // Yield to browser event loop (50ms) to ensure cookie storage is fully updated

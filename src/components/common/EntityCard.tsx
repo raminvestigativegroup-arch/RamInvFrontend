@@ -61,7 +61,7 @@ const EntityCard: React.FC<EntityCardProps> = ({
   return (
     <div 
       onClick={onClick}
-      className={`bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`hud-panel hud-corners-container bg-card rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">

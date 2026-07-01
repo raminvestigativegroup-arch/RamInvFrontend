@@ -33,7 +33,12 @@ function Badge({ className, variant, showDot, children, ...props }: BadgeProps) 
   return (
     <div className={cn(badgeVariants({ variant }), className)} {...props}>
       {showDot && (
-        <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+        <span className={cn(
+          "mr-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0",
+          variant === "success" && "status-pulse-success",
+          variant === "warning" && "status-pulse-warning",
+          (variant === "destructive" || variant === "danger") && "status-pulse-danger"
+        )} />
       )}
       {children}
     </div>

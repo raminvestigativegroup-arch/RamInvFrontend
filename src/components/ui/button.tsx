@@ -6,22 +6,22 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap g text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.98] shadow-sm",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-semibold ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.98] shadow-sm",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:opacity-95 shadow-sm border border-transparent",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-secondary hover:text-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border/10",
+        default: "bg-gradient-to-b from-primary/95 to-primary text-primary-foreground hover:opacity-90 hover:shadow-md border-t border-white/10 border-b border-black/20 shadow-sm",
+        destructive: "bg-gradient-to-b from-destructive/95 to-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
+        outline: "border border-input/80 bg-background hover:bg-secondary hover:text-foreground hover:border-input shadow-sm",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border/20 shadow-xs",
         ghost: "hover:bg-secondary hover:text-foreground shadow-none",
         link: "text-primary underline-offset-4 hover:underline shadow-none",
       },
       size: {
-        default: "h-9 rounded px-3",
-        sm: "h-9 rounded px-3",
-        lg: "h-11 rounded px-8",
-        icon: "h-9 w-9",
+        default: "h-[38px] rounded-lg px-4 py-2",
+        sm: "h-[34px] rounded-md px-3 text-xs",
+        lg: "h-11 rounded-lg px-8",
+        icon: "h-[38px] w-[38px] rounded-lg",
       },
     },
     defaultVariants: {

@@ -4,12 +4,17 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface EntityDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
+  description?: string;
   onSubmit: (e: React.FormEvent) => void;
   submitLabel: string;
   children: React.ReactNode;
@@ -18,10 +23,25 @@ interface EntityDialogProps {
   isLoading?: boolean;
 }
 
+/**
+ * EntityDialog — the standard form dialog used throughout the app.
+ *
+ * Layout:
+ *  ┌─────────────────────────┐
+ *  │ 3px primary accent bar  │
+ *  │─────────────────────────│
+ *  │  Title (white, fixed)   │
+ *  │─────────────────────────│
+ *  │  Form fields (scrolls)  │
+ *  │─────────────────────────│
+ *  │  Cancel · Submit (white)│
+ *  └─────────────────────────┘
+ */
 const EntityDialog: React.FC<EntityDialogProps> = ({
   open,
   onOpenChange,
   title,
+  description,
   onSubmit,
   submitLabel,
   children,
@@ -32,31 +52,33 @@ const EntityDialog: React.FC<EntityDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={maxWidth}>
-        <DialogHeader className="border-b pb-4">
+        {/* Fixed white header */}
+        <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
+          {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4 mt-2" noValidate>
-          <div className="max-h-[75vh] overflow-y-auto px-1 -mx-1 space-y-4">
-            {children}
-          </div>
-          <div className="flex justify-end gap-3 pt-5 border-t border-border mt-4">
-            <button
+
+        {/* Scrollable form body + fixed white footer */}
+        <form
+          onSubmit={onSubmit}
+          noValidate
+          className="flex flex-col flex-1 min-h-0"
+        >
+          <DialogBody>{children}</DialogBody>
+
+          <DialogFooter>
+            <Button
               type="button"
+              variant="secondary"
               disabled={isLoading}
               onClick={() => onOpenChange(false)}
-              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
             >
               {cancelLabel}
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
-            >
-              {isLoading && <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />}
+            </Button>
+            <Button type="submit" disabled={isLoading} loading={isLoading}>
               {submitLabel}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
