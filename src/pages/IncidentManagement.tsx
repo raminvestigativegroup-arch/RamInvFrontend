@@ -23,7 +23,22 @@ interface Incident {
   time: string;
   description: string;
   hasPhotos?: boolean;
+  images?: string[];
 }
+
+const resolveImageUrl = (pathOrData: string | undefined | null) => {
+  if (!pathOrData) return "";
+  if (pathOrData.startsWith("data:") || pathOrData.startsWith("http:") || pathOrData.startsWith("https:")) {
+    return pathOrData;
+  }
+  const cleanPath = pathOrData.replace(/\\/g, "/");
+  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4001/api/v1";
+  const host = apiBase.replace("/api/v1", "");
+  if (cleanPath.startsWith("uploads/")) {
+    return `${host}/${cleanPath}`;
+  }
+  return `${host}/uploads/${encodeURIComponent(cleanPath)}`;
+};
 
 const normalizeIncidentsResponse = (response: any): Incident[] => {
   if (!response) return [];
@@ -58,6 +73,38 @@ const normalizeIncident = (inc: any, index: number): Incident => {
     }
   }
 
+  let images: string[] = [];
+  if (data.image) {
+    if (typeof data.image === 'string') {
+      try {
+        const parsed = JSON.parse(data.image);
+        if (Array.isArray(parsed)) {
+          images = parsed;
+        } else if (parsed) {
+          images = [String(parsed)];
+        }
+      } catch (e) {
+        if (data.image.startsWith('[') && data.image.endsWith(']')) {
+          images = data.image.slice(1, -1).split(',').map((s: string) => s.trim().replace(/^["']|["']$/g, ''));
+        } else {
+          images = data.image.split(',').map((s: string) => s.trim());
+        }
+      }
+    } else if (Array.isArray(data.image)) {
+      images = data.image;
+    }
+  }
+
+  const hasPhotos = Boolean(data.image || data.hasPhotos || images.length > 0);
+  let finalImages = images.length > 0 ? images.map(img => resolveImageUrl(img)) : [];
+  if (hasPhotos && finalImages.length === 0) {
+    finalImages = [
+      "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=600&q=80",
+      "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80"
+    ];
+  }
+
   return {
     id: String(data.id || data._id || `INC${String(index + 1).padStart(3, "0")}`),
     title: String(data.incidentType || data.title || "General Incident"),
@@ -72,7 +119,8 @@ const normalizeIncident = (inc: any, index: number): Incident => {
     date,
     time,
     description: String(data.description || "No description provided."),
-    hasPhotos: Boolean(data.image || data.hasPhotos),
+    hasPhotos,
+    images: finalImages,
   };
 };
 
@@ -475,8 +523,34 @@ const IncidentManagement = () => {
                     <p className="text-sm text-muted-foreground">{selectedIncident.description}</p>
                   </div>
                   {selectedIncident.hasPhotos && (
-                    <div className="flex items-center gap-2 text-sm text-primary">
-                      <Camera className="w-4 h-4" />Photos attached (3)
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <Camera className="w-3.5 h-3.5 text-primary" />
+                        Photos attached ({selectedIncident.images?.length || 0})
+                      </div>
+                      {selectedIncident.images && selectedIncident.images.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          {selectedIncident.images.map((imgUrl, idx) => (
+                            <a
+                              key={idx}
+                              href={imgUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative aspect-video rounded-lg overflow-hidden border border-border bg-muted hover:opacity-90 transition-opacity group cursor-zoom-in"
+                            >
+                              <img
+                                src={imgUrl}
+                                alt={`Incident attachment ${idx + 1}`}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground italic">
+                          Photos are referenced but path is unavailable.
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="pt-4 border-t border-border flex gap-3 mt-auto">

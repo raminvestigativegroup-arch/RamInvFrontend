@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import {
   Download,
   Loader2,
@@ -24,7 +24,9 @@ import {
   LogOut,
   Coffee,
   Briefcase,
-  ShieldOff
+  ShieldOff,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/config/api";
@@ -34,6 +36,12 @@ import DateSelect from "@/components/common/DateSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { formatUTCTime } from "@/lib/dateUtils";
 
@@ -75,6 +83,14 @@ const HoursTracking = () => {
   const [sortBy, setSortBy] = useState<"name" | "scheduled" | "attendance" | "progress">("name");
   const [page, setPage] = useState(1);
   const limit = 10;
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+
+  const toggleRow = (id: string) => {
+    setExpandedRows(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -274,7 +290,8 @@ const HoursTracking = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <TooltipProvider>
+      <div className="p-6 space-y-6">
       {/* Page Header */}
       <div className="module-page-header">
         <div>
@@ -408,6 +425,7 @@ const HoursTracking = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-secondary/50 border-b border-border">
+                      <th className="w-12 px-4 py-4"></th>
                       <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Site & Client</th>
                       <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Supervisor</th>
                       <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Guards</th>
@@ -419,78 +437,233 @@ const HoursTracking = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {processedSites.map((site: any, index: number) => (
-                      <tr
-                        key={site.id || index}
-                        onClick={() => setSelectedSite(site)}
-                        className="hover:bg-secondary/30 transition-colors cursor-pointer text-sm font-medium"
-                      >
-                        {/* Site Name and Client */}
-                        <td className="px-5 py-4">
-                          <div className="space-y-0.5">
-                            <span className="font-semibold text-foreground text-sm block">{site.name}</span>
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
-                              {site.client}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* Supervisor name */}
-                        <td className="px-5 py-4 text-foreground">
-                          {site.manager}
-                        </td>
-
-                        {/* Assigned guards count */}
-                        <td className="px-5 py-4 text-right font-semibold text-foreground">
-                          {site.totalGuardsAssigned}
-                        </td>
-
-                        {/* Hours coverage status (Direct value, no progress bar) */}
-                        <td className="px-5 py-4 text-center">
-                          {formatHoursText(site.completedHours, site.totalScheduledHours)}
-                        </td>
-
-                        {/* Remaining hours */}
-                        <td className="px-5 py-4 text-right font-semibold text-foreground">
-                          {site.remainingHours}h
-                        </td>
-
-                        {/* Attendance Rate */}
-                        <td className="px-5 py-4 text-right">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${site.attendancePct >= 90
-                            ? 'bg-emerald-500/5 text-emerald-600 border border-emerald-500/10'
-                            : site.attendancePct >= 75
-                              ? 'bg-amber-500/5 text-amber-600 border border-amber-500/10'
-                              : 'bg-rose-500/5 text-rose-600 border border-rose-500/10'
-                            }`}>
-                            {site.attendancePct}%
-                          </span>
-                        </td>
-
-                        {/* Active/Inactive Status */}
-                        <td className="px-5 py-4 text-center">
-                          <Badge variant={site.status === "active" ? "success" : "inactive"} showDot>
-                            {site.status === "active" ? "Active" : "Inactive"}
-                          </Badge>
-                        </td>
-
-                        {/* View action button */}
-                        <td className="px-5 py-4 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-primary hover:text-primary hover:bg-secondary font-semibold text-xs flex gap-1 items-center ml-auto"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedSite(site);
-                            }}
+                    {processedSites.map((site: any, index: number) => {
+                      const isExpanded = !!expandedRows[site.id];
+                      return (
+                        <Fragment key={site.id || index}>
+                          <tr
+                            onClick={() => toggleRow(site.id)}
+                            className={`hover:bg-secondary/30 transition-colors cursor-pointer text-sm font-medium ${
+                              isExpanded ? 'bg-secondary/10 border-b-0' : ''
+                            }`}
                           >
-                            <Eye className="w-3.5 h-3.5" /> View
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                            <td className="px-4 py-4 text-center">
+                              <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ease-in-out ${
+                                isExpanded ? 'rotate-90 text-primary' : ''
+                              }`} />
+                            </td>
+                            {/* Site Name and Client */}
+                            <td className="px-5 py-4">
+                              <div className="space-y-0.5">
+                                <span className="font-semibold text-foreground text-sm block">{site.name}</span>
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+                                  {site.client}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Supervisor name */}
+                            <td className="px-5 py-4 text-foreground">
+                              {site.manager}
+                            </td>
+
+                            {/* Assigned guards count */}
+                            <td className="px-5 py-4 text-right font-semibold text-foreground">
+                              {site.totalGuardsAssigned}
+                            </td>
+
+                            {/* Hours coverage status (Direct value, no progress bar) */}
+                            <td className="px-5 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                              {site.deviationReasons && site.deviationReasons.length > 0 ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button className="cursor-help border-b border-dashed border-muted-foreground/50 pb-0.5 outline-none">
+                                      {formatHoursText(site.completedHours, site.totalScheduledHours)}
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="w-64 p-3 bg-slate-900 text-white border-slate-700 dark:bg-slate-950 dark:border-slate-800 shadow-xl rounded-lg">
+                                    <div className="font-semibold mb-1.5 text-[10px] uppercase tracking-wider text-slate-400">Site Deviations Summary</div>
+                                    <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-200">
+                                      {site.deviationReasons.map((r: string, rIdx: number) => (
+                                        <li key={rIdx} className="break-words">{r}</li>
+                                      ))}
+                                    </ul>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                formatHoursText(site.completedHours, site.totalScheduledHours)
+                              )}
+                            </td>
+
+                            {/* Remaining hours */}
+                            <td className="px-5 py-4 text-right font-semibold text-foreground">
+                              {site.remainingHours}h
+                            </td>
+
+                            {/* Attendance Rate */}
+                            <td className="px-5 py-4 text-right">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${site.attendancePct >= 90
+                                ? 'bg-emerald-500/5 text-emerald-600 border border-emerald-500/10'
+                                : site.attendancePct >= 75
+                                  ? 'bg-amber-500/5 text-amber-600 border border-amber-500/10'
+                                  : 'bg-rose-500/5 text-rose-600 border border-rose-500/10'
+                                }`}>
+                                {site.attendancePct}%
+                              </span>
+                            </td>
+
+                            {/* Active/Inactive Status */}
+                            <td className="px-5 py-4 text-center">
+                              <Badge variant={site.status === "active" ? "success" : "inactive"} showDot>
+                                {site.status === "active" ? "Active" : "Inactive"}
+                              </Badge>
+                            </td>
+
+                            {/* View action button */}
+                            <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-primary hover:text-primary hover:bg-secondary font-semibold text-xs flex gap-1 items-center ml-auto"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedSite(site);
+                                }}
+                              >
+                                <Eye className="w-3.5 h-3.5" /> View
+                              </Button>
+                            </td>
+                          </tr>
+
+                          {isExpanded && (
+                            <tr className="bg-secondary/15 dark:bg-slate-900/10 border-b border-border/50">
+                              <td colSpan={9} className="px-6 py-5" onClick={(e) => e.stopPropagation()}>
+                                <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
+                                  {/* Site Deviation Summary Panel */}
+                                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-1 bg-card/65 p-4 rounded-xl border border-border/60 shadow-xs space-y-3">
+                                      <div className="flex items-center gap-2 border-b border-border/50 pb-2">
+                                        <ShieldAlert className="w-4 h-4 text-amber-500" />
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">Site Deviations</span>
+                                      </div>
+                                      {site.deviationReasons && site.deviationReasons.length > 0 ? (
+                                        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                                          {site.deviationReasons.map((reason: string, idx: number) => {
+                                            const isOvertime = reason.toLowerCase().includes('overtime');
+                                            return (
+                                              <div
+                                                key={idx}
+                                                className={`text-xs px-3 py-2 rounded-lg border flex flex-col gap-0.5 ${
+                                                  isOvertime
+                                                    ? 'bg-rose-50/50 dark:bg-rose-950/10 border-rose-100/60 dark:border-rose-900/20 text-rose-700 dark:text-rose-400'
+                                                    : 'bg-amber-50/50 dark:bg-amber-950/10 border-amber-100/60 dark:border-amber-900/20 text-amber-700 dark:text-amber-400'
+                                                }`}
+                                              >
+                                                <span className="font-semibold text-[10px] uppercase tracking-wider">
+                                                  {isOvertime ? 'Overtime Alert' : 'Shortage Alert'}
+                                                </span>
+                                                <span className="font-medium">{reason}</span>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      ) : (
+                                        <div className="text-xs text-muted-foreground py-6 text-center">
+                                          No overtime or shortage deviations logged for this site.
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Guards Breakdown sub-table */}
+                                    <div className="lg:col-span-2 space-y-3">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">Guards Shift Breakdown</span>
+                                      </div>
+                                      <div className="border border-border/60 rounded-xl overflow-hidden shadow-xs bg-card/40">
+                                        <table className="w-full text-xs">
+                                          <thead>
+                                            <tr className="bg-secondary/40 border-b border-border/50 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                              <th className="px-4 py-2.5 text-left">Guard</th>
+                                              <th className="px-4 py-2.5 text-center">Completed/Scheduled</th>
+                                              <th className="px-4 py-2.5 text-right">Attendance</th>
+                                              <th className="px-4 py-2.5 text-left">Deviation Reasons / Notes</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-border/40">
+                                            {site.guardsDetail && site.guardsDetail.length > 0 ? (
+                                              site.guardsDetail.map((g: any, gIdx: number) => {
+                                                return (
+                                                  <tr key={g.id || gIdx} className="hover:bg-secondary/20 transition-colors">
+                                                    <td className="px-4 py-2.5 font-medium text-foreground">
+                                                      <div className="flex items-center gap-2">
+                                                        <span className="w-6 h-6 rounded-full bg-secondary border border-border/80 flex items-center justify-center text-[10px] font-bold">
+                                                          {g.avatar}
+                                                        </span>
+                                                        <span>{g.name}</span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="px-4 py-2.5 text-center">
+                                                      {g.deviationReasons && g.deviationReasons.length > 0 ? (
+                                                        <Tooltip>
+                                                          <TooltipTrigger asChild>
+                                                            <button className="cursor-help border-b border-dashed border-muted-foreground/50 pb-0.5 outline-none">
+                                                              {formatHoursText(g.completedHours, g.assignedHours)}
+                                                            </button>
+                                                          </TooltipTrigger>
+                                                          <TooltipContent className="w-60 p-2.5 bg-slate-900 text-white border-slate-700 dark:bg-slate-950 dark:border-slate-800 shadow-xl rounded-lg">
+                                                            <div className="font-semibold mb-1 text-[10px] uppercase tracking-wider text-slate-400">Shift Deviations</div>
+                                                            <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-200">
+                                                              {g.deviationReasons.map((r: string, rIdx: number) => (
+                                                                <li key={rIdx} className="break-words">{r}</li>
+                                                              ))}
+                                                            </ul>
+                                                          </TooltipContent>
+                                                        </Tooltip>
+                                                      ) : (
+                                                        formatHoursText(g.completedHours, g.assignedHours)
+                                                      )}
+                                                    </td>
+                                                    <td className="px-4 py-2.5 text-right font-semibold">
+                                                      <span className={g.attendancePct >= 90 ? 'text-success' : g.attendancePct >= 75 ? 'text-amber-500' : 'text-destructive'}>
+                                                        {g.attendancePct}%
+                                                      </span>
+                                                    </td>
+                                                    <td className="px-4 py-2.5 text-left text-muted-foreground text-[11px] max-w-[200px] truncate">
+                                                      {g.deviationReasons && g.deviationReasons.length > 0 ? (
+                                                        <div className="space-y-0.5">
+                                                          {g.deviationReasons.map((r: string, rIdx: number) => (
+                                                            <span key={rIdx} className="block truncate font-medium text-slate-600 dark:text-slate-400">
+                                                              {r}
+                                                            </span>
+                                                          ))}
+                                                        </div>
+                                                      ) : (
+                                                        <span className="text-slate-400">-</span>
+                                                      )}
+                                                    </td>
+                                                  </tr>
+                                                );
+                                              })
+                                            ) : (
+                                              <tr>
+                                                <td colSpan={4} className="text-center py-4 text-muted-foreground text-xs">
+                                                  No guards registered.
+                                                </td>
+                                              </tr>
+                                            )}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -874,7 +1047,25 @@ const HoursTracking = () => {
 
                                   {/* Completed / Scheduled Hours */}
                                   <td className="px-4 py-3 text-center">
-                                    {formatHoursText(guard.completedHours, guard.assignedHours)}
+                                    {guard.deviationReasons && guard.deviationReasons.length > 0 ? (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button className="cursor-help border-b border-dashed border-muted-foreground/50 pb-0.5 outline-none">
+                                            {formatHoursText(guard.completedHours, guard.assignedHours)}
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="w-60 p-2.5 bg-slate-900 text-white border-slate-700 dark:bg-slate-950 dark:border-slate-800 shadow-xl rounded-lg">
+                                          <div className="font-semibold mb-1 text-[10px] uppercase tracking-wider text-slate-400">Shift Deviations</div>
+                                          <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-200">
+                                            {guard.deviationReasons.map((r: string, rIdx: number) => (
+                                              <li key={rIdx} className="break-words">{r}</li>
+                                            ))}
+                                          </ul>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    ) : (
+                                      formatHoursText(guard.completedHours, guard.assignedHours)
+                                    )}
                                   </td>
 
                                   {/* Attendance Rate */}
@@ -910,7 +1101,8 @@ const HoursTracking = () => {
         </>
       )
       }
-    </div >
+      </div >
+    </TooltipProvider>
   );
 };
 
