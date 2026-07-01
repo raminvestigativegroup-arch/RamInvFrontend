@@ -815,7 +815,7 @@ const Compliance = () => {
                     {selectedDoc.status === "valid" ? "Valid" : selectedDoc.status === "expiring" ? "Expiring Soon" : "Expired"}
                   </Badge>
                   <Badge variant={selectedDoc.isApproved ? "success" : "warning"} showDot>
-                    {selectedDoc.isApproved ? "Approved" : "Pending Approval"}
+                    {selectedDoc.isApproved ? "Verified" : "Pending Verification"}
                   </Badge>
                 </div>
               </div>
@@ -915,7 +915,7 @@ const Compliance = () => {
                         variant={selectedDoc.isApproved ? "outline" : "default"}
                         size="sm"
                       >
-                        {selectedDoc.isApproved ? "Revoke Approval" : "Approve Document"}
+                        {selectedDoc.isApproved ? "Revoke Verification" : "Verify Document"}
                       </Button>
                       <Button
                         onClick={() => {

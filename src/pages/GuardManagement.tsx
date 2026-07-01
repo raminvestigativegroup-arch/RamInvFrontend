@@ -314,6 +314,29 @@ const GuardManagement = () => {
     },
   });
 
+  const editDocMutation = useMutation({
+    mutationFn: async ({ id, type, name, expiryDate, isApproved }: { id: string; type?: string; name?: string; expiryDate?: string; isApproved?: boolean }) => {
+      const response = await api.documents.update(id, { type: type || name, name: type || name, expiryDate, isApproved });
+      return response.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
+      await queryClient.invalidateQueries({ queryKey: ["guards"] });
+      toast({
+        title: "Success",
+        description: "Document status updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      const errMsg = error.response?.data?.message || "Failed to update document. Please try again.";
+      toast({
+        title: "Error",
+        description: errMsg,
+        variant: "destructive",
+      });
+    },
+  });
+
 
   const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [siteFilter, setSiteFilter] = useState("all");
@@ -913,11 +936,9 @@ const GuardManagement = () => {
                     <DialogTitle className="text-lg font-bold text-foreground">Document Details</DialogTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record for {verifyingGuard.name}</p>
                   </div>
-                  {verifyingGuard.isVerified && (
-                    <Badge variant="success" showDot className="mt-6">
-                      Verified Guard
-                    </Badge>
-                  )}
+                  <Badge variant={verifyingGuard.isVerified ? "success" : "inactive"} showDot>
+                    {verifyingGuard.isVerified ? "Verified Guard" : "Pending Verification"}
+                  </Badge>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-0 min-h-[400px]">
@@ -957,11 +978,16 @@ const GuardManagement = () => {
                                 }`}
                             >
                               <div className="truncate pr-2">
-                                <p className="text-xs font-bold text-foreground truncate">{doc.name}</p>
+                                <p className="text-xs font-bold text-foreground truncate">{doc.type || doc.name}</p>
                                 <p className="text-[10px] text-muted-foreground mt-0.5">Exp: {doc.expiryDate || "N/A"}</p>
                               </div>
-                              <span className={`w-2 h-2 rounded-full shrink-0 ${status === "valid" ? "bg-success" : status === "expiring" ? "bg-warning" : "bg-destructive"
-                                }`} />
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {doc.isApproved && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" title="Verified" />
+                                )}
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${status === "valid" ? "bg-success" : status === "expiring" ? "bg-warning" : "bg-destructive"
+                                  }`} />
+                              </div>
                             </button>
                           );
                         })}
@@ -977,7 +1003,7 @@ const GuardManagement = () => {
                           {selectedDoc.documentImage && !imageError ? (
                             <img
                               src={resolveImageUrl(selectedDoc.documentImage)}
-                              alt={selectedDoc.name}
+                              alt={selectedDoc.type || selectedDoc.name}
                               className="w-full h-full object-contain"
                               onError={() => setImageError(true)}
                             />
@@ -992,12 +1018,40 @@ const GuardManagement = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="p-3 bg-secondary/30 rounded-xl border border-border/50">
                             <p className="text-[10px] text-muted-foreground font-bold uppercase">Document Type</p>
-                            <p className="text-sm font-bold text-foreground mt-0.5">{selectedDoc.name}</p>
+                            <p className="text-sm font-bold text-foreground mt-0.5">{selectedDoc.type || selectedDoc.name}</p>
                           </div>
                           <div className="p-3 bg-secondary/30 rounded-xl border border-border/50">
                             <p className="text-[10px] text-muted-foreground font-bold uppercase">Expiration Date</p>
                             <p className="text-sm font-bold text-foreground mt-0.5">{selectedDoc.expiryDate || "N/A"}</p>
                           </div>
+                        </div>
+
+                        {/* Document Verification Row */}
+                        <div className="flex items-center justify-between p-3.5 bg-secondary/30 rounded-xl border border-border/50">
+                          <div className="flex flex-col gap-0.5">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Verification Status</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant={selectedDoc.isApproved ? "success" : "warning"} showDot>
+                                {selectedDoc.isApproved ? "Verified" : "Pending Verification"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              editDocMutation.mutate({
+                                id: selectedDoc.id,
+                                isApproved: !selectedDoc.isApproved,
+                                type: selectedDoc.type || selectedDoc.name,
+                                name: selectedDoc.type || selectedDoc.name,
+                              });
+                            }}
+                            loading={editDocMutation.isPending}
+                            variant={selectedDoc.isApproved ? "outline" : "default"}
+                            size="sm"
+                          >
+                            {selectedDoc.isApproved ? "Revoke Verification" : "Verify Document"}
+                          </Button>
                         </div>
                       </div>
                     ) : (
@@ -1009,18 +1063,20 @@ const GuardManagement = () => {
 
                     {/* Verification Action Panel */}
                     <div className="mt-6 pt-4 border-t border-border flex flex-col gap-4">
-                      <div className="flex items-center gap-3 p-3 bg-secondary/40 rounded-xl border border-border">
-                        <input
-                          type="checkbox"
-                          id="verify-check-modal"
-                          checked={isVerifiedChecked}
-                          onChange={(e) => setIsVerifiedChecked(e.target.checked)}
-                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-                        />
-                        <label htmlFor="verify-check-modal" className="text-xs font-semibold cursor-pointer select-none text-foreground">
-                          I confirm that documents are verified and authentic
-                        </label>
-                      </div>
+                      {!verifyingGuard.isVerified && (
+                        <div className="flex items-center gap-3 p-3 bg-secondary/40 rounded-xl border border-border">
+                          <input
+                            type="checkbox"
+                            id="verify-check-modal"
+                            checked={isVerifiedChecked}
+                            onChange={(e) => setIsVerifiedChecked(e.target.checked)}
+                            className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                          />
+                          <label htmlFor="verify-check-modal" className="text-xs font-semibold cursor-pointer select-none text-foreground">
+                            I confirm that documents are verified and authentic
+                          </label>
+                        </div>
+                      )}
                       <div className="flex justify-end gap-3">
                         <Button
                           type="button"
@@ -1037,15 +1093,21 @@ const GuardManagement = () => {
                           Cancel
                         </Button>
                         <Button
-                          disabled={!isVerifiedChecked || updateMutation.isPending}
+                          disabled={(!isVerifiedChecked && !verifyingGuard.isVerified) || updateMutation.isPending}
                           onClick={() => {
-                            updateMutation.mutate({ id: verifyingGuard.id, verified: "true" });
+                            updateMutation.mutate({
+                              id: verifyingGuard.id,
+                              verified: verifyingGuard.isVerified ? "false" : "true"
+                            });
                           }}
                           size="sm"
                           loading={updateMutation.isPending}
-                          className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
+                          className={verifyingGuard.isVerified
+                            ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2 border border-transparent shadow-xs"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
+                          }
                         >
-                          Verify Guard
+                          {verifyingGuard.isVerified ? "Revoke Guard Verification" : "Verify Guard"}
                         </Button>
                       </div>
                     </div>

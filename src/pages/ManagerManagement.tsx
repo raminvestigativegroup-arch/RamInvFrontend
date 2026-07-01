@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { sites, Manager } from "@/data/dummyData";
-import { Plus, MoreVertical, Mail, Phone, MapPin, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, UserCog, Search, Filter } from "lucide-react";
+import { Plus, MoreVertical, Mail, Phone, MapPin, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, UserCog, Search, Filter, FileText, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -157,6 +157,8 @@ const ManagerManagement = () => {
   const [deletingManager, setDeletingManager] = useState<Manager | null>(null);
   const [verifyingManager, setVerifyingManager] = useState<Manager | null>(null);
   const [isVerifiedChecked, setIsVerifiedChecked] = useState(false);
+  const [selectedDocIndex, setSelectedDocIndex] = useState(0);
+  const [imageError, setImageError] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -334,6 +336,29 @@ const ManagerManagement = () => {
         variant: "destructive"
       });
     }
+  });
+
+  const editDocMutation = useMutation({
+    mutationFn: async ({ id, type, name, expiryDate, isApproved }: { id: string; type?: string; name?: string; expiryDate?: string; isApproved?: boolean }) => {
+      const response = await api.documents.update(id, { type: type || name, name: type || name, expiryDate, isApproved });
+      return response.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["documents"] });
+      await queryClient.invalidateQueries({ queryKey: ["managers"] });
+      toast({
+        title: "Success",
+        description: "Document status updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      const errMsg = error.response?.data?.message || "Failed to update document. Please try again.";
+      toast({
+        title: "Error",
+        description: errMsg,
+        variant: "destructive",
+      });
+    },
   });
 
 
@@ -832,60 +857,210 @@ const ManagerManagement = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Verification Dialog */}
-      <AlertDialog open={!!verifyingManager} onOpenChange={(val) => {
+      {/* Verification Dialog (Document Details Modal) */}
+      <Dialog open={!!verifyingManager} onOpenChange={(val) => {
         if (!val) {
           setVerifyingManager(null);
           setIsVerifiedChecked(false);
+          setSelectedDocIndex(0);
+          setImageError(false);
         }
       }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6 text-primary" />
+        <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-background">
+          {verifyingManager && (() => {
+            const managerDocs = rawDocuments.filter((doc: any) => doc.ownerId === verifyingManager.id && doc.ownerType === "Manager");
+            const selectedDoc = managerDocs[selectedDocIndex];
+
+            return (
+              <div className="flex flex-col">
+                <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-4 border-b border-border/50 flex items-center justify-between">
+                  <div>
+                    <DialogTitle className="text-lg font-bold text-foreground">Document Details</DialogTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record for {verifyingManager.name}</p>
+                  </div>
+                  <Badge variant={verifyingManager.isVerified ? "success" : "inactive"} showDot>
+                    {verifyingManager.isVerified ? "Verified Manager" : "Pending Verification"}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-0 min-h-[400px]">
+                  <div className="col-span-1 md:col-span-4 border-r border-border/50 p-4 space-y-3 bg-secondary/10">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Manager Documents</h3>
+                    {managerDocs.length === 0 ? (
+                      <div className="py-8 text-center text-xs text-muted-foreground">
+                        No compliance documents uploaded yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {managerDocs.map((doc: any, idx: number) => {
+                          let status = "expired";
+                          const expiry = doc.expiryDate ? new Date(doc.expiryDate) : null;
+                          const today = new Date();
+                          if (expiry) {
+                            const diffTime = expiry.getTime() - today.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            if (diffDays > 30) {
+                              status = "valid";
+                            } else if (diffDays > 0) {
+                              status = "expiring";
+                            }
+                          }
+
+                          return (
+                            <button
+                              key={doc.id || idx}
+                              type="button"
+                              onClick={() => {
+                                setSelectedDocIndex(idx);
+                                setImageError(false);
+                              }}
+                              className={`w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between ${selectedDocIndex === idx
+                                ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
+                                : "bg-card border-border hover:bg-secondary/40 text-muted-foreground"
+                                }`}
+                            >
+                              <div className="truncate pr-2">
+                                <p className="text-xs font-bold text-foreground truncate">{doc.type || doc.name}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">Exp: {doc.expiryDate || "N/A"}</p>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {doc.isApproved && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" title="Verified" />
+                                )}
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${status === "valid" ? "bg-success" : status === "expiring" ? "bg-warning" : "bg-destructive"
+                                  }`} />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column: Selected Document Preview & Details */}
+                  <div className="col-span-1 md:col-span-8 p-6 flex flex-col justify-between">
+                    {selectedDoc ? (
+                      <div className="space-y-4">
+                        <div className="relative aspect-[16/9] w-full bg-secondary/50 rounded-2xl overflow-hidden border border-border">
+                          {selectedDoc.documentImage && !imageError ? (
+                            <img
+                              src={resolveImageUrl(selectedDoc.documentImage)}
+                              alt={selectedDoc.type || selectedDoc.name}
+                              className="w-full h-full object-contain"
+                              onError={() => setImageError(true)}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
+                              <FileText className="w-10 h-10 opacity-30 mb-2" />
+                              <p className="text-xs font-semibold">No document preview</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-3 bg-secondary/30 rounded-xl border border-border/50">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Document Type</p>
+                            <p className="text-sm font-bold text-foreground mt-0.5">{selectedDoc.type || selectedDoc.name}</p>
+                          </div>
+                          <div className="p-3 bg-secondary/30 rounded-xl border border-border/50">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Expiration Date</p>
+                            <p className="text-sm font-bold text-foreground mt-0.5">{selectedDoc.expiryDate || "N/A"}</p>
+                          </div>
+                        </div>
+
+                        {/* Document Verification Row */}
+                        <div className="flex items-center justify-between p-3.5 bg-secondary/30 rounded-xl border border-border/50">
+                          <div className="flex flex-col gap-0.5">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Verification Status</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant={selectedDoc.isApproved ? "success" : "warning"} showDot>
+                                {selectedDoc.isApproved ? "Verified" : "Pending Verification"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              editDocMutation.mutate({
+                                id: selectedDoc.id,
+                                isApproved: !selectedDoc.isApproved,
+                                type: selectedDoc.type || selectedDoc.name,
+                                name: selectedDoc.type || selectedDoc.name,
+                              });
+                            }}
+                            loading={editDocMutation.isPending}
+                            variant={selectedDoc.isApproved ? "outline" : "default"}
+                            size="sm"
+                          >
+                            {selectedDoc.isApproved ? "Revoke Verification" : "Verify Document"}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground py-12">
+                        <ShieldCheck className="w-12 h-12 opacity-20 mb-3" />
+                        <p className="text-sm font-medium">Select a document from the left to view details</p>
+                      </div>
+                    )}
+
+                    {/* Verification Action Panel */}
+                    <div className="mt-6 pt-4 border-t border-border flex flex-col gap-4">
+                      {!verifyingManager.isVerified && (
+                        <div className="flex items-center gap-3 p-3 bg-secondary/40 rounded-xl border border-border">
+                          <input
+                            type="checkbox"
+                            id="verify-check-modal"
+                            checked={isVerifiedChecked}
+                            onChange={(e) => setIsVerifiedChecked(e.target.checked)}
+                            className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+                          />
+                          <label htmlFor="verify-check-modal" className="text-xs font-semibold cursor-pointer select-none text-foreground">
+                            I confirm that documents are verified and authentic
+                          </label>
+                        </div>
+                      )}
+                      <div className="flex justify-end gap-3">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => {
+                            setVerifyingManager(null);
+                            setIsVerifiedChecked(false);
+                            setSelectedDocIndex(0);
+                            setImageError(false);
+                          }}
+                          size="sm"
+                          disabled={updateManagerMutation.isPending}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          disabled={(!isVerifiedChecked && !verifyingManager.isVerified) || updateManagerMutation.isPending}
+                          onClick={() => {
+                            updateManagerMutation.mutate({
+                              id: verifyingManager.id,
+                              verified: verifyingManager.isVerified ? "false" : "true"
+                            });
+                          }}
+                          size="sm"
+                          loading={updateManagerMutation.isPending}
+                          className={verifyingManager.isVerified
+                            ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2 border border-transparent shadow-xs"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-2"
+                          }
+                        >
+                          {verifyingManager.isVerified ? "Revoke Manager Verification" : "Verify Manager"}
+                        </Button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
               </div>
-              <AlertDialogTitle>Verify Manager Documents</AlertDialogTitle>
-            </div>
-            <AlertDialogDescription>
-              Please confirm that you have verified all required documents for <strong>{verifyingManager?.name}</strong>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex items-center gap-3 p-4 bg-secondary/50 rounded-lg border border-border mt-2">
-            <input
-              type="checkbox"
-              id="verify-manager-check"
-              checked={isVerifiedChecked}
-              onChange={(e) => setIsVerifiedChecked(e.target.checked)}
-              className="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
-            />
-            <label htmlFor="verify-manager-check" className="text-sm font-medium cursor-pointer select-none">
-              I confirm that documents are verified and authentic
-            </label>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button variant="outline" disabled={updateManagerMutation.isPending}>
-                Cancel
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                disabled={!isVerifiedChecked}
-                onClick={() => {
-                  if (verifyingManager) {
-                    updateManagerMutation.mutate({ id: verifyingManager.id, verified: "true" });
-                  }
-                }}
-                loading={updateManagerMutation.isPending}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                Verify Manager
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
