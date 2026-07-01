@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import EntityCard from "@/components/common/EntityCard";
 import EntityDialog from "@/components/common/EntityDialog";
+import TablePagination from "@/components/common/TablePagination";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
@@ -75,6 +76,10 @@ const SiteManagement = () => {
   const hasDeletePermission = isAdmin || permissions.includes("delete_site") || permissions.includes("site");
 
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [managerFilter, setManagerFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const limit = 10;
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [form, setForm] = useState({ name: "", address: "", manager: "", managerIds: [] as string[], status: "active" as "active" | "inactive", lat: "", lng: "" });
@@ -97,22 +102,47 @@ const SiteManagement = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter, managerFilter]);
+
   const {
-    data: siteList = [],
+    data: siteData = { sites: [], pagination: { totalItems: 0, totalPages: 1, currentPage: 1, pageSize: limit } },
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["sites", debouncedSearch],
+    queryKey: ["sites", debouncedSearch, statusFilter, managerFilter, page],
     queryFn: async () => {
-      const params: any = {};
+      const params: any = {
+        page,
+        limit,
+      };
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
+      if (statusFilter !== "all") {
+        params.status = statusFilter;
+      }
+      if (managerFilter !== "all") {
+        params.managerId = managerFilter;
+      }
       const response = await api.sites.list(params);
-      return normalizeSitesResponse(response.data).map(normalizeSite);
+      const rawData = response.data?.data || response.data || {};
+      const normalizedList = normalizeSitesResponse(rawData);
+      const sites = normalizedList.map(normalizeSite);
+      const paginationObj = rawData.pagination || {
+        totalItems: sites.length,
+        totalPages: 1,
+        currentPage: 1,
+        pageSize: limit,
+      };
+      return { sites, pagination: paginationObj };
     },
   });
+
+  const siteList = siteData.sites;
+  const pagination = siteData.pagination;
 
   const { data: managersList = [] } = useQuery({
     queryKey: ["managers", "select"],
@@ -122,24 +152,7 @@ const SiteManagement = () => {
     },
   });
 
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [managerFilter, setManagerFilter] = useState("all");
-
-  const filtered = useMemo(() => {
-    return siteList.filter((s) => {
-      const matchStatus =
-        statusFilter === "all" ||
-        s.status === statusFilter;
-
-      const matchManager =
-        managerFilter === "all" ||
-        (managerFilter === "unassigned" && (!s.managerIds || s.managerIds.length === 0) && (!s.manager || s.manager === "Unassigned" || s.manager === "Unassigned Manager")) ||
-        (s.managerIds && s.managerIds.includes(managerFilter)) ||
-        String(s.managerid || s.manager).toLowerCase() === managerFilter.toLowerCase();
-
-      return matchStatus && matchManager;
-    });
-  }, [siteList, statusFilter, managerFilter]);
+  const filtered = siteList;
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
   const showLoader = isLoading;
@@ -797,6 +810,16 @@ const SiteManagement = () => {
           })}
         </div>
       )}
+
+      <TablePagination
+        page={page}
+        totalPages={pagination.totalPages}
+        totalItems={pagination.totalItems}
+        limit={limit}
+        onPageChange={setPage}
+        itemLabel="sites"
+        className="mt-6 rounded-xl border border-border bg-card"
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingSite} onOpenChange={(val) => !val && setDeletingSite(null)}>

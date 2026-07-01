@@ -11,6 +11,7 @@ interface DateSelectProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  isFilter?: boolean;
 }
 
 const DateSelect: React.FC<DateSelectProps> = ({
@@ -19,6 +20,7 @@ const DateSelect: React.FC<DateSelectProps> = ({
   placeholder = "Select date",
   className = "",
   disabled = false,
+  isFilter = false,
 }) => {
   const selectedDate = value ? parseISO(value) : undefined;
 
@@ -43,7 +45,7 @@ const DateSelect: React.FC<DateSelectProps> = ({
             className
           )}
         >
-          <span className={cn(!value && "text-muted-foreground")}>
+          <span className={cn(!value && !isFilter && "text-muted-foreground")}>
             {selectedDate ? format(selectedDate, "PPP") : placeholder}
           </span>
           <CalendarIcon className="w-4 h-4 text-muted-foreground" />

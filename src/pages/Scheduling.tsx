@@ -341,30 +341,37 @@ const Scheduling = () => {
       </div>
 
       {/* View Toggle & Filters */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 justify-between" >
-        <div className="flex bg-secondary rounded-lg p-1">
-          {viewTabs.map((tab) => (
-            <Button
-              key={tab.id}
-              onClick={() => setViewMode(tab.id)}
-              variant={viewMode === tab.id ? "default" : "ghost"}
-              size="sm"
-              className="rounded"
-            >
-              {tab.icon}{tab.label}
-            </Button>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 w-48">
-          <SelectDropdown
-            value={filterSite}
-            onChange={setFilterSite}
-            options={[
-              { value: "all", label: "All Sites" },
-              ...activeSites.map((s: any) => ({ value: s.name, label: s.name }))
-            ]}
-            placeholder="All Sites"
-          />
+      <div className="flex flex-col sm:flex-row items-stretch justify-between w-full">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 w-full px-4 py-3 bg-card rounded-xl border border-border shadow-sm">
+          <div className="flex bg-secondary rounded-lg p-1">
+            {viewTabs.map((tab) => (
+              <Button
+                key={tab.id}
+                onClick={() => setViewMode(tab.id)}
+                variant={viewMode === tab.id ? "default" : "ghost"}
+                size="sm"
+                className="rounded"
+              >
+                {tab.icon}
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="w-full md:w-48">
+            <SelectDropdown
+              value={filterSite}
+              onChange={setFilterSite}
+              options={[
+                { value: "all", label: "All Sites" },
+                ...activeSites.map((s: any) => ({
+                  value: s.name,
+                  label: s.name,
+                })),
+              ]}
+              placeholder="All Sites"
+            />
+          </div>
         </div>
       </div>
 

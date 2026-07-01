@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import EntityCard from "@/components/common/EntityCard";
 import EntityDialog from "@/components/common/EntityDialog";
+import TablePagination from "@/components/common/TablePagination";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
@@ -174,6 +175,11 @@ const GuardManagement = () => {
   const hasDeletePermission = isAdmin || permissions.includes("delete_guard") || permissions.includes("guard");
 
   const [search, setSearch] = useState("");
+  const [verifiedFilter, setVerifiedFilter] = useState("all");
+  const [siteFilter, setSiteFilter] = useState("all");
+  const [complianceFilter, setComplianceFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const limit = 10;
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [form, setForm] = useState({
@@ -206,6 +212,10 @@ const GuardManagement = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, verifiedFilter, siteFilter, complianceFilter]);
+
   // Fetch compliance documents
   const { data: rawDocuments = [] } = useQuery({
     queryKey: ["documents"],
@@ -218,22 +228,46 @@ const GuardManagement = () => {
   });
 
   const {
-    data: guardList = [],
+    data: guardData = { guards: [], pagination: { totalItems: 0, totalPages: 1, currentPage: 1, pageSize: limit } },
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["guards", debouncedSearch],
+    queryKey: ["guards", debouncedSearch, verifiedFilter, siteFilter, complianceFilter, page],
     queryFn: async () => {
-      const params: any = {};
+      const params: any = {
+        page,
+        limit,
+      };
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
+      if (verifiedFilter !== "all") {
+        params.verified = verifiedFilter === "verified" ? "true" : "false";
+      }
+      if (siteFilter !== "all") {
+        params.siteId = siteFilter;
+      }
+      if (complianceFilter !== "all") {
+        params.complianceStatus = complianceFilter;
+      }
       const response = await api.guards.list(params);
-      return normalizeGuardsResponse(response.data as GuardApiResponse).map(normalizeGuard);
+      const rawData = response.data?.data || response.data || {};
+      const normalizedList = normalizeGuardsResponse(rawData as GuardApiResponse);
+      const guards = normalizedList.map(normalizeGuard);
+      const paginationObj = rawData.pagination || {
+        totalItems: guards.length,
+        totalPages: 1,
+        currentPage: 1,
+        pageSize: limit,
+      };
+      return { guards, pagination: paginationObj };
     },
     enabled: hasViewPermission,
   });
+
+  const guardList = guardData.guards;
+  const pagination = guardData.pagination;
 
   const { data: rolesList = [] } = useQuery({
     queryKey: ["roles"],
@@ -338,9 +372,7 @@ const GuardManagement = () => {
   });
 
 
-  const [verifiedFilter, setVerifiedFilter] = useState("all");
-  const [siteFilter, setSiteFilter] = useState("all");
-  const [complianceFilter, setComplianceFilter] = useState("all");
+
 
   const { data: siteList = [] } = useQuery({
     queryKey: ["sites"],
@@ -404,27 +436,7 @@ const GuardManagement = () => {
     });
   };
 
-  const filtered = useMemo(() => {
-    return guardList.filter((g) => {
-      const matchVerified =
-        verifiedFilter === "all" ||
-        (verifiedFilter === "verified" && g.isVerified) ||
-        (verifiedFilter === "unverified" && !g.isVerified);
-
-      const assignments = getGuardAssignments(g.id);
-      const uniqueSiteNames = Array.from(new Set(assignments.map(a => a.siteName.toLowerCase())));
-
-      const matchSite =
-        siteFilter === "all" ||
-        (siteFilter === "unassigned" && uniqueSiteNames.length === 0) ||
-        uniqueSiteNames.includes(siteFilter.toLowerCase());
-
-      const matchCompliance =
-        complianceFilter === "all" ||
-        g.complianceStatus === complianceFilter;
-      return matchVerified && matchSite && matchCompliance;
-    });
-  }, [guardList, verifiedFilter, siteFilter, complianceFilter, scheduleRaw, siteList]);
+  const filtered = guardList;
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
   const showLoader = isLoading;
@@ -733,6 +745,16 @@ const GuardManagement = () => {
           })}
         </div>
       )}
+
+      <TablePagination
+        page={page}
+        totalPages={pagination.totalPages}
+        totalItems={pagination.totalItems}
+        limit={limit}
+        onPageChange={setPage}
+        itemLabel="guards"
+        className="mt-6 rounded-xl border border-border bg-card"
+      />
 
       {/* Add/Edit Guard Dialog */}
       <EntityDialog

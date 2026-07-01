@@ -28,6 +28,9 @@ const getShiftDurationMinutes = (start: string, end: string): number => {
   if (!start || !end) return 0;
   const startMins = timeToMinutes(start);
   let endMins = timeToMinutes(end);
+  if (endMins === startMins) {
+    return 24 * 60; // 24 hours
+  }
   if (endMins < startMins) {
     endMins += 24 * 60; // Crosses midnight
   }
@@ -253,8 +256,6 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
     }
     if (!form.shiftEnd) {
       newErrors.shiftEnd = "Shift end time is required";
-    } else if (form.shiftStart && form.shiftEnd <= form.shiftStart) {
-      newErrors.shiftEnd = "Shift end must be after shift start";
     }
 
     setErrors(newErrors);

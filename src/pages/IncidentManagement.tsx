@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
+import TablePagination from "@/components/common/TablePagination";
 import { Download, Sparkles, Camera, X, AlertCircle, MoreVertical, CheckCircle2, Clock, AlertTriangle, FileWarning } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -148,6 +149,17 @@ const IncidentManagement = () => {
   const hasDeletePermission = isAdmin || permissions.includes("delete_incident") || permissions.includes("incident");
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [siteFilter, setSiteFilter] = useState("all");
@@ -157,6 +169,10 @@ const IncidentManagement = () => {
   const [aiActiveTab, setAiActiveTab] = useState<"refined" | "original">("refined");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, priorityFilter, siteFilter, guardFilter, dateFilter]);
 
   const { data: refinedData, isLoading: isRefining, isError: isRefineError } = useQuery({
     queryKey: ["incidents", aiIncidentId, "refine"],
@@ -186,16 +202,6 @@ const IncidentManagement = () => {
         description: err.response?.data?.message || "Failed to update incident.",
         variant: "destructive"
       });
-    }
-  });
-
-  const { data: incidentList = [], isLoading, isError, error } = useQuery({
-    queryKey: ["incidents"],
-    queryFn: async () => {
-      const response = await api.incidents.list();
-      const rawData = response.data;
-      const normalizedList = normalizeIncidentsResponse(rawData);
-      return normalizedList.map((inc, index) => normalizeIncident(inc, index));
     }
   });
 
@@ -231,6 +237,44 @@ const IncidentManagement = () => {
       }));
     }
   });
+
+  const { data: incidentData = { incidents: [], pagination: { totalItems: 0, totalPages: 1, currentPage: 1, pageSize: limit } }, isLoading, isError, error } = useQuery({
+    queryKey: ["incidents", debouncedSearch, priorityFilter, siteFilter, guardFilter, dateFilter, page],
+    queryFn: async () => {
+      const params: any = {
+        page,
+        limit,
+      };
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+      if (priorityFilter !== "all") params.priority = priorityFilter;
+      if (siteFilter !== "all") {
+        const selectedSite = siteList.find(s => s.name === siteFilter);
+        params.siteId = selectedSite ? selectedSite.id : siteFilter;
+      }
+      if (guardFilter !== "all") {
+        params.guardId = guardFilter;
+      }
+      if (dateFilter !== "all") params.date = dateFilter;
+
+      const response = await api.incidents.list(params);
+      const rawData = response.data?.data || response.data || {};
+      const normalizedList = normalizeIncidentsResponse(rawData);
+      const incidents = normalizedList.map((inc, index) => normalizeIncident(inc, index));
+      const paginationObj = rawData.pagination || {
+        totalItems: incidents.length,
+        totalPages: 1,
+        currentPage: 1,
+        pageSize: limit
+      };
+      return { incidents, pagination: paginationObj };
+    },
+    enabled: hasViewPermission,
+  });
+
+  const incidentList = incidentData.incidents;
+  const pagination = incidentData.pagination;
+
+
 
   const guardMap = useMemo(() => {
     return guardList.reduce((acc, g) => {
@@ -278,17 +322,7 @@ const IncidentManagement = () => {
     }
   });
 
-  const filtered = useMemo(() => {
-    return incidentList.filter((i) => {
-      const matchSearch = i.title.toLowerCase().includes(search.toLowerCase()) ||
-        i.guard.toLowerCase().includes(search.toLowerCase());
-      const matchPriority = priorityFilter === "all" || i.priority === priorityFilter;
-      const matchSite = siteFilter === "all" || i.site === siteFilter;
-      const matchGuard = guardFilter === "all" || i.guard === guardFilter;
-      const matchDate = dateFilter === "all" || i.date === dateFilter;
-      return matchSearch && matchPriority && matchSite && matchGuard && matchDate;
-    });
-  }, [incidentList, search, priorityFilter, siteFilter, guardFilter, dateFilter]);
+  const filtered = incidentList;
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
   const showLoader = isLoading;
@@ -296,10 +330,6 @@ const IncidentManagement = () => {
   const showError = isError && !isNotFound;
 
   const aiSelected = aiIncidentId ? incidentList.find((i) => i.id === aiIncidentId) : null;
-
-  const uniqueDates = useMemo(() => [...new Set(incidentList.map((i) => i.date))].sort().reverse(), [incidentList]);
-  const guardIds = useMemo(() => [...new Set(incidentList.map((i) => i.guard))].sort(), [incidentList]);
-  const siteNames = useMemo(() => [...new Set(incidentList.map((i) => i.site))].sort(), [incidentList]);
 
   const activeFilters = [priorityFilter, siteFilter, guardFilter, dateFilter].filter((f) => f !== "all").length;
 
@@ -357,7 +387,8 @@ const IncidentManagement = () => {
             value={dateFilter === "all" ? "" : dateFilter}
             onChange={(val) => setDateFilter(val || "all")}
             placeholder="All Dates"
-            className="h-[38px] text-xs font-semibold"
+            className="mb-1"
+            isFilter={true}
           />
         </div>
         <SelectDropdown
@@ -444,6 +475,15 @@ const IncidentManagement = () => {
                 </td>
               </tr>
             )}
+          />
+          <TablePagination
+            page={page}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.totalItems}
+            limit={limit}
+            onPageChange={setPage}
+            itemLabel="incidents"
+            className="mt-4 rounded-xl border border-border bg-card"
           />
         </div>
 

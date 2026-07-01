@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Bell, AlertTriangle, Calendar, Settings, CheckCircle, Search, Inbox, EyeOff } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import StateMessage from "@/components/common/StateMessage";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import TablePagination from "@/components/common/TablePagination";
 
 const iconMap = {
   incident: AlertTriangle,
@@ -24,12 +25,31 @@ const Notifications = () => {
 
   // State for search and active inbox filter tabs
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "unread" | "high">("all");
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, activeTab]);
 
   // 1. Query for live notifications
-  const { data: response, isLoading, error, refetch } = useQuery({
-    queryKey: ["notifications-list"],
-    queryFn: () => api.notifications.list().then(res => res.data),
+  const { data: response = { notifications: [], pagination: { totalItems: 0, totalPages: 1, currentPage: 1, pageSize: limit }, unreadCount: 0, highPriorityUnreadCount: 0 }, isLoading, error, refetch } = useQuery({
+    queryKey: ["notifications-list", debouncedSearch, activeTab, page],
+    queryFn: () => api.notifications.list({
+      page,
+      limit,
+      search: debouncedSearch.trim() || undefined,
+      tab: activeTab
+    }).then(res => res.data),
     enabled: hasViewPermission,
   });
 
@@ -78,26 +98,10 @@ const Notifications = () => {
   };
 
   const notificationList = response?.notifications || [];
-  const unreadCount = notificationList.filter((n: any) => !n.read).length;
+  const unreadCount = response?.unreadCount || 0;
+  const highPriorityUnreadCount = response?.highPriorityUnreadCount || 0;
 
-  // Filter list based on tabs & search
-  const filteredNotifications = useMemo(() => {
-    return notificationList.filter((n: any) => {
-      // Tab filter
-      if (activeTab === "unread" && n.read) return false;
-      if (activeTab === "high" && n.priority !== "high") return false;
-
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const titleMatch = n.title?.toLowerCase().includes(query);
-        const msgMatch = n.message?.toLowerCase().includes(query);
-        return titleMatch || msgMatch;
-      }
-
-      return true;
-    });
-  }, [notificationList, activeTab, searchQuery]);
+  const filteredNotifications = notificationList;
 
   const formatDate = (dateStr: string) => {
     try {
@@ -160,7 +164,7 @@ const Notifications = () => {
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">High Priority</p>
             <h3 className="text-2xl font-bold text-destructive mt-1">
-              {notificationList.filter((n: any) => n.priority === "high" && !n.read).length}
+              {highPriorityUnreadCount}
             </h3>
           </div>
           <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center text-destructive">
@@ -313,6 +317,18 @@ const Notifications = () => {
                   <p className="text-sm font-bold text-foreground">No alerts match your filter</p>
                   <p className="text-xs text-muted-foreground mt-1">Try clearing your search query or selecting a different tab.</p>
                 </div>
+              )}
+
+              {response?.pagination && response.pagination.totalPages > 1 && (
+                <TablePagination
+                  page={page}
+                  totalPages={response.pagination.totalPages}
+                  totalItems={response.pagination.totalItems}
+                  limit={limit}
+                  onPageChange={setPage}
+                  itemLabel="notifications"
+                  className="mt-6 rounded-xl border border-border bg-card"
+                />
               )}
             </div>
           )}

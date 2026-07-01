@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import EntityCard from "@/components/common/EntityCard";
 import EntityDialog from "@/components/common/EntityDialog";
+import TablePagination from "@/components/common/TablePagination";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
@@ -149,6 +150,10 @@ const ManagerManagement = () => {
   const hasDeletePermission = isAdmin || permissions.includes("delete_manager") || permissions.includes("manager");
 
   const [search, setSearch] = useState("");
+  const [verifiedFilter, setVerifiedFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const limit = 10;
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [form, setForm] = useState({ firstName: "", middleName: "", lastName: "", email: "", phoneNumber: "", roleId: "", selectedSites: [] as string[], status: "active" as "active" | "inactive", licenseExpiry: "2027-01-01", image: "" });
@@ -183,25 +188,47 @@ const ManagerManagement = () => {
     },
   });
 
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, verifiedFilter, statusFilter]);
+
   const {
-    data: managerList = [],
+    data: managerData = { managers: [], pagination: { totalItems: 0, totalPages: 1, currentPage: 1, pageSize: limit } },
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["managers", debouncedSearch],
+    queryKey: ["managers", debouncedSearch, verifiedFilter, statusFilter, page],
     queryFn: async () => {
-      const params: any = {};
+      const params: any = {
+        page,
+        limit,
+      };
       if (debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
+      if (verifiedFilter !== "all") {
+        params.verified = verifiedFilter === "verified" ? "true" : "false";
+      }
+      if (statusFilter !== "all") {
+        params.status = statusFilter;
+      }
       const response = await api.managers.list(params);
-      return normalizeManagersResponse(response.data as ManagerApiResponse).map(normalizeManager);
+      const rawData = response.data?.data || response.data || {};
+      const normalizedList = normalizeManagersResponse(rawData as ManagerApiResponse);
+      const managers = normalizedList.map(normalizeManager);
+      const paginationObj = rawData.pagination || {
+        totalItems: managers.length,
+        totalPages: 1,
+        currentPage: 1,
+        pageSize: limit,
+      };
+      return { managers, pagination: paginationObj };
     },
   });
 
-  const [verifiedFilter, setVerifiedFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const managerList = managerData.managers;
+  const pagination = managerData.pagination;
 
   const { data: siteList = [] } = useQuery({
     queryKey: ["sites"],
@@ -251,18 +278,7 @@ const ManagerManagement = () => {
     }
   });
 
-  const filtered = useMemo(() => {
-    return managerList.filter((m) => {
-      const matchVerified =
-        verifiedFilter === "all" ||
-        (verifiedFilter === "verified" && m.isVerified) ||
-        (verifiedFilter === "unverified" && !m.isVerified);
-      const matchStatus =
-        statusFilter === "all" ||
-        m.status === statusFilter;
-      return matchVerified && matchStatus;
-    });
-  }, [managerList, verifiedFilter, statusFilter]);
+  const filtered = managerList;
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
   const showLoader = isLoading;
@@ -824,6 +840,16 @@ const ManagerManagement = () => {
           })}
         </div>
       )}
+
+      <TablePagination
+        page={page}
+        totalPages={pagination.totalPages}
+        totalItems={pagination.totalItems}
+        limit={limit}
+        onPageChange={setPage}
+        itemLabel="managers"
+        className="mt-6 rounded-xl border border-border bg-card"
+      />
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletingManager} onOpenChange={(val) => !val && setDeletingManager(null)}>
         <AlertDialogContent>
