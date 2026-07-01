@@ -27,7 +27,7 @@ interface EntityCardProps {
     text?: string;
     src?: string;
   };
-  badge?: {
+  badge?: React.ReactNode | {
     label: string;
     className: string;
   };
@@ -93,7 +93,14 @@ const EntityCard: React.FC<EntityCardProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          {badge && <span className={badge.className}>{badge.label}</span>}
+          {badge && (
+            React.isValidElement(badge) ? (
+              badge
+            ) : (
+              // @ts-ignore
+              <span className={badge.className}>{badge.label}</span>
+            )
+          )}
           {actions || (
             menuItems && menuItems.length > 0 ? (
               <DropdownMenu>

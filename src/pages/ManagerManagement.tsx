@@ -22,6 +22,7 @@ import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { formatDateOnly } from "@/lib/dateUtils";
 
 type ManagerApiResponse =
@@ -726,12 +727,12 @@ const ManagerManagement = () => {
                   ...assignedSites.map(s => ({ icon: MapPin, content: s.name }))
                 ]}
                 footerLeft={
-                  <span className={mgr.status === "active" ? "status-badge-active" : "status-badge-inactive"}>{mgr.status}</span>
+                  <Badge variant={mgr.status === "active" ? "success" : "inactive"} showDot>{mgr.status}</Badge>
                 }
                 footerMiddle={
-                  <span className={mgr.isVerified ? "status-badge-active" : "status-badge-inactive"}>
+                  <Badge variant={mgr.isVerified ? "success" : "inactive"} showDot>
                     {mgr.isVerified ? "Verified" : "Not Verified"}
-                  </span>
+                  </Badge>
                 }
                 menuItems={[
                   ...(hasEditPermission ? [

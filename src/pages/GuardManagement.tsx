@@ -22,6 +22,7 @@ import SelectDropdown from "@/components/common/SelectDropdown";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { formatDateOnly } from "@/lib/dateUtils";
 
 type GuardApiResponse =
@@ -640,14 +641,14 @@ const GuardManagement = () => {
                 ]}
                 footerLeft={undefined}
                 footerMiddle={
-                  <span className={guard.isVerified ? "status-badge-active" : "status-badge-inactive"}>
+                  <Badge variant={guard.isVerified ? "success" : "inactive"} showDot>
                     {guard.isVerified ? "Verified" : "Not Verified"}
-                  </span>
+                  </Badge>
                 }
                 footerRight={
-                  <span className={guard.status === "on-duty" ? "status-badge-active" : guard.status === "break" ? "status-badge-warning" : "status-badge-inactive"}>
+                  <Badge variant={guard.status === "on-duty" ? "success" : guard.status === "break" ? "warning" : "inactive"} showDot>
                     {guard.status === "on-duty" ? "On Duty" : guard.status === "break" ? "Break" : "Off Duty"}
-                  </span>
+                  </Badge>
                 }
                 menuItems={[
                   hasEditPermission && {
@@ -913,9 +914,9 @@ const GuardManagement = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record for {verifyingGuard.name}</p>
                   </div>
                   {verifyingGuard.isVerified && (
-                    <span className="status-badge-active mt-6">
+                    <Badge variant="success" showDot className="mt-6">
                       Verified Guard
-                    </span>
+                    </Badge>
                   )}
                 </div>
 

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, Sparkles, X, Camera, Download, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatUTCTime } from "@/lib/dateUtils";
+import { Badge } from "@/components/ui/badge";
 
 interface Incident {
   id: string;
@@ -193,7 +194,7 @@ const RecentIncidents = () => {
             <div className="space-y-4">
               <div className="flex gap-2">
                 <span className={`priority-${selected.priority}`}>{selected.priority.toUpperCase()}</span>
-                <span className={selected.status === "resolved" ? "status-badge-active" : selected.status === "open" ? "status-badge-danger" : "status-badge-warning"}>{selected.status}</span>
+                <Badge variant={selected.status === "resolved" ? "success" : selected.status === "open" ? "danger" : "warning"} showDot>{selected.status}</Badge>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{selected.type}</span></div>
@@ -245,7 +246,7 @@ const RecentIncidents = () => {
               </div>
               <div className="flex gap-2">
                 <span className={`priority-${aiSelected.priority}`}>{aiSelected.priority.toUpperCase()}</span>
-                <span className={aiSelected.status === "resolved" ? "status-badge-active" : "status-badge-danger"}>{aiSelected.status}</span>
+                <Badge variant={aiSelected.status === "resolved" ? "success" : "danger"} showDot>{aiSelected.status}</Badge>
               </div>
             </div>
           )}

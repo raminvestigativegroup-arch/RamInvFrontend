@@ -1,5 +1,6 @@
 import { ScheduleEntry } from "@/data/dummyData";
 import { MapPin, Users, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
   entries: ScheduleEntry[];
@@ -37,13 +38,13 @@ const ScheduleSiteView = ({ entries, selectedDate, sites }: Props) => {
                     <span className="text-sm font-medium text-foreground">{shift.guard}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">{shift.shiftStart}–{shift.shiftEnd}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${shift.status === "completed" ? "bg-success/10 text-success" :
-                        shift.status === "in-progress" ? "bg-primary/10 text-primary" :
-                          shift.status === "missed" ? "bg-destructive/10 text-destructive" :
-                            "bg-muted text-muted-foreground"
-                        }`}>
+                      <Badge variant={shift.status === "completed" ? "success" :
+                        shift.status === "in-progress" ? "info" :
+                          shift.status === "missed" ? "danger" :
+                            "inactive"
+                        } showDot>
                         {shift.status}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
                 ))}

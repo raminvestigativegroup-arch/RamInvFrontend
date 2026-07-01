@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { Search, Upload, AlertTriangle, CheckCircle, XCircle, Loader2, FileText, Calendar, ShieldCheck, Plus } from "lucide-react";
 import { useState, useMemo } from "react";
+import authService from "@/services/authService";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
@@ -149,6 +151,22 @@ const Compliance = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["documents"] });
+      // Sync current user profile
+      try {
+        const currentUserStr = localStorage.getItem("user");
+        if (currentUserStr) {
+          const currentUser = JSON.parse(currentUserStr);
+          if (currentUser && currentUser.role !== "admin") {
+            const meRes = await authService.getCurrentUser();
+            if (meRes) {
+              localStorage.setItem("user", JSON.stringify(meRes));
+              window.dispatchEvent(new Event("user-localstorage-changed"));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to sync current user profile:", err);
+      }
       toast({
         title: "Success",
         description: "Document uploaded successfully.",
@@ -178,6 +196,22 @@ const Compliance = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["documents"] });
+      // Sync current user profile
+      try {
+        const currentUserStr = localStorage.getItem("user");
+        if (currentUserStr) {
+          const currentUser = JSON.parse(currentUserStr);
+          if (currentUser && currentUser.role !== "admin") {
+            const meRes = await authService.getCurrentUser();
+            if (meRes) {
+              localStorage.setItem("user", JSON.stringify(meRes));
+              window.dispatchEvent(new Event("user-localstorage-changed"));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to sync current user profile:", err);
+      }
       toast({
         title: "Success",
         description: "Document updated successfully.",
@@ -213,6 +247,22 @@ const Compliance = () => {
           }
         };
       });
+      // Sync current user profile
+      try {
+        const currentUserStr = localStorage.getItem("user");
+        if (currentUserStr) {
+          const currentUser = JSON.parse(currentUserStr);
+          if (currentUser && currentUser.role !== "admin") {
+            const meRes = await authService.getCurrentUser();
+            if (meRes) {
+              localStorage.setItem("user", JSON.stringify(meRes));
+              window.dispatchEvent(new Event("user-localstorage-changed"));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to sync current user profile:", err);
+      }
       setSelectedDoc(null);
       setIsDeleteConfirmOpen(false);
       setDocToDelete(null);
@@ -377,8 +427,8 @@ const Compliance = () => {
         type: person.type,
         photo: normalizeImageUrl(person.photo),
         stateId: findDocStatus("State ID"),
-        securityLicense: findDocStatus("Security License"),
-        pistolLicense: findDocStatus("Pistol License"),
+        securityLicense: findDocStatus("Security Licen"),
+        pistolLicense: findDocStatus("Pistol Licen"),
       };
     });
   }, [guards, managers, rawDocuments]);
@@ -460,18 +510,26 @@ const Compliance = () => {
   });
 
   const docTypeOptions = [
+    { value: "Security Licence", label: "Security Licence" },
     { value: "State ID", label: "State ID" },
-    { value: "Security License", label: "Security License" },
-    { value: "Pistol License", label: "Pistol License" },
-    { value: "Other", label: "Other Government ID" }
+    { value: "Pistol Licence", label: "Pistol Licence" }
   ];
 
   const filteredDocTypeOptions = useMemo(() => {
     if (!uploadOwnerId) return docTypeOptions;
     const submitted = rawDocuments
       .filter((doc: any) => doc.ownerId === uploadOwnerId && doc.ownerType === uploadUserType)
-      .map((doc: any) => doc.name);
-    return docTypeOptions.filter(opt => opt.value === "Other" || !submitted.includes(opt.value));
+      .map((doc: any) => (doc.name || '').toLowerCase().trim());
+    return docTypeOptions.filter(opt => {
+      const optValLower = opt.value.toLowerCase().trim();
+      if (optValLower.includes('security licen')) {
+        return !submitted.some(s => s.includes('security licen'));
+      }
+      if (optValLower.includes('pistol licen')) {
+        return !submitted.some(s => s.includes('pistol licen'));
+      }
+      return !submitted.includes(optValLower);
+    });
   }, [uploadOwnerId, uploadUserType, rawDocuments, docTypeOptions]);
 
   const ownerTypeOptions = [
@@ -664,12 +722,9 @@ const Compliance = () => {
                       <td className="px-5 py-4 text-sm text-foreground font-medium">{doc.docType}</td>
                       <td className="px-5 py-4 text-sm text-muted-foreground font-semibold">{doc.expiryDate}</td>
                       <td className="px-5 py-4">
-                        <span className={`status-badge ${doc.status === "valid" ? "status-badge-active mt-2" :
-                          doc.status === "expiring" ? "status-badge-warning" :
-                            "status-badge-danger"
-                          }`}>
+                        <Badge variant={doc.status === "valid" ? "success" : doc.status === "expiring" ? "warning" : "danger"} showDot>
                           {doc.status === "valid" ? "Verified" : doc.status === "expiring" ? "Expiring Soon" : "Expired"}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="px-5 py-4">
                         <Button variant="link" size="sm" className="h-auto p-0 hover:underline">
@@ -691,8 +746,8 @@ const Compliance = () => {
                   <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Person</th>
                   <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Role</th>
                   <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">State ID</th>
-                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Security License</th>
-                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Pistol License</th>
+                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Security Licence</th>
+                  <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Pistol Licence</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -751,12 +806,9 @@ const Compliance = () => {
                   <DialogTitle className="text-lg font-bold text-foreground">Document Details</DialogTitle>
                   <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record</p>
                 </div>
-                <span className={`status-badge ${selectedDoc.status === "valid" ? "status-badge-active m-2" :
-                  selectedDoc.status === "expiring" ? "status-badge-warning m-2" :
-                    "status-badge-danger m-2"
-                  }`}>
+                <Badge variant={selectedDoc.status === "valid" ? "success" : selectedDoc.status === "expiring" ? "warning" : "danger"} showDot className="m-2">
                   {selectedDoc.status === "valid" ? "Verified" : selectedDoc.status === "expiring" ? "Expiring Soon" : "Expired"}
-                </span>
+                </Badge>
               </div>
 
               <div className="p-6 space-y-6">
@@ -844,7 +896,7 @@ const Compliance = () => {
                   {hasEditPermission && (
                     <Button
                       onClick={() => {
-                        const isCustom = !["State ID", "Security License", "Pistol License"].includes(selectedDoc.docType);
+                        const isCustom = !["State ID", "Security Licence", "Security License", "Pistol Licence", "Pistol License"].includes(selectedDoc.docType);
                         setEditDocType(isCustom ? "Other" : selectedDoc.docType);
                         setEditCustomDocType(isCustom ? selectedDoc.docType : "");
                         setEditExpiryDate(selectedDoc.expiryDate || "");
@@ -929,8 +981,17 @@ const Compliance = () => {
                   if (val) {
                     const submitted = rawDocuments
                       .filter((doc: any) => doc.ownerId === val && doc.ownerType === uploadUserType)
-                      .map((doc: any) => doc.name);
-                    const available = docTypeOptions.find(opt => opt.value === "Other" || !submitted.includes(opt.value));
+                      .map((doc: any) => (doc.name || '').toLowerCase().trim());
+                    const available = docTypeOptions.find(opt => {
+                      const optValLower = opt.value.toLowerCase().trim();
+                      if (optValLower.includes('security licen')) {
+                        return !submitted.some(s => s.includes('security licen'));
+                      }
+                      if (optValLower.includes('pistol licen')) {
+                        return !submitted.some(s => s.includes('pistol licen'));
+                      }
+                      return !submitted.includes(optValLower);
+                    });
                     if (available) {
                       setUploadDocType(available.value);
                     }

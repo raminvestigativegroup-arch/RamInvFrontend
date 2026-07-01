@@ -9,6 +9,7 @@ import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import DateSelect from "@/components/common/DateSelect";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { formatUTCTime } from "@/lib/dateUtils";
 interface Incident {
   id: string;
@@ -397,13 +398,9 @@ const IncidentManagement = () => {
                       <td className="px-5 py-4 text-sm text-foreground">{guardMap[inc.guard] || inc.guard}</td>
                       <td className="px-5 py-4"><span className={`priority-${inc.priority}`}>{inc.priority.toUpperCase()}</span></td>
                       <td className="px-5 py-4">
-                        <span className={
-                          inc.status === "resolved" ? "status-badge-active" :
-                            inc.status === "open" ? "status-badge-danger" :
-                              "status-badge-warning"
-                        }>
+                        <Badge variant={inc.status === "resolved" ? "success" : inc.status === "open" ? "danger" : "warning"} showDot>
                           {inc.status}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="px-5 py-4 text-sm text-muted-foreground whitespace-nowrap">{inc.date}<br /><span className="text-xs">{inc.time}</span></td>
                       <td className="px-5 py-4 text-right">
@@ -462,7 +459,8 @@ const IncidentManagement = () => {
                           { value: "resolved", label: "Resolved" },
                         ]}
                         disabled={!hasEditPermission || updateStatusMutation.isPending}
-                        className={`status-badge-${selectedIncident.status === 'resolved' ? 'active' : selectedIncident.status === 'open' ? 'danger' : 'warning'} h-[28px] py-0 mb-0`}
+                        variant={selectedIncident.status === 'resolved' ? 'success' : selectedIncident.status === 'open' ? 'destructive' : 'warning'}
+                        className="h-[28px] py-0 mb-0 font-semibold"
                       />
                     </div>
                   </div>
@@ -551,7 +549,7 @@ const IncidentManagement = () => {
 
                   <div className="flex gap-2">
                     <span className={`priority-${aiSelected.priority}`}>{aiSelected.priority.toUpperCase()}</span>
-                    <span className={aiSelected.status === "resolved" ? "status-badge-active" : "status-badge-danger"}>{aiSelected.status}</span>
+                    <Badge variant={aiSelected.status === "resolved" ? "success" : "danger"} showDot>{aiSelected.status}</Badge>
                   </div>
 
                   {aiActiveTab === "refined" && refinedData?.refined && (

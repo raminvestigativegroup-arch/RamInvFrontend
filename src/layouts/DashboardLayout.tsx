@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink, useNavigate, Outlet } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { NavLink, useNavigate, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, MapPin, FileWarning, Calendar,
   Clock, Bell, Settings, Shield, FileText, ChevronLeft,
@@ -36,13 +36,48 @@ const DashboardLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
-  const userStr = localStorage.getItem("user");
-  const user = userStr ? JSON.parse(userStr) : null;
+  const [user, setUser] = useState(() => {
+    const userStr = localStorage.getItem("user");
+    return userStr ? JSON.parse(userStr) : null;
+  });
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const userStr = localStorage.getItem("user");
+      setUser(userStr ? JSON.parse(userStr) : null);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("user-localstorage-changed", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("user-localstorage-changed", handleStorageChange);
+    };
+  }, []);
+
+  const isCompliant =
+    user?.role === "admin" ||
+    (user?.securityLicenceUploaded && user?.stateIdUploaded);
+
+  useEffect(() => {
+    if (user && !isCompliant && pathname !== "/dashboard/compliance") {
+      navigate("/dashboard/compliance", { replace: true });
+    }
+  }, [user, isCompliant, pathname, navigate]);
+
   const permissions = user?.permissions || [];
 
   const filteredNavItems = navItems.filter((item) => {
     if (user?.role === "admin") return true;
+
+    // If not compliant, only show Compliance page
+    if (!isCompliant) {
+      return item.permission === "compliance";
+    }
+
     return (
       permissions.includes(item.permission) ||
       permissions.includes(`view_${item.permission}`)
@@ -50,9 +85,11 @@ const DashboardLayout = () => {
   });
 
   const hasSettingsPermission =
-    user?.role === "admin" ||
-    permissions.includes("setting") ||
-    permissions.includes("view_setting");
+    isCompliant && (
+      user?.role === "admin" ||
+      permissions.includes("setting") ||
+      permissions.includes("view_setting")
+    );
 
   const handleLogout = async () => {
     await authService.logout();

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { guards } from "@/data/dummyData";
 import { AlertTriangle, MapPinned, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface GuardStatusPanelProps {
   selectedGuardId?: string | null;
@@ -61,13 +62,13 @@ const GuardStatusPanel = ({ selectedGuardId, onSelectGuard, guards: dynamicGuard
                   <p className="text-xs font-bold text-foreground truncate">{guard.name}</p>
                   <div className="shrink-0">
                     {guard.geofenceAlert ? (
-                      <span className="status-badge-danger uppercase tracking-wider text-[9px] font-bold">Alert</span>
+                      <Badge variant="danger" showDot>Alert</Badge>
                     ) : guard.status === "on-duty" ? (
-                      <span className="status-badge-active uppercase tracking-wider text-[9px] font-bold">On Duty</span>
+                      <Badge variant="success" showDot>On Duty</Badge>
                     ) : guard.status === "break" ? (
-                      <span className="status-badge-warning uppercase tracking-wider text-[9px] font-bold">Break</span>
+                      <Badge variant="warning" showDot>Break</Badge>
                     ) : (
-                      <span className="status-badge-inactive uppercase tracking-wider text-[9px] font-bold">Off Duty</span>
+                      <Badge variant="inactive" showDot>Off Duty</Badge>
                     )}
                   </div>
                 </div>

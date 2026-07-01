@@ -21,6 +21,7 @@ import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatDateOnly } from "@/lib/dateUtils";
 
@@ -628,10 +629,11 @@ const SiteManagement = () => {
               <EntityCard
                 key={site.id}
                 title={site.name}
-                badge={{
-                  label: site.status,
-                  className: site.status === "active" ? "status-badge-active" : "status-badge-inactive"
-                }}
+                badge={
+                  <Badge variant={site.status === "active" ? "success" : "inactive"} showDot>
+                    {site.status}
+                  </Badge>
+                }
                 details={[
                   { icon: MapPin, content: site.address },
                   { icon: Users, content: `${siteGuardCounts[site.id] ?? site.guards.length} guards assigned` },

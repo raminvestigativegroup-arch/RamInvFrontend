@@ -33,6 +33,7 @@ import SelectDropdown from "@/components/common/SelectDropdown";
 import DateSelect from "@/components/common/DateSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { formatUTCTime } from "@/lib/dateUtils";
 
@@ -469,13 +470,9 @@ const HoursTracking = () => {
 
                         {/* Active/Inactive Status */}
                         <td className="px-5 py-4 text-center">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${site.status === "active"
-                              ? "bg-success/5 text-success border border-success/15"
-                              : "bg-secondary text-muted-foreground border border-border"
-                            }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${site.status === "active" ? "bg-success" : "bg-muted-foreground"}`} />
+                          <Badge variant={site.status === "active" ? "success" : "inactive"} showDot>
                             {site.status === "active" ? "Active" : "Inactive"}
-                          </span>
+                          </Badge>
                         </td>
 
                         {/* View action button */}
@@ -615,12 +612,9 @@ const HoursTracking = () => {
                     </div>
 
                     <div className="flex gap-2 items-center mr-6">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${activeSelectedSite.status === "active"
-                        ? 'bg-success/5 text-success border border-success/15'
-                        : 'bg-secondary text-muted-foreground border border-border'
-                        }`}>
+                      <Badge variant={activeSelectedSite.status === "active" ? "success" : "inactive"} showDot>
                         {activeSelectedSite.status === "active" ? "Active" : "Inactive"}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
                 </DialogHeader>
@@ -825,13 +819,11 @@ const HoursTracking = () => {
                             return filtered.map((guard: any, index: number) => {
                               const formatTime = (ts: string | null) => formatUTCTime(ts);
 
-                              const statusConfig: Record<string, { icon: React.ReactNode; cls: string; dot: string }> = {
-                                'Clocked In': { icon: <LogIn className="w-3 h-3" />, cls: 'bg-success/5 text-success border border-success/15', dot: 'bg-success animate-pulse' },
-                                'On Break': { icon: <Coffee className="w-3 h-3" />, cls: 'bg-warning/5 text-warning border border-warning/15', dot: 'bg-warning animate-pulse' },
-                                'Clocked Out': { icon: <LogOut className="w-3 h-3" />, cls: 'bg-info/5 text-info border border-info/15', dot: 'bg-info' },
-                                'Off Duty': { icon: <ShieldOff className="w-3 h-3" />, cls: 'bg-secondary text-muted-foreground border border-border', dot: 'bg-muted-foreground' },
-                              };
-                              const sc = statusConfig[guard.status] || statusConfig['Off Duty'];
+                              const statusDotClass =
+                                guard.status === 'Clocked In' ? 'bg-success animate-pulse' :
+                                guard.status === 'On Break' ? 'bg-warning animate-pulse' :
+                                guard.status === 'Clocked Out' ? 'bg-info' :
+                                'bg-muted-foreground';
 
                               return (
                                 <tr key={guard.id || index} className="hover:bg-secondary/30 transition-colors">
@@ -842,18 +834,25 @@ const HoursTracking = () => {
                                         <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-foreground text-[11px] font-bold shadow-xs">
                                           {guard.avatar}
                                         </div>
-                                        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background ${sc.dot}`} />
+                                        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background ${statusDotClass}`} />
                                       </div>
                                       <span className="font-semibold text-foreground">{guard.name}</span>
                                     </div>
                                   </td>
-
+ 
                                   {/* Live Status Badge */}
                                   <td className="px-4 py-3 text-center">
-                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${sc.cls}`}>
-                                      {sc.icon}
+                                    <Badge
+                                      variant={
+                                        guard.status === 'Clocked In' ? 'success' :
+                                        guard.status === 'On Break' ? 'warning' :
+                                        guard.status === 'Clocked Out' ? 'info' :
+                                        'inactive'
+                                      }
+                                      showDot
+                                    >
                                       {guard.status || 'Off Duty'}
-                                    </span>
+                                    </Badge>
                                   </td>
 
                                   {/* Clock In */}

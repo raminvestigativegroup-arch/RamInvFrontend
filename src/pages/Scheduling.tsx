@@ -11,6 +11,7 @@ import ScheduleSiteView from "@/features/scheduling/components/ScheduleSiteView"
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { formatDateOnly } from "@/lib/dateUtils";
 import {
   AlertDialog,
@@ -499,11 +500,11 @@ const Scheduling = () => {
                       <td className="px-5 py-4 text-sm text-foreground">{entry.shiftStart} – {entry.shiftEnd}</td>
                       <td className="px-5 py-4 text-sm text-foreground">{entry.actualStart || "—"}</td>
                       <td className="px-5 py-4">
-                        <span className={
-                          entry.status === "in-progress" ? "status-badge-active" :
-                            entry.status === "completed" ? "status-badge-active" :
-                              entry.status === "missed" ? "status-badge-danger" : "status-badge-inactive"
-                        }>{entry.status}</span>
+                        <Badge variant={
+                          entry.status === "in-progress" ? "success" :
+                            entry.status === "completed" ? "success" :
+                              entry.status === "missed" ? "danger" : "inactive"
+                        } showDot>{entry.status}</Badge>
                       </td>
                       <td className="px-5 py-4 flex gap-2">
                         {hasEditPermission && (
