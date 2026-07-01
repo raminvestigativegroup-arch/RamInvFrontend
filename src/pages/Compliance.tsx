@@ -446,27 +446,27 @@ const Compliance = () => {
     switch (status) {
       case "valid":
         return (
-          <span className="inline-flex items-center mt-2 gap-1 text-[11px] font-semibold text-success bg-success/10 px-2.5 py-1 rounded-full border border-success/20">
-            <CheckCircle className="w-3.5 h-3.5" /> Verified
-          </span>
+          <Badge variant="success" showDot className="text-[11px] px-2.5 py-0.5 mt-2">
+            Verified
+          </Badge>
         );
       case "expiring":
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-warning bg-warning/10 px-2.5 py-1 rounded-full border border-warning/20">
-            <AlertTriangle className="w-3.5 h-3.5" /> Expiring Soon
-          </span>
+          <Badge variant="warning" showDot className="text-[11px] px-2.5 py-0.5">
+            Expiring Soon
+          </Badge>
         );
       case "expired":
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-destructive bg-destructive/10 px-2.5 py-1 rounded-full border border-destructive/20">
-            <XCircle className="w-3.5 h-3.5" /> Expired
-          </span>
+          <Badge variant="danger" showDot className="text-[11px] px-2.5 py-0.5">
+            Expired
+          </Badge>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1 rounded-full border border-border border-dashed">
+          <Badge variant="inactive" className="text-[11px] px-2.5 py-0.5 border-dashed">
             Missing
-          </span>
+          </Badge>
         );
     }
   };

@@ -724,7 +724,13 @@ const ManagerManagement = () => {
                 details={[
                   { icon: Mail, content: mgr.email },
                   { icon: Phone, content: mgr.phoneNumber },
-                  ...assignedSites.map(s => ({ icon: MapPin, content: s.name }))
+                  {
+                    icon: MapPin,
+                    content:
+                      assignedSites.length > 0
+                        ? assignedSites.map((s: any) => s.name).join(", ")
+                        : "No sites assigned",
+                  },
                 ]}
                 footerLeft={
                   <Badge variant={mgr.status === "active" ? "success" : "inactive"} showDot>{mgr.status}</Badge>
