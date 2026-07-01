@@ -190,8 +190,8 @@ const Compliance = () => {
 
   // Document edit/update mutation
   const editMutation = useMutation({
-    mutationFn: async ({ id, name, expiryDate }: { id: string; name?: string; expiryDate?: string }) => {
-      const response = await api.documents.update(id, { name, expiryDate });
+    mutationFn: async ({ id, type, name, expiryDate, isApproved }: { id: string; type?: string; name?: string; expiryDate?: string; isApproved?: boolean }) => {
+      const response = await api.documents.update(id, { type: type || name, name: type || name, expiryDate, isApproved });
       return response.data;
     },
     onSuccess: async () => {
@@ -326,7 +326,9 @@ const Compliance = () => {
     const formData = new FormData();
     formData.append("ownerId", uploadOwnerId);
     formData.append("ownerType", uploadUserType);
-    formData.append("name", uploadDocType === "Other" ? customDocType : uploadDocType);
+    const finalType = uploadDocType === "Other" ? customDocType : uploadDocType;
+    formData.append("type", finalType);
+    formData.append("name", finalType);
     formData.append("expiryDate", uploadExpiryDate);
     formData.append("documentImage", uploadFile!);
 
@@ -341,6 +343,7 @@ const Compliance = () => {
     const finalName = editDocType === "Other" ? editCustomDocType : editDocType;
     editMutation.mutate({
       id: selectedDoc.id,
+      type: finalName,
       name: finalName,
       expiryDate: editExpiryDate
     });
@@ -383,9 +386,10 @@ const Compliance = () => {
         personName: ownerName,
         personType: (doc.ownerType || "guard").toLowerCase() as "guard" | "manager",
         personPhoto: normalizeImageUrl(ownerPhoto),
-        docType: String(doc.name || "Document"),
+        docType: String(doc.type || doc.name || "Document"),
         expiryDate: String(doc.expiryDate || "N/A"),
         status: doc.status || "valid",
+        isApproved: Boolean(doc.isApproved),
         uploadDate: String(doc.createdAt || ""),
         docImage: normalizeImageUrl(doc.documentImage),
       };
@@ -415,7 +419,7 @@ const Compliance = () => {
 
       const findDocStatus = (typeName: string) => {
         const found = personDocs.find(
-          (doc: any) => (doc.name || "").toLowerCase().includes(typeName.toLowerCase())
+          (doc: any) => (doc.type || doc.name || "").toLowerCase().includes(typeName.toLowerCase())
         );
         if (!found) return "missing";
         return found.status; // "valid" | "expiring" | "expired"
@@ -519,7 +523,7 @@ const Compliance = () => {
     if (!uploadOwnerId) return docTypeOptions;
     const submitted = rawDocuments
       .filter((doc: any) => doc.ownerId === uploadOwnerId && doc.ownerType === uploadUserType)
-      .map((doc: any) => (doc.name || '').toLowerCase().trim());
+      .map((doc: any) => (doc.type || doc.name || '').toLowerCase().trim());
     return docTypeOptions.filter(opt => {
       const optValLower = opt.value.toLowerCase().trim();
       if (optValLower.includes('security licen')) {
@@ -806,9 +810,14 @@ const Compliance = () => {
                   <DialogTitle className="text-lg font-bold text-foreground">Document Details</DialogTitle>
                   <p className="text-xs text-muted-foreground mt-0.5">Verification & Compliance Record</p>
                 </div>
-                <Badge variant={selectedDoc.status === "valid" ? "success" : selectedDoc.status === "expiring" ? "warning" : "danger"} showDot className="m-2">
-                  {selectedDoc.status === "valid" ? "Verified" : selectedDoc.status === "expiring" ? "Expiring Soon" : "Expired"}
-                </Badge>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Badge variant={selectedDoc.status === "valid" ? "success" : selectedDoc.status === "expiring" ? "warning" : "danger"} showDot>
+                    {selectedDoc.status === "valid" ? "Valid" : selectedDoc.status === "expiring" ? "Expiring Soon" : "Expired"}
+                  </Badge>
+                  <Badge variant={selectedDoc.isApproved ? "success" : "warning"} showDot>
+                    {selectedDoc.isApproved ? "Approved" : "Pending Approval"}
+                  </Badge>
+                </div>
               </div>
 
               <div className="p-6 space-y-6">
@@ -892,21 +901,36 @@ const Compliance = () => {
                     </Button>
                   )}
                 </div>
-                <div className="flex gap-2">
+                 <div className="flex gap-2">
                   {hasEditPermission && (
-                    <Button
-                      onClick={() => {
-                        const isCustom = !["State ID", "Security Licence", "Security License", "Pistol Licence", "Pistol License"].includes(selectedDoc.docType);
-                        setEditDocType(isCustom ? "Other" : selectedDoc.docType);
-                        setEditCustomDocType(isCustom ? selectedDoc.docType : "");
-                        setEditExpiryDate(selectedDoc.expiryDate || "");
-                        setIsEditOpen(true);
-                      }}
-                      variant="secondary"
-                      size="sm"
-                    >
-                      Edit Details
-                    </Button>
+                    <>
+                      <Button
+                        onClick={() => {
+                          editMutation.mutate({
+                            id: selectedDoc.id,
+                            isApproved: !selectedDoc.isApproved
+                          });
+                        }}
+                        loading={editMutation.isPending}
+                        variant={selectedDoc.isApproved ? "outline" : "default"}
+                        size="sm"
+                      >
+                        {selectedDoc.isApproved ? "Revoke Approval" : "Approve Document"}
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          const isCustom = !["State ID", "Security Licence", "Security License", "Pistol Licence", "Pistol License"].includes(selectedDoc.docType);
+                          setEditDocType(isCustom ? "Other" : selectedDoc.docType);
+                          setEditCustomDocType(isCustom ? selectedDoc.docType : "");
+                          setEditExpiryDate(selectedDoc.expiryDate || "");
+                          setIsEditOpen(true);
+                        }}
+                        variant="secondary"
+                        size="sm"
+                      >
+                        Edit Details
+                      </Button>
+                    </>
                   )}
                   <Button
                     onClick={() => setSelectedDoc(null)}
@@ -981,7 +1005,7 @@ const Compliance = () => {
                   if (val) {
                     const submitted = rawDocuments
                       .filter((doc: any) => doc.ownerId === val && doc.ownerType === uploadUserType)
-                      .map((doc: any) => (doc.name || '').toLowerCase().trim());
+                      .map((doc: any) => (doc.type || doc.name || '').toLowerCase().trim());
                     const available = docTypeOptions.find(opt => {
                       const optValLower = opt.value.toLowerCase().trim();
                       if (optValLower.includes('security licen')) {
