@@ -294,25 +294,6 @@ const GuardPhotosDetail = () => {
                         <p className="text-xs text-muted-foreground italic">No events logged.</p>
                       )}
                     </div>
-
-                    {/* Clock-in card detail on the right */}
-                    <div className="bg-secondary/20 border border-border/50 rounded-xl p-4 flex flex-col justify-between space-y-4">
-
-                      <div className="pt-3 border-t border-border/50 space-y-3">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Clock-in Photo:</span>
-                          {hasPhotos ? (
-                            <span className="font-bold text-success flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Available
-                            </span>
-                          ) : (
-                            <span className="font-bold text-amber-600 dark:text-amber-500 flex items-center gap-1">
-                              <AlertCircle className="w-3.5 h-3.5" /> Missing Photo
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
