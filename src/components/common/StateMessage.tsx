@@ -26,7 +26,7 @@ const StateMessage: React.FC<StateMessageProps> = ({
   // Select icon based on state type
   const getIcon = () => {
     if (CustomIcon) return <CustomIcon className="w-5 h-5" />;
-    
+
     switch (type) {
       case "loading":
         return <Loader2 className="w-5 h-5 animate-spin" />;
@@ -51,8 +51,8 @@ const StateMessage: React.FC<StateMessageProps> = ({
 
   const containerPadding = inline ? "p-4" : "p-8 text-center";
   const iconSpacing = inline ? "mr-3" : "mx-auto mb-3";
-  const layoutClasses = inline 
-    ? "flex items-center" 
+  const layoutClasses = inline
+    ? "flex items-center"
     : "flex flex-col items-center justify-center";
 
   return (

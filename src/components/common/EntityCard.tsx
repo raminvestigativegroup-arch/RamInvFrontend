@@ -59,7 +59,7 @@ const EntityCard: React.FC<EntityCardProps> = ({
   onClick,
 }) => {
   return (
-    <div 
+    <div
       onClick={onClick}
       className={`hud-panel hud-corners-container bg-card rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
@@ -69,9 +69,9 @@ const EntityCard: React.FC<EntityCardProps> = ({
           {avatar && (
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold overflow-hidden shrink-0">
               {avatar.src ? (
-                <img 
-                  src={avatar.src} 
-                  alt={title} 
+                <img
+                  src={avatar.src}
+                  alt={title}
                   className="w-full h-full object-cover"
                   onLoad={(e) => {
                     const img = e.currentTarget;

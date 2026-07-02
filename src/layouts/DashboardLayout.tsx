@@ -111,7 +111,7 @@ const DashboardLayout = () => {
         {/* Floating Toggle Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute top-5 -right-3.5 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-white text-muted-foreground shadow-sm hover:text-primary hover:bg-secondary transition-all duration-200 focus:outline-none"
+          className="absolute top-5 -right-3.5 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-primary hover:bg-secondary transition-all duration-200 focus:outline-none"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
@@ -150,8 +150,7 @@ const DashboardLayout = () => {
               to={item.path}
               end={item.path === "/dashboard"}
               className={({ isActive }) =>
-                `flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${
-                  collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5"
+                `flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5"
                 } ${isActive
                   ? "bg-primary text-white shadow-sm"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -178,8 +177,7 @@ const DashboardLayout = () => {
             <NavLink
               to="/dashboard/settings"
               className={({ isActive }) =>
-                `flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${
-                  collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5"
+                `flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5"
                 } ${isActive
                   ? "bg-primary text-white shadow-sm"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -198,9 +196,8 @@ const DashboardLayout = () => {
           )}
           <button
             onClick={() => setShowLogoutDialog(true)}
-            className={`flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${
-              collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5 w-full"
-            } text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground`}
+            className={`flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5 w-full"
+              } text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground`}
           >
             <LogOut className="w-5 h-5 shrink-0" />
             <span

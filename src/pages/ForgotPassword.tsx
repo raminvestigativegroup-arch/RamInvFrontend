@@ -105,19 +105,19 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-40 h-30 mb-4">
             <img src={logo} alt="SecurePro Logo" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">RAM Investigative Group Inc.</h1>
-          <p className="text-muted-foreground mt-1">Professional Investigation Services</p>
+          <h1 className="text-3xl font-bold text-foreground text-center">RAM Investigative Group Inc.</h1>
+          <p className="text-muted-foreground mt-1 text-center">Professional Investigation Services</p>
         </div>
 
         {/* Card */}
-        <div className="bg-card rounded-2xl p-8 shadow-lg border border-border">
+        <div className="glass-panel rounded-2xl p-8 shadow-xl">
           <div className="flex items-center gap-2 mb-6">
             <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-5 h-5" />

@@ -61,19 +61,19 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-40 h-30  mb-4 ">
             <img src={logo} alt="SecurePro Logo" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">RAM Investigative Group Inc.</h1>
-          <p className="text-muted-foreground mt-1">Professional Investigation Services</p>
+          <h1 className="text-3xl font-bold text-foreground text-center">RAM Investigative Group Inc.</h1>
+          <p className="text-muted-foreground mt-1 text-center">Professional Investigation Services</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-card rounded-2xl p-8 shadow-lg border border-border">
+        <div className="glass-panel rounded-2xl p-8 shadow-xl">
           <h2 className="text-xl font-semibold text-foreground mb-6">Sign in to continue</h2>
 
           <form onSubmit={handleLogin} className="space-y-5" noValidate>
