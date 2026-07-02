@@ -89,12 +89,12 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
     maxDate = dates[dates.length - 1];
   }
 
-  // Fetch verified guards from API
+  // Fetch guards from API
   const { data: guards = [], isLoading: isLoadingGuards } = useQuery({
-    queryKey: ["guards", "verified"],
+    queryKey: ["guards", "all-scheduling"],
     queryFn: async () => {
       try {
-        const response = await api.guards.list({ verified: true, fields: "id,firstName,middleName,lastName,name,verified,managerId" });
+        const response = await api.guards.list({ fields: "id,firstName,middleName,lastName,name,verified,managerId" });
         const raw = response.data as any;
 
         let list: any[] = [];
@@ -113,8 +113,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
             site: g.site || g.siteName || "Unassigned",
             verified: g.verified === true || g.verified === "true" || g.isVerified === true,
             managerId: g.managerId || null
-          }))
-          .filter((g: any) => g.verified);
+          }));
       } catch (error: any) {
         if (error.response?.status === 404) return [];
         throw error;

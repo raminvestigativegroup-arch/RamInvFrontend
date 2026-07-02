@@ -86,7 +86,7 @@ const Scheduling = () => {
     return rawGuards.map((g: any) => ({
       ...g,
       isVerified: g.isVerified === true || g.verified === true || g.verified === "true" || g.isVerified === "true"
-    })).filter((g: any) => g.isVerified);
+    }));
   }, [rawGuards]);
 
   // Fetch Sites
