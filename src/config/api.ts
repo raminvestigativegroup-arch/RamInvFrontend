@@ -62,7 +62,7 @@ export const api = {
     update: (id: string, data: any) => httpClient.patch(`/guard/incident/${id}`, data),
     create: (data: any) => httpClient.post("/guard", data),
     refine: (id: string) => httpClient.post(`/guard/incident/${id}/refine`),
-    delete: (id: string) => httpClient.delete(`/guard/${id}`),
+    delete: (id: string) => httpClient.delete(`/guard/incident/${id}`),
   },
 
   // Scheduling

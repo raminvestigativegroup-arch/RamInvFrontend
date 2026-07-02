@@ -2,9 +2,10 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import TablePagination from "@/components/common/TablePagination";
-import { Download, Sparkles, Camera, X, AlertCircle, MoreVertical, CheckCircle2, Clock, AlertTriangle, FileWarning } from "lucide-react";
+import { Download, Sparkles, Camera, X, AlertCircle, MoreVertical, CheckCircle2, Clock, AlertTriangle, FileWarning, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
@@ -185,6 +186,7 @@ const IncidentManagement = () => {
   const [dateFilter, setDateFilter] = useState("all");
   const [aiIncidentId, setAiIncidentId] = useState<string | null>(null);
   const [aiActiveTab, setAiActiveTab] = useState<"refined" | "original">("refined");
+  const [deletingIncident, setDeletingIncident] = useState<Incident | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -341,6 +343,23 @@ const IncidentManagement = () => {
     }
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.incidents.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["incidents"] });
+      if (selectedIncidentId === deletingIncident?.id) setSelectedIncidentId(null);
+      setDeletingIncident(null);
+      toast({ title: "Incident Deleted", description: "The incident has been permanently removed." });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Delete Failed",
+        description: err.response?.data?.message || "Failed to delete the incident.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const filtered = incidentList;
 
   const isNotFound = isError && ((error as any)?.response?.status === 404 || (error as any)?.message?.includes("404"));
@@ -488,7 +507,7 @@ const IncidentManagement = () => {
                           <MoreVertical className="w-4 h-4 text-muted-foreground" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'open' }); }}>
                           <AlertTriangle className="w-4 h-4 mr-2 text-destructive" /> Mark Open
                         </DropdownMenuItem>
@@ -498,6 +517,17 @@ const IncidentManagement = () => {
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); updateStatusMutation.mutate({ id: inc.id, status: 'resolved' }); }}>
                           <CheckCircle2 className="w-4 h-4 mr-2 text-success" /> Resolved
                         </DropdownMenuItem>
+                        {hasDeletePermission && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) => { e.stopPropagation(); setDeletingIncident(inc); }}
+                              className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   ) : (
@@ -696,6 +726,38 @@ const IncidentManagement = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingIncident} onOpenChange={(open) => !open && setDeletingIncident(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                <AlertCircle className="w-6 h-6 text-destructive" />
+              </div>
+              <AlertDialogTitle>Delete Incident?</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete{" "}
+              <strong>{deletingIncident?.title}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={deleteMutation.isPending}>Cancel</Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={() => deletingIncident && deleteMutation.mutate(deletingIncident.id)}
+                loading={deleteMutation.isPending}
+              >
+                Delete Incident
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
