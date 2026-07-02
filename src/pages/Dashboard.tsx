@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { API_BASE_URL } from "@/config/api";
+import { api, API_BASE_URL } from "@/config/api";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const resolveImageUrl = (pathOrData: string | undefined | null) => {
@@ -58,6 +58,31 @@ const Dashboard = () => {
     refetchInterval: 10000,
   });
 
+  const { data: siteList = [] } = useQuery({
+    queryKey: ["sites", "dashboard"],
+    queryFn: async () => {
+      const res = await api.sites.list();
+      const raw = res.data as any;
+      let list: any[] = [];
+      if (Array.isArray(raw)) list = raw;
+      else if (Array.isArray(raw?.data)) list = raw.data;
+      else if (raw?.data && typeof raw.data === "object") {
+        list = raw.data.sites || raw.data.site || raw.data.items || raw.data.results || [];
+      } else {
+        list = raw?.sites || raw?.site || raw?.items || raw?.results || [];
+      }
+      return (Array.isArray(list) ? list : []).map((s: any) => ({
+        id: String(s.id || s._id),
+        name: String(s.name || "Unknown Site"),
+        lat: Number(s.lat ?? s.latitude ?? 0),
+        lng: Number(s.lng ?? s.longitude ?? 0),
+        geofenceRadius: s.geofenceRadius,
+        status: s.status,
+      }));
+    },
+    staleTime: 60000,
+  });
+
   return (
     <div className="p-6 space-y-6 max-w-full">
       {/* Header */}
@@ -88,7 +113,7 @@ const Dashboard = () => {
       {/* Map & Guard Status */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 relative group flex flex-col min-h-[400px] hud-panel hud-corners-container overflow-hidden rounded-xl">
-          <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} />
+          <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} sites={siteList} />
           <button
             onClick={() => setMapFullscreen(true)}
             className="absolute top-12 right-3 z-10 p-2 bg-card/90 border border-border rounded-lg shadow-md hover:bg-accent transition-colors opacity-0 group-hover:opacity-100"
@@ -111,7 +136,7 @@ const Dashboard = () => {
           <div className="h-full flex">
             {/* Map area */}
             <div className="flex-1 relative flex flex-col">
-              <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} />
+              <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} sites={siteList} />
             </div>
             {/* Guard real-time panel */}
             <div className="w-80 border-l border-border bg-card overflow-y-auto">

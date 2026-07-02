@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { guards, sites } from "@/data/dummyData";
+import { guards } from "@/data/dummyData";
 import { Search, LocateFixed } from "lucide-react";
 import SelectDropdown from "@/components/common/SelectDropdown";
 
@@ -18,15 +18,31 @@ interface LiveMapViewProps {
   onSelectGuard?: (guardId: string) => void;
   selectedGuardId?: string | null;
   guards?: any[];
+  sites?: { id: string | number; name: string; lat?: number; lng?: number; latitude?: number; longitude?: number; geofenceRadius?: number; status?: string }[];
 }
 
-const LiveMapView = ({ onSelectGuard, selectedGuardId, guards: dynamicGuards }: LiveMapViewProps) => {
+const LiveMapView = ({ onSelectGuard, selectedGuardId, guards: dynamicGuards, sites: dynamicSites }: LiveMapViewProps) => {
   const [siteFilter, setSiteFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const activeGuardsList = dynamicGuards || guards;
 
-  const siteNames = ["all", ...sites.filter(s => s.status === "active").map(s => s.name)];
+  // Normalise whatever shape the backend returns into { id, name, lat, lng, geofenceRadius }
+  const activeSites = (dynamicSites && dynamicSites.length > 0 ? dynamicSites : [])
+    .map(s => ({
+      id: s.id,
+      name: s.name,
+      lat: Number(s.lat ?? s.latitude ?? 0),
+      lng: Number(s.lng ?? s.longitude ?? 0),
+      geofenceRadius: s.geofenceRadius,
+      status: s.status,
+    }))
+    .filter(s => !s.status || s.status === "active");
+
+  const siteOptions = [
+    { value: "all", label: "All Sites" },
+    ...activeSites.map(s => ({ value: s.name, label: s.name })),
+  ];
 
   const filteredGuards = activeGuardsList.filter(g => {
     const showByStatus = g.status !== "off-duty" || g.geofenceAlert;
@@ -86,7 +102,7 @@ const LiveMapView = ({ onSelectGuard, selectedGuardId, guards: dynamicGuards }: 
             <SelectDropdown
               value={siteFilter}
               onChange={setSiteFilter}
-              options={siteNames.map(s => ({ value: s, label: s === "all" ? "All Sites" : s }))}
+              options={siteOptions}
               placeholder="All Sites"
               className="h-[32px] mb-0"
             />
@@ -156,7 +172,7 @@ const LiveMapView = ({ onSelectGuard, selectedGuardId, guards: dynamicGuards }: 
           })}
 
           {/* Site markers */}
-          {sites.filter(s => s.status === "active" && (siteFilter === "all" || s.name === siteFilter)).map(site => {
+          {activeSites.filter(s => siteFilter === "all" || s.name === siteFilter).map(site => {
             const baseLat = parseFloat(center.split(",")[0]);
             const baseLng = parseFloat(center.split(",")[1]);
             const latRange = selectedGuardId ? 0.01 : 0.06;
