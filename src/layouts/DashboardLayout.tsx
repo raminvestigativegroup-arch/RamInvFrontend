@@ -3,7 +3,7 @@ import { NavLink, useNavigate, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, MapPin, FileWarning, Calendar,
   Clock, Bell, Settings, Shield, FileText, ChevronLeft,
-  ChevronRight, LogOut, ShieldCheck, UserCog,
+  ChevronRight, LogOut, ShieldCheck, UserCog, Camera,
 } from "lucide-react";
 import authService from "@/services/authService";
 import logoImg from "@/assets/logo.png";
@@ -21,6 +21,7 @@ import {
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard" },
   { path: "/dashboard/guards", label: "Guard Management", icon: Users, permission: "guard" },
+  { path: "/dashboard/guard-photos", label: "Guard Photos", icon: Camera, permission: "guard" },
   { path: "/dashboard/managers", label: "Manager Management", icon: UserCog, permission: "manager" },
   { path: "/dashboard/sites", label: "Site Management", icon: MapPin, permission: "site" },
   { path: "/dashboard/incidents", label: "Incidents", icon: FileWarning, permission: "incident" },

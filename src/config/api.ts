@@ -105,6 +105,12 @@ export const api = {
     clockOut: (data: any) => httpClient.post("/attendance/hours/clock-out", data),
   },
 
+  // Attendance details and clock-in images
+  attendance: {
+    getDetails: (params: { guardId: string; date?: string; startDate?: string; endDate?: string }) =>
+      httpClient.get<{ success: boolean; guard: { id: string; name: string; email: string }; rangeStart: string; rangeEnd: string; results: any[] }>("/attendance/details", { params }),
+  },
+
   // Reports
   reports: {
     list: (params?: any) => httpClient.get("/reports", { params }),

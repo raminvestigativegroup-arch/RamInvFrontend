@@ -4,6 +4,8 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import Dashboard from "@/pages/Dashboard";
 import GuardManagement from "@/pages/GuardManagement";
+import GuardPhotosList from "@/pages/GuardPhotosList";
+import GuardPhotosDetail from "@/pages/GuardPhotosDetail";
 import ManagerManagement from "@/pages/ManagerManagement";
 import SiteManagement from "@/pages/SiteManagement";
 import IncidentManagement from "@/pages/IncidentManagement";
@@ -24,6 +26,8 @@ export const AppRoutes = () => {
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="guards" element={<GuardManagement />} />
+        <Route path="guard-photos" element={<GuardPhotosList />} />
+        <Route path="guard-photos/:guardId" element={<GuardPhotosDetail />} />
         <Route path="managers" element={<ManagerManagement />} />
         <Route path="sites" element={<SiteManagement />} />
         <Route path="incidents" element={<IncidentManagement />} />
