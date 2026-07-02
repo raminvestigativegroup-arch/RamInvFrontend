@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
-import { ArrowLeft, Calendar, MapPin, Clock, Camera, Maximize2, User, Mail, ShieldAlert, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Clock, Camera, Maximize2, Mail, ShieldAlert, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import StateMessage from "@/components/common/StateMessage";
 import DateSelect from "@/components/common/DateSelect";
 import { Badge } from "@/components/ui/badge";
@@ -328,11 +328,15 @@ const GuardPhotosDetail = () => {
 
             {/* Modal Footer info */}
             <div className="bg-slate-50 dark:bg-slate-900 px-5 py-4 border-t border-border/80 flex items-center justify-between text-xs text-muted-foreground shrink-0">
-              <div className="flex items-center gap-1">
-                <User className="w-3.5 h-3.5 text-primary shrink-0" />
-                <span>Guard: {guard?.name}</span>
+              <div className="flex items-center gap-2">
+                <Avatar className="w-6 h-6 shrink-0">
+                  <AvatarImage src={resolveImageUrl(guard?.profilePhoto)} alt={guard?.name} className="object-cover" />
+                  <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-bold">
+                    {guard?.name ? getInitials(guard.name) : "G"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="font-medium text-foreground">{guard?.name}</span>
               </div>
-              <span>Captured authoritatively on client device</span>
             </div>
           </DialogContent>
         )}
