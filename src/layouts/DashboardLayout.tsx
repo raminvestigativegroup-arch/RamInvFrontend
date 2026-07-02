@@ -21,7 +21,7 @@ import {
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard" },
   { path: "/dashboard/guards", label: "Guard Management", icon: Users, permission: "guard" },
-  { path: "/dashboard/guard-photos", label: "Guard Photos", icon: Camera, permission: "guard" },
+  { path: "/dashboard/guard-photos", label: "Uniform Compliance", icon: Camera, permission: "guard" },
   { path: "/dashboard/managers", label: "Manager Management", icon: UserCog, permission: "manager" },
   { path: "/dashboard/sites", label: "Site Management", icon: MapPin, permission: "site" },
   { path: "/dashboard/incidents", label: "Incidents", icon: FileWarning, permission: "incident" },

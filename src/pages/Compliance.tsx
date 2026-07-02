@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
@@ -677,13 +678,12 @@ const Compliance = () => {
             <tr key={doc.id} onClick={() => setSelectedDoc(doc)} className="cursor-pointer">
               <td>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold overflow-hidden shrink-0">
-                    {doc.personPhoto ? (
-                      <img src={doc.personPhoto} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      doc.personName.charAt(0).toUpperCase()
-                    )}
-                  </div>
+                  <Avatar className="w-8 h-8 border border-border shrink-0">
+                    <AvatarImage src={doc.personPhoto} alt={doc.personName} className="object-cover" />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold flex items-center justify-center h-full w-full">
+                      {doc.personName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="font-medium">{doc.personName}</span>
                 </div>
               </td>
@@ -723,13 +723,12 @@ const Compliance = () => {
             <tr key={person.id}>
               <td>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold overflow-hidden shrink-0">
-                    {person.photo ? (
-                      <img src={person.photo} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      person.name.charAt(0).toUpperCase()
-                    )}
-                  </div>
+                  <Avatar className="w-8 h-8 border border-border shrink-0">
+                    <AvatarImage src={person.photo} alt={person.name} className="object-cover" />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold flex items-center justify-center h-full w-full">
+                      {person.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="font-medium">{person.name}</span>
                 </div>
               </td>

@@ -7,14 +7,9 @@ import StateMessage from "@/components/common/StateMessage";
 import DateSelect from "@/components/common/DateSelect";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogBody,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody } from "@/components/ui/dialog";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
 
 const resolveImageUrl = (pathOrData: string | undefined | null) => {
   if (!pathOrData) return undefined;
@@ -42,17 +37,14 @@ const GuardPhotosDetail = () => {
   const { guardId } = useParams<{ guardId: string }>();
   const navigate = useNavigate();
 
-  // Date range state - default to last 30 days
+  // Date state - default to today
   const today = new Date();
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(today.getDate() - 30);
 
   const formatDateStr = (date: Date) => {
     return date.toISOString().split("T")[0];
   };
 
-  const [startDate, setStartDate] = useState(formatDateStr(thirtyDaysAgo));
-  const [endDate, setEndDate] = useState(formatDateStr(today));
+  const [selectedDate, setSelectedDate] = useState(formatDateStr(today));
 
   // Lightbox Zoom state
   const [activePhoto, setActivePhoto] = useState<{ url: string; date: string; time: string; siteName: string; type: string } | null>(null);
@@ -64,13 +56,12 @@ const GuardPhotosDetail = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["guard-attendance-details", guardId, startDate, endDate],
+    queryKey: ["guard-attendance-details", guardId, selectedDate],
     queryFn: async () => {
       if (!guardId) throw new Error("Guard ID is required");
       const response = await api.attendance.getDetails({
         guardId,
-        startDate,
-        endDate,
+        date: selectedDate,
       });
       return response.data;
     },
@@ -124,19 +115,13 @@ const GuardPhotosDetail = () => {
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className="flex items-center gap-1.5 shrink-0">
             <Calendar className="w-4 h-4 text-slate-400" />
-            <span className="text-sm font-semibold text-foreground">Date Range:</span>
+            <span className="text-sm font-semibold text-foreground">Select Date:</span>
           </div>
           <div className="flex items-center gap-2">
             <DateSelect
-              value={startDate}
-              onChange={setStartDate}
-              className="h-[38px] text-xs w-[130px] md:w-[150px]"
-            />
-            <span className="text-xs text-muted-foreground font-bold px-1">to</span>
-            <DateSelect
-              value={endDate}
-              onChange={setEndDate}
-              className="h-[38px] text-xs w-[130px] md:w-[150px]"
+              value={selectedDate}
+              onChange={(val) => setSelectedDate(val || formatDateStr(today))}
+              className="h-[38px] text-xs w-[150px] md:w-[180px]"
             />
           </div>
         </div>
@@ -146,9 +131,12 @@ const GuardPhotosDetail = () => {
       {guard && (
         <div className="bg-card border border-border rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg">
-              {getInitials(guard.name)}
-            </div>
+            <Avatar className="w-14 h-14 border border-border">
+              <AvatarImage src={resolveImageUrl(guard.profilePhoto)} alt={guard.name} className="object-cover" />
+              <AvatarFallback className="bg-primary/5 text-primary text-base font-bold flex items-center justify-center h-full w-full">
+                {getInitials(guard.name)}
+              </AvatarFallback>
+            </Avatar>
             <div className="space-y-1">
               <h2 className="text-base font-bold text-foreground leading-snug">{guard.name}</h2>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -297,12 +285,7 @@ const GuardPhotosDetail = () => {
                                   </div>
                                 )}
 
-                                {isClockIn && !photoUrl && (
-                                  <p className="text-[11px] text-muted-foreground italic flex items-center gap-1 bg-secondary/20 p-2 rounded max-w-md">
-                                    <Camera className="w-3.5 h-3.5 text-muted-foreground/80 shrink-0" />
-                                    <span>No verification image uploaded for this clock-in</span>
-                                  </p>
-                                )}
+
                               </div>
                             </div>
                           );
@@ -314,12 +297,6 @@ const GuardPhotosDetail = () => {
 
                     {/* Clock-in card detail on the right */}
                     <div className="bg-secondary/20 border border-border/50 rounded-xl p-4 flex flex-col justify-between space-y-4">
-                      <div className="space-y-2">
-                        <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Verification Status</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Supervisor audit log for {formatLocalDate(day.date)}. Verification photos confirm identity and physical presence at the site during clock-in.
-                        </p>
-                      </div>
 
                       <div className="pt-3 border-t border-border/50 space-y-3">
                         <div className="flex items-center justify-between text-xs">

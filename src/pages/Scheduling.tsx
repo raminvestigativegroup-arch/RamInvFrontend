@@ -1,9 +1,20 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/config/api";
+import { api, API_BASE_URL } from "@/config/api";
 import { ScheduleEntry } from "@/data/dummyData";
 import { Plus, CalendarDays, LayoutGrid, MapPin, ChevronLeft, ChevronRight, Loader2, Calendar, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { UserAvatar } from "@/components/common/UserAvatar";
+
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
 import ShiftFormDialog from "@/features/scheduling/components/ShiftFormDialog";
 import ScheduleCalendarView from "@/features/scheduling/components/ScheduleCalendarView";
 import ScheduleWeekView from "@/features/scheduling/components/ScheduleWeekView";
@@ -130,6 +141,7 @@ const Scheduling = () => {
 
   const entries = useMemo(() => {
     const guardsMap = new Map(guards.map((g: any) => [g.id || g._id, g.name || g.fullName || "Unknown Guard"]));
+    const guardsPhotoMap = new Map(guards.map((g: any) => [g.id || g._id, g.profilePhoto || null]));
     const sitesMap = new Map(sites.map((s: any) => [s.id || s._id, s.name || "Unknown Site"]));
 
     const parsed: ScheduleEntry[] = [];
@@ -152,9 +164,9 @@ const Scheduling = () => {
       if (guardIds.length === 0 && (s.guard || s.guardName)) {
         const guardName = s.guard?.name || s.guardName;
         // Check if this guard name exists in our verified guards map
-        const isVerified = Array.from(guardsMap.values()).includes(guardName);
+        const guardEntry = guards.find((g: any) => g.name === guardName || g.fullName === guardName);
 
-        if (isVerified) {
+        if (guardEntry) {
           parsed.push({
             id: s.id || s._id,
             guard: guardName,
@@ -166,7 +178,11 @@ const Scheduling = () => {
             shiftEnd: (s.shiftEnd || "00:00").substring(0, 5),
             status: s.status || "scheduled",
             actualStart: s.actualStart,
-            actualEnd: s.actualEnd
+            actualEnd: s.actualEnd,
+            ...({
+              guardId: guardEntry.id || guardEntry._id,
+              guardPhoto: guardEntry.profilePhoto || null,
+            } as any)
           });
         }
         continue;
@@ -190,7 +206,11 @@ const Scheduling = () => {
             shiftEnd: (s.shiftEnd || "00:00:00").substring(0, 5),
             status: s.status || "scheduled",
             actualStart: s.actualStart,
-            actualEnd: s.actualEnd
+            actualEnd: s.actualEnd,
+            ...({
+              guardId: gId,
+              guardPhoto: guardsPhotoMap.get(gId) || null,
+            } as any)
           });
         }
       }
@@ -502,7 +522,12 @@ const Scheduling = () => {
                 <tbody className="divide-y divide-border">
                   {todayShifts.map((entry) => (
                     <tr key={entry.id} className="hover:bg-secondary/30 transition-colors">
-                      <td className="px-5 py-4 text-sm font-medium text-foreground">{entry.guard}</td>
+                      <td className="px-5 py-4 text-sm font-medium text-foreground">
+                        <div className="flex items-center gap-2">
+                          <UserAvatar src={(entry as any).guardPhoto} name={entry.guard} size="sm" />
+                          <span>{entry.guard}</span>
+                        </div>
+                      </td>
                       <td className="px-5 py-4 text-sm text-muted-foreground">{entry.site}</td>
                       <td className="px-5 py-4 text-sm text-foreground">{entry.shiftStart} – {entry.shiftEnd}</td>
                       <td className="px-5 py-4 text-sm text-foreground">{entry.actualStart || "—"}</td>

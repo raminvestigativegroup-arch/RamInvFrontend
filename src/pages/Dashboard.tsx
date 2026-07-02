@@ -1,6 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { API_BASE_URL } from "@/config/api";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+const resolveImageUrl = (pathOrData: string | undefined | null) => {
+  if (!pathOrData) return undefined;
+  if (pathOrData.startsWith("data:") || pathOrData.startsWith("http:") || pathOrData.startsWith("https:")) {
+    return pathOrData;
+  }
+  const cleanPath = pathOrData.replace(/\\/g, "/");
+  const host = API_BASE_URL.replace("/api/v1", "");
+  if (cleanPath.startsWith("uploads/")) {
+    return `${host}/${cleanPath}`;
+  }
+  return `${host}/uploads/${encodeURIComponent(cleanPath)}`;
+};
 import KpiCards from "@/features/dashboard/components/KpiCards";
 import HoursSummary from "@/features/dashboard/components/HoursSummary";
 import LiveMapView from "@/features/dashboard/components/LiveMapView";
@@ -113,9 +128,12 @@ const Dashboard = () => {
                   >
                     <div className="flex items-center gap-2.5">
                       <div className="relative">
-                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                          {guard.avatar}
-                        </div>
+                        <Avatar className="w-9 h-9 border border-primary/10">
+                          <AvatarImage src={resolveImageUrl(guard.profilePhoto)} alt={guard.name} className="object-cover" />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold flex items-center justify-center h-full w-full">
+                            {guard.avatar}
+                          </AvatarFallback>
+                        </Avatar>
                         <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${guard.geofenceAlert ? "bg-destructive" : guard.status === "on-duty" ? "bg-success" : "bg-muted-foreground"
                           }`} />
                       </div>

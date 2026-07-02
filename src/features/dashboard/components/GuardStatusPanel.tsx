@@ -2,6 +2,21 @@ import { useState } from "react";
 import { guards } from "@/data/dummyData";
 import { AlertTriangle, MapPinned, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { API_BASE_URL } from "@/config/api";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+const resolveImageUrl = (pathOrData: string | undefined | null) => {
+  if (!pathOrData) return undefined;
+  if (pathOrData.startsWith("data:") || pathOrData.startsWith("http:") || pathOrData.startsWith("https:")) {
+    return pathOrData;
+  }
+  const cleanPath = pathOrData.replace(/\\/g, "/");
+  const host = API_BASE_URL.replace("/api/v1", "");
+  if (cleanPath.startsWith("uploads/")) {
+    return `${host}/${cleanPath}`;
+  }
+  return `${host}/uploads/${encodeURIComponent(cleanPath)}`;
+};
 
 interface GuardStatusPanelProps {
   selectedGuardId?: string | null;
@@ -51,10 +66,12 @@ const GuardStatusPanel = ({ selectedGuardId, onSelectGuard, guards: dynamicGuard
                 }`}
               onClick={() => onSelectGuard?.(guard.id)}
             >
-              {/* Avatar circle */}
-              <div className="w-9 h-9 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center shrink-0 text-xs font-bold text-primary shadow-sm">
-                {initials}
-              </div>
+              <Avatar className="w-9 h-9 border border-primary/10 shrink-0">
+                <AvatarImage src={resolveImageUrl(guard.profilePhoto)} alt={guard.name} className="object-cover" />
+                <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold flex items-center justify-center h-full w-full">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
 
               {/* Guard details */}
               <div className="min-w-0 flex-1">

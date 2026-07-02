@@ -24,6 +24,7 @@ import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatDateOnly } from "@/lib/dateUtils";
 
 type ManagerApiResponse =
@@ -815,16 +816,12 @@ const ManagerManagement = () => {
                       <div className="flex items-center gap-2 mt-1 border-t border-border/50 pt-2">
                         <div className="flex -space-x-1.5">
                           {assignedGuards.slice(0, 5).map((g: any) => {
-                            let avatarContent: React.ReactNode;
-                            if (g.profilePhoto) {
-                              avatarContent = <img src={g.profilePhoto} alt={g.name} className="w-full h-full object-cover rounded-full" />;
-                            } else {
-                              avatarContent = g.name ? g.name.split(" ").filter(Boolean).map((n: string) => n[0].toUpperCase()).join("") : "G";
-                            }
+                            const initials = g.name ? g.name.split(" ").filter(Boolean).map((n: string) => n[0].toUpperCase()).join("") : "G";
                             return (
-                              <div key={g.id} className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold border border-card overflow-hidden shadow-xs">
-                                {avatarContent}
-                              </div>
+                              <Avatar key={g.id} className="w-6 h-6 border border-card">
+                                <AvatarImage src={resolveImageUrl(g.profilePhoto)} alt={g.name} className="object-cover" />
+                                <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-bold flex items-center justify-center h-full w-full">{initials}</AvatarFallback>
+                              </Avatar>
                             );
                           })}
                         </div>

@@ -8,6 +8,7 @@ import SelectDropdown from "@/components/common/SelectDropdown";
 import TablePagination from "@/components/common/TablePagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const resolveImageUrl = (pathOrData: string | undefined | null) => {
   if (!pathOrData) return undefined;
@@ -319,19 +320,12 @@ const GuardPhotosList = () => {
                         {/* Guard Avatar & Name */}
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="relative w-10 h-10 rounded-full overflow-hidden bg-primary/5 border border-border flex items-center justify-center shrink-0">
-                              {profilePhotoUrl ? (
-                                <img
-                                  src={profilePhotoUrl}
-                                  alt={guard.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-xs font-bold text-primary">
-                                  {getInitials(guard.name)}
-                                </span>
-                              )}
-                            </div>
+                            <Avatar className="w-10 h-10 border border-border shrink-0">
+                              <AvatarImage src={profilePhotoUrl} alt={guard.name} className="object-cover" />
+                              <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold flex items-center justify-center h-full w-full">
+                                {getInitials(guard.name)}
+                              </AvatarFallback>
+                            </Avatar>
                             <span className="font-bold text-foreground text-sm block hover:text-primary transition-colors">
                               {guard.name}
                             </span>

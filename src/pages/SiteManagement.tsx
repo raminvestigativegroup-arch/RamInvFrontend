@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/config/api";
+import { api, API_BASE_URL } from "@/config/api";
 import { Site } from "@/data/dummyData";
 import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, UserCheck, Locate, Search, Filter, Mail, Phone, Loader2, Calendar, Clock, MoreHorizontal, CalendarClock, CalendarClockIcon, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -24,7 +24,22 @@ import SelectDropdown from "@/components/common/SelectDropdown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatDateOnly } from "@/lib/dateUtils";
+import { UserAvatar } from "@/components/common/UserAvatar";
+
+const resolveImageUrl = (pathOrData: string | undefined | null) => {
+  if (!pathOrData) return undefined;
+  if (pathOrData.startsWith("data:") || pathOrData.startsWith("http:") || pathOrData.startsWith("https:")) {
+    return pathOrData;
+  }
+  const cleanPath = pathOrData.replace(/\\/g, "/");
+  const host = API_BASE_URL.replace("/api/v1", "");
+  if (cleanPath.startsWith("uploads/")) {
+    return `${host}/${cleanPath}`;
+  }
+  return `${host}/uploads/${encodeURIComponent(cleanPath)}`;
+};
 
 const normalizeSitesResponse = (response: any): any[] => {
   if (Array.isArray(response)) return response;
@@ -62,6 +77,7 @@ const normalizeManager = (manager: any): any => ({
   id: String(manager.id || manager._id || ""),
   name: String(manager.name || `${manager.firstName || ""} ${manager.lastName || ""}`.trim() || "Unknown Manager"),
   isVerified: manager.isVerified === true || manager.verified === true || manager.verified === "true" || manager.isVerified === "true",
+  profilePhoto: manager.profilePhoto || null,
 });
 
 const SiteManagement = () => {
@@ -147,7 +163,7 @@ const SiteManagement = () => {
   const { data: managersList = [] } = useQuery({
     queryKey: ["managers", "select"],
     queryFn: async () => {
-      const response = await api.managers.list({ fields: "id,firstName,middleName,lastName,verified" });
+      const response = await api.managers.list({ fields: "id,firstName,middleName,lastName,verified,profilePhoto" });
       return normalizeManagersResponse(response.data).map(normalizeManager);
     },
   });
@@ -539,13 +555,8 @@ const SiteManagement = () => {
                             }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${isSelected
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-primary/10 text-primary"
-                              }`}>
-                              {initials}
-                            </div>
-                            <span className="font-medium">{m.name}</span>
+                            <UserAvatar src={m.profilePhoto} name={m.name} size="md" />
+                            <span className="font-medium text-foreground">{m.name}</span>
                           </div>
                           {isSelected && (
                             <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-sm">
@@ -687,32 +698,19 @@ const SiteManagement = () => {
                         >
                           <div className="flex -space-x-2 transition-transform duration-200 group-hover:scale-105">
                             {site.managers.slice(0, 5).map((m: any) => {
-                              let avatarContent: React.ReactNode;
-                              if (m.profilePhoto) {
-                                avatarContent = (
-                                  <img
-                                    src={m.profilePhoto}
-                                    alt={m.name || "Manager"}
-                                    className="w-full h-full object-cover rounded-full"
-                                  />
-                                );
-                              } else {
-                                avatarContent = m.name
-                                  ? m.name
-                                    .split(" ")
-                                    .filter(Boolean)
-                                    .map((n: string) => n[0].toUpperCase())
-                                    .join("")
-                                  : "M";
-                              }
+                              const initials = m.name
+                                ? m.name
+                                  .split(" ")
+                                  .filter(Boolean)
+                                  .map((n: string) => n[0].toUpperCase())
+                                  .join("")
+                                : "M";
 
                               return (
-                                <div
-                                  key={m.id}
-                                  className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shadow-sm"
-                                >
-                                  {avatarContent}
-                                </div>
+                                <Avatar key={m.id} className="w-7 h-7 border-2 border-card">
+                                  <AvatarImage src={resolveImageUrl(m.profilePhoto)} alt={m.name} className="object-cover" />
+                                  <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center h-full w-full">{initials}</AvatarFallback>
+                                </Avatar>
                               );
                             })}
                             {site.managers.length > 5 && (
@@ -748,34 +746,21 @@ const SiteManagement = () => {
                                   (gu) => String(gu.id) === String(gId)
                                 );
 
-                                let avatarContent: React.ReactNode;
-                                if (g?.profilePhoto) {
-                                  avatarContent = (
-                                    <img
-                                      src={g.profilePhoto}
-                                      alt={g.name || "Guard"}
-                                      className="w-full h-full object-cover rounded-full"
-                                    />
-                                  );
-                                } else {
-                                  avatarContent = g
+                                const initials = g
+                                  ? g.name
                                     ? g.name
-                                      ? g.name
-                                        .split(" ")
-                                        .filter(Boolean)
-                                        .map((n) => n[0].toUpperCase())
-                                        .join("")
-                                      : ""
-                                    : String(gId).slice(0, 2).toUpperCase();
-                                }
+                                      .split(" ")
+                                      .filter(Boolean)
+                                      .map((n) => n[0].toUpperCase())
+                                      .join("")
+                                    : ""
+                                  : String(gId).slice(0, 2).toUpperCase();
 
                                 return (
-                                  <div
-                                    key={gId}
-                                    className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shadow-sm"
-                                  >
-                                    {avatarContent}
-                                  </div>
+                                  <Avatar key={gId} className="w-7 h-7 border-2 border-card">
+                                    <AvatarImage src={resolveImageUrl(g?.profilePhoto)} alt={g?.name} className="object-cover" />
+                                    <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center h-full w-full">{initials}</AvatarFallback>
+                                  </Avatar>
                                 );
                               })}
                           </div>
@@ -935,21 +920,18 @@ const SiteManagement = () => {
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {assignedManagers.map((m: any, index: number) => {
-                            let avatarContent: React.ReactNode;
-                            if (m.profilePhoto) {
-                              avatarContent = <img src={m.profilePhoto} alt={m.name || "Manager"} className="w-full h-full object-cover rounded-full" />;
-                            } else {
-                              avatarContent = m.name ? m.name.split(" ").filter(Boolean).map((n: string) => n[0].toUpperCase()).join("") : "M";
-                            }
 
                             return (
                               <div key={m.id || index} className="p-4 rounded-xl border border-border bg-card hover:bg-secondary/20 transition-all flex flex-col justify-between gap-4">
                                 <div className="flex items-start justify-between gap-3">
                                   {/* Avatar & Name */}
                                   <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shrink-0">
-                                      {avatarContent}
-                                    </div>
+                                    <Avatar className="w-10 h-10 border-2 border-card shrink-0">
+                                      <AvatarImage src={resolveImageUrl(m.profilePhoto)} alt={m.name} className="object-cover" />
+                                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold flex items-center justify-center h-full w-full">
+                                        {m.name ? m.name.split(" ").filter(Boolean).map((n: string) => n[0].toUpperCase()).join("") : "M"}
+                                      </AvatarFallback>
+                                    </Avatar>
                                     <div className="min-w-0">
                                       <p className="text-sm font-bold text-foreground truncate">{m.name}</p>
                                       <p className="text-[10px] text-muted-foreground truncate mt-0.5">Email: {m.email}</p>
@@ -990,12 +972,6 @@ const SiteManagement = () => {
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {filteredGuards.map((g: any, index) => {
-                            let avatarContent: React.ReactNode;
-                            if (g.profilePhoto) {
-                              avatarContent = <img src={g.profilePhoto} alt={g.name || "Guard"} className="w-full h-full object-cover rounded-full" />;
-                            } else {
-                              avatarContent = g.name ? g.name.split(" ").filter(Boolean).map((n: string) => n[0].toUpperCase()).join("") : String(g.id).slice(0, 2).toUpperCase();
-                            }
 
                             // Status styling
                             const statusColors = {
@@ -1027,9 +1003,12 @@ const SiteManagement = () => {
                                 <div className="flex items-start justify-between gap-3">
                                   {/* Avatar & Name */}
                                   <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border-2 border-card overflow-hidden shrink-0">
-                                      {avatarContent}
-                                    </div>
+                                    <Avatar className="w-10 h-10 border-2 border-card shrink-0">
+                                      <AvatarImage src={resolveImageUrl(g.profilePhoto)} alt={g.name} className="object-cover" />
+                                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold flex items-center justify-center h-full w-full">
+                                        {g.name ? g.name.split(" ").filter(Boolean).map((n: string) => n[0].toUpperCase()).join("") : String(g.id).slice(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
                                     <div className="min-w-0">
                                       <p className="text-sm font-bold text-foreground truncate">{g.name}</p>
                                       <p className="text-[10px] text-muted-foreground truncate mt-0.5">Email: {g.email}</p>

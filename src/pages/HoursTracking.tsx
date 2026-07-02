@@ -43,21 +43,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "@/components/ui/dialog";
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { formatUTCTime } from "@/lib/dateUtils";
 
-const resolveImageUrl = (pathOrData: string | undefined | null) => {
-  if (!pathOrData) return "";
-  if (pathOrData.startsWith("data:") || pathOrData.startsWith("http:") || pathOrData.startsWith("https:")) {
-    return pathOrData;
-  }
-  const cleanPath = pathOrData.replace(/\\/g, "/");
-  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:4001/api/v1";
-  const host = apiBase.replace("/api/v1", "");
-  if (cleanPath.startsWith("uploads/")) {
-    return `${host}/${cleanPath}`;
-  }
-  return `${host}/uploads/${encodeURIComponent(cleanPath)}`;
-};
 
 const HoursTracking = () => {
   const userStr = localStorage.getItem("user");
@@ -453,7 +441,18 @@ const HoursTracking = () => {
 
                               {/* Supervisor name */}
                               <td className="px-5 py-4 text-foreground">
-                                {site.manager}
+                                {site.managers && site.managers.length > 0 ? (
+                                  <div className="flex items-center gap-2">
+                                    <UserAvatar
+                                      src={site.managers[0].profilePhoto}
+                                      name={site.managers[0].name}
+                                      size="sm"
+                                    />
+                                    <span>{site.managers[0].name}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground">{site.manager || 'Unassigned'}</span>
+                                )}
                               </td>
 
                               {/* Assigned guards count */}
@@ -584,9 +583,7 @@ const HoursTracking = () => {
                                                     <tr key={g.id || gIdx} className="hover:bg-secondary/20 transition-colors">
                                                       <td className="px-4 py-2.5 font-medium text-foreground">
                                                         <div className="flex items-center gap-2">
-                                                          <span className="w-6 h-6 rounded-full bg-secondary border border-border/80 flex items-center justify-center text-[10px] font-bold">
-                                                            {g.avatar}
-                                                          </span>
+                                                          <UserAvatar src={g.profilePhoto} name={g.name} size="sm" />
                                                           <span>{g.name}</span>
                                                         </div>
                                                       </td>
@@ -925,9 +922,7 @@ const HoursTracking = () => {
                                     <td className="px-5 py-3.5">
                                       <div className="flex items-center gap-2.5">
                                         <div className="relative">
-                                          <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-foreground text-[11px] font-bold shadow-xs">
-                                            {guard.avatar}
-                                          </div>
+                                          <UserAvatar src={guard.profilePhoto} name={guard.name} size="md" />
                                           <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background ${statusDotClass}`} />
                                         </div>
                                         <span className="font-semibold text-foreground">{guard.name}</span>

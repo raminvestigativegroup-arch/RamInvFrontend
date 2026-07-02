@@ -6,6 +6,7 @@ import { Eye, Sparkles, X, Camera, Download, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatUTCTime } from "@/lib/dateUtils";
 import { Badge } from "@/components/ui/badge";
+import { UserAvatar } from "@/components/common/UserAvatar";
 
 interface Incident {
   id: string;
@@ -13,6 +14,11 @@ interface Incident {
   type: string;
   site: string;
   guard: string;
+  guardDetails?: {
+    id: string;
+    name: string;
+    profilePhoto: string | null;
+  } | null;
   priority: "high" | "medium" | "low";
   status: "open" | "in-progress" | "resolved";
   date: string;
@@ -100,12 +106,24 @@ const normalizeIncident = (inc: any, index: number): Incident => {
     ];
   }
 
+  let guardDetails = null;
+  if (data.guard && typeof data.guard === 'object') {
+    const firstName = data.guard.firstName || "";
+    const lastName = data.guard.lastName || "";
+    guardDetails = {
+      id: String(data.guard.id || ""),
+      name: `${firstName} ${lastName}`.trim() || data.guard.email || "Unknown Guard",
+      profilePhoto: data.guard.profilePhoto || null,
+    };
+  }
+
   return {
     id: String(data.id || data._id || `INC${String(index + 1).padStart(3, "0")}`),
     title: String(data.incidentType || data.title || "General Incident"),
     type: String(data.incidentType || data.type || "Security"),
     site: String(data.site || "Unknown Site"),
     guard: String(data.guardId || data.guard || "Unknown Guard"),
+    guardDetails,
     priority: (data.priority === "high" || data.priority === "medium" || data.priority === "low") ? data.priority : "medium",
     status: (data.solved === "resolved" || data.solved === "in-progress" || data.solved === "open") 
       ? data.solved 
@@ -149,18 +167,24 @@ const RecentIncidents = () => {
     queryFn: async () => {
       const response = await api.guards.list();
       const raw = response.data?.data || response.data?.guards || response.data?.items || (Array.isArray(response.data) ? response.data : []);
-      return (Array.isArray(raw) ? raw : []).map(g => ({
-        id: String(g.id || g._id),
-        name: String(g.name || g.fullName || "Unknown Guard")
-      }));
+      return (Array.isArray(raw) ? raw : []).map(g => {
+        const firstName = g.firstName || "";
+        const lastName = g.lastName || "";
+        const name = g.name || `${firstName} ${lastName}`.trim() || g.email || "Unknown Guard";
+        return {
+          id: String(g.id || g._id),
+          name: String(name),
+          profilePhoto: g.profilePhoto || null
+        };
+      });
     }
   });
 
   const guardMap = useMemo(() => {
     return guardList.reduce((acc, g) => {
-      acc[g.id] = g.name;
+      acc[g.id] = g;
       return acc;
-    }, {} as Record<string, string>);
+    }, {} as Record<string, { id: string; name: string; profilePhoto: string | null }>);
   }, [guardList]);
 
   const selected = viewIncident ? incidentList.find(i => i.id === viewIncident) : null;
@@ -202,7 +226,19 @@ const RecentIncidents = () => {
                     <td className="px-4 py-3 text-sm text-muted-foreground whitespace-nowrap">
                       {inc.date} · {inc.time}
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-foreground">{guardMap[inc.guard] || inc.guard}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-foreground">
+                      {(() => {
+                        const guardObj = inc.guardDetails || guardMap[inc.guard];
+                        const guardName = guardObj ? (typeof guardObj === 'object' ? guardObj.name : String(guardObj)) : inc.guard;
+                        const guardPhoto = guardObj && typeof guardObj === 'object' ? guardObj.profilePhoto : null;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <UserAvatar src={guardPhoto} name={guardName} size="sm" />
+                            <span>{guardName}</span>
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{inc.site}</td>
                     <td className="px-4 py-3 text-sm text-foreground">{inc.type}</td>
                     <td className="px-4 py-3">
@@ -246,7 +282,22 @@ const RecentIncidents = () => {
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div><span className="text-muted-foreground">Type:</span> <span className="font-medium">{selected.type}</span></div>
-                <div><span className="text-muted-foreground">Guard:</span> <span className="font-medium">{guardMap[selected.guard] || selected.guard}</span></div>
+                <div>
+                  <span className="text-muted-foreground">Guard:</span>{" "}
+                  <span className="font-medium inline-flex items-center gap-1.5 align-middle">
+                    {(() => {
+                      const guardObj = selected.guardDetails || guardMap[selected.guard];
+                      const guardName = guardObj ? (typeof guardObj === 'object' ? guardObj.name : String(guardObj)) : selected.guard;
+                      const guardPhoto = guardObj && typeof guardObj === 'object' ? guardObj.profilePhoto : null;
+                      return (
+                        <>
+                          <UserAvatar src={guardPhoto} name={guardName} size="sm" className="w-5 h-5" />
+                          <span>{guardName}</span>
+                        </>
+                      );
+                    })()}
+                  </span>
+                </div>
                 <div><span className="text-muted-foreground">Site:</span> <span className="font-medium">{selected.site}</span></div>
                 <div><span className="text-muted-foreground">Time:</span> <span className="font-medium">{selected.date} {selected.time}</span></div>
               </div>
@@ -315,7 +366,7 @@ const RecentIncidents = () => {
               <div className="bg-accent rounded-lg p-4">
                 <p className="text-sm text-foreground leading-relaxed">
                   {aiSummaries[aiSelected.id] || 
-                    `AI Incident Summary: A ${aiSelected.priority} priority ${aiSelected.type} incident occurred at ${aiSelected.site} on ${aiSelected.date} at ${aiSelected.time}. The guard on duty, ${guardMap[aiSelected.guard] || aiSelected.guard}, reported the following: "${aiSelected.description}". The immediate action taken was: "${aiSelected.action}". Recommendations: Review security presence at ${aiSelected.site} and monitor for similar occurrences.`}
+                    `AI Incident Summary: A ${aiSelected.priority} priority ${aiSelected.type} incident occurred at ${aiSelected.site} on ${aiSelected.date} at ${aiSelected.time}. The guard on duty, ${(aiSelected.guardDetails || guardMap[aiSelected.guard])?.name || aiSelected.guard}, reported the following: "${aiSelected.description}". The immediate action taken was: "${aiSelected.action}". Recommendations: Review security presence at ${aiSelected.site} and monitor for similar occurrences.`}
                 </p>
               </div>
               <div className="flex gap-2">

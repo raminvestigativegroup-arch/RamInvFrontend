@@ -1,6 +1,21 @@
 import { useMemo } from "react";
 import { ScheduleEntry } from "@/data/dummyData";
 import { Pencil, Trash2 } from "lucide-react";
+import { API_BASE_URL } from "@/config/api";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+const resolveImageUrl = (pathOrData: string | undefined | null) => {
+  if (!pathOrData) return undefined;
+  if (pathOrData.startsWith("data:") || pathOrData.startsWith("http:") || pathOrData.startsWith("https:")) {
+    return pathOrData;
+  }
+  const cleanPath = pathOrData.replace(/\\/g, "/");
+  const host = API_BASE_URL.replace("/api/v1", "");
+  if (cleanPath.startsWith("uploads/")) {
+    return `${host}/${cleanPath}`;
+  }
+  return `${host}/uploads/${encodeURIComponent(cleanPath)}`;
+};
 
 interface Guard {
   id: string;
@@ -72,13 +87,12 @@ const ScheduleWeekView = ({ entries, guards, onEdit, onDelete, filterSite, weekS
             <tr key={guard.id} className="border-b border-border hover:bg-secondary/20 transition-colors">
               <td className="px-4 py-3 sticky left-0 bg-card z-10 border-r border-border/50">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold border border-primary/20 overflow-hidden">
-                    {guard.profilePhoto ? (
-                      <img src={guard.profilePhoto} alt={guard.name || "Guard"} className="w-full h-full object-cover rounded-full" />
-                    ) : (
-                      guard.name.split(" ").filter(Boolean).map((n) => n[0].toUpperCase()).join("")
-                    )}
-                  </div>
+                  <Avatar className="w-8 h-8 border border-primary/20 shrink-0">
+                    <AvatarImage src={resolveImageUrl(guard.profilePhoto)} alt={guard.name} className="object-cover" />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold flex items-center justify-center h-full w-full">
+                      {guard.name.split(" ").filter(Boolean).map((n) => n[0].toUpperCase()).join("")}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="text-sm font-semibold text-foreground truncate">{guard.name}</span>
                 </div>
               </td>

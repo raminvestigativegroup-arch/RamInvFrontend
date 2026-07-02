@@ -11,6 +11,7 @@ import FormField from "@/components/common/FormField";
 import DateSelect from "@/components/common/DateSelect";
 import { Button } from "@/components/ui/button";
 import { formatDateOnly } from "@/lib/dateUtils";
+import { UserAvatar } from "@/components/common/UserAvatar";
 
 const timeToMinutes = (time: string): number => {
   if (!time) return 0;
@@ -94,7 +95,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
     queryKey: ["guards", "all-scheduling"],
     queryFn: async () => {
       try {
-        const response = await api.guards.list({ fields: "id,firstName,middleName,lastName,name,verified,managerId" });
+        const response = await api.guards.list({ fields: "id,firstName,middleName,lastName,name,verified,managerId,profilePhoto" });
         const raw = response.data as any;
 
         let list: any[] = [];
@@ -112,7 +113,8 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
             name: g.name || g.fullName || `${g.firstName || ""} ${g.lastName || ""}`.trim() || "Unnamed",
             site: g.site || g.siteName || "Unassigned",
             verified: g.verified === true || g.verified === "true" || g.isVerified === true,
-            managerId: g.managerId || null
+            managerId: g.managerId || null,
+            profilePhoto: g.profilePhoto || null
           }));
       } catch (error: any) {
         if (error.response?.status === 404) return [];
@@ -412,12 +414,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
                                   }`}
                               >
                                 <div className="flex items-center gap-3">
-                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${isSelected
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-primary/10 text-primary"
-                                    }`}>
-                                    {initials}
-                                  </div>
+                                  <UserAvatar src={g.profilePhoto} name={g.name} size="md" />
                                   <span className="font-medium text-foreground">{g.name}</span>
                                 </div>
                                 {isSelected && (

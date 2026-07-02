@@ -13,6 +13,7 @@ import TableToolbar from "@/components/common/TableToolbar";
 import DataTable from "@/components/common/DataTable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { formatUTCTime } from "@/lib/dateUtils";
 interface Incident {
   id: string;
@@ -20,6 +21,11 @@ interface Incident {
   type: string;
   site: string;
   guard: string;
+  guardDetails?: {
+    id: string;
+    name: string;
+    profilePhoto: string | null;
+  } | null;
   priority: "high" | "medium" | "low";
   status: "open" | "in-progress" | "resolved";
   date: string;
@@ -108,12 +114,24 @@ const normalizeIncident = (inc: any, index: number): Incident => {
     ];
   }
 
+  let guardDetails = null;
+  if (data.guard && typeof data.guard === 'object') {
+    const firstName = data.guard.firstName || "";
+    const lastName = data.guard.lastName || "";
+    guardDetails = {
+      id: String(data.guard.id || ""),
+      name: `${firstName} ${lastName}`.trim() || data.guard.email || "Unknown Guard",
+      profilePhoto: data.guard.profilePhoto || null,
+    };
+  }
+
   return {
     id: String(data.id || data._id || `INC${String(index + 1).padStart(3, "0")}`),
     title: String(data.incidentType || data.title || "General Incident"),
     type: String(data.incidentType || data.type || "Security"),
     site: String(data.site || "Unknown Site"),
     guard: String(data.guardId || data.guard || "Unknown Guard"),
+    guardDetails,
     priority: (data.priority === "high" || data.priority === "medium" || data.priority === "low") ? data.priority : "medium",
     // Use the 'solved' string field as the source of truth for status
     status: (data.solved === "resolved" || data.solved === "in-progress" || data.solved === "open")
@@ -213,7 +231,8 @@ const IncidentManagement = () => {
       const raw = response.data?.data || response.data?.guards || response.data?.items || (Array.isArray(response.data) ? response.data : []);
       return (Array.isArray(raw) ? raw : []).map(g => ({
         id: String(g.id || g._id),
-        name: String(g.name || g.fullName || "Unknown Guard")
+        name: String(g.name || g.fullName || "Unknown Guard"),
+        profilePhoto: g.profilePhoto || null
       }));
     }
   });
@@ -278,9 +297,9 @@ const IncidentManagement = () => {
 
   const guardMap = useMemo(() => {
     return guardList.reduce((acc, g) => {
-      acc[g.id] = g.name;
+      acc[g.id] = g;
       return acc;
-    }, {} as Record<string, string>);
+    }, {} as Record<string, { id: string; name: string; profilePhoto: string | null }>);
   }, [guardList]);
 
   const { data: selectedIncident, isLoading: isDetailsLoading } = useQuery({
@@ -439,7 +458,19 @@ const IncidentManagement = () => {
                   <p className="text-xs text-muted-foreground mt-0.5">{inc.type}</p>
                 </td>
                 <td className="text-muted-foreground">{inc.site}</td>
-                <td>{guardMap[inc.guard] || inc.guard}</td>
+                <td>
+                  {(() => {
+                    const guardObj = inc.guardDetails || guardMap[inc.guard];
+                    const guardName = guardObj ? guardObj.name : inc.guard;
+                    const guardPhoto = guardObj ? guardObj.profilePhoto : null;
+                    return (
+                      <div className="flex items-center gap-2">
+                        <UserAvatar src={guardPhoto} name={guardName} size="sm" />
+                        <span>{guardName}</span>
+                      </div>
+                    );
+                  })()}
+                </td>
                 <td><span className={`priority-${inc.priority}`}>{inc.priority.toUpperCase()}</span></td>
                 <td>
                   <Badge variant={inc.status === "resolved" ? "success" : inc.status === "open" ? "danger" : "warning"} showDot>
@@ -518,7 +549,20 @@ const IncidentManagement = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div><span className="text-muted-foreground">Type:</span> <span className="text-foreground font-medium">{selectedIncident.type}</span></div>
-                    <div><span className="text-muted-foreground">Guard:</span> <span className="text-foreground font-medium">{guardMap[selectedIncident.guard] || selectedIncident.guard}</span></div>
+                    <div>
+                      {(() => {
+                        const guardObj = selectedIncident.guardDetails || guardMap[selectedIncident.guard];
+                        const guardName = guardObj ? guardObj.name : selectedIncident.guard;
+                        const guardPhoto = guardObj ? guardObj.profilePhoto : null;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">Guard:</span>
+                            <UserAvatar src={guardPhoto} name={guardName} size="sm" />
+                            <span className="text-foreground font-medium">{guardName}</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
                     <div><span className="text-muted-foreground">Site:</span> <span className="text-foreground font-medium">{selectedIncident.site}</span></div>
                     <div><span className="text-muted-foreground">Date:</span> <span className="text-foreground font-medium">{selectedIncident.date} {selectedIncident.time}</span></div>
                   </div>
