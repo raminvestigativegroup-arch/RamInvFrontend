@@ -281,8 +281,8 @@ const IncidentManagement = () => {
       const incidents = normalizedList.map((inc, index) => normalizeIncident(inc, index));
       const paginationObj = rawData.pagination || {
         totalItems: incidents.length,
-        totalPages: 1,
-        currentPage: 1,
+        totalPages: Math.max(1, Math.ceil(incidents.length / limit)),
+        currentPage: page,
         pageSize: limit
       };
       return { incidents, pagination: paginationObj };

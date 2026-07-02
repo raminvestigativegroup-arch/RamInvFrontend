@@ -220,8 +220,8 @@ const ManagerManagement = () => {
       const managers = normalizedList.map(normalizeManager);
       const paginationObj = rawData.pagination || {
         totalItems: managers.length,
-        totalPages: 1,
-        currentPage: 1,
+        totalPages: Math.max(1, Math.ceil(managers.length / limit)),
+        currentPage: page,
         pageSize: limit,
       };
       return { managers, pagination: paginationObj };

@@ -163,8 +163,8 @@ const HoursTracking = () => {
 
   // Server-side filtered & sorted sites list
   const processedSites = sitesList;
-  const totalPages = response?.pagination?.totalPages || 1;
-  const totalItems = response?.pagination?.totalItems || 0;
+  const totalPages = response?.pagination?.totalPages || Math.max(1, Math.ceil((sitesList.length || 0) / (limit || 10)));
+  const totalItems = response?.pagination?.totalItems ?? sitesList.length;
 
   // Dynamically update the selectedSite object if data updates
   const activeSelectedSite = useMemo(() => {
@@ -653,7 +653,7 @@ const HoursTracking = () => {
                 </div>
 
                 {/* Pagination Controls */}
-                {response?.pagination && totalItems > 0 && (
+                {totalItems > 0 && (
                   <TablePagination
                     page={page}
                     totalPages={totalPages}

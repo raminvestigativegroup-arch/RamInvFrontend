@@ -149,8 +149,8 @@ const SiteManagement = () => {
       const sites = normalizedList.map(normalizeSite);
       const paginationObj = rawData.pagination || {
         totalItems: sites.length,
-        totalPages: 1,
-        currentPage: 1,
+        totalPages: Math.max(1, Math.ceil(sites.length / limit)),
+        currentPage: page,
         pageSize: limit,
       };
       return { sites, pagination: paginationObj };

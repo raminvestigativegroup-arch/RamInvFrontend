@@ -108,7 +108,11 @@ export const api = {
   // Attendance details and clock-in images
   attendance: {
     getDetails: (params: { guardId: string; date?: string; startDate?: string; endDate?: string }) =>
-      httpClient.get<{ success: boolean; guard: { id: string; name: string; email: string }; rangeStart: string; rangeEnd: string; results: any[] }>("/attendance/details", { params }),
+      httpClient.get<{
+        details: any[]; success: boolean; guard: {
+          profilePhoto(profilePhoto: any): string; id: string; name: string; email: string
+        }; rangeStart: string; rangeEnd: string; results: any[]
+      }>("/attendance/details", { params }),
   },
 
   // Reports

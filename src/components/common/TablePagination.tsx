@@ -27,7 +27,10 @@ const TablePagination: React.FC<TablePaginationProps> = ({
   className,
   itemLabel = "records",
 }) => {
-  if (totalPages <= 1 && totalItems <= limit) return null;
+  // Hide only when there is truly just one page worth of data.
+  // Use >= to guard against undefined/0 coming from a backend that didn't
+  // return pagination metadata (flat-array response).
+  if (totalPages <= 1 && (totalItems === 0 || totalItems <= limit)) return null;
 
   const from = Math.min(totalItems, (page - 1) * limit + 1);
   const to = Math.min(totalItems, page * limit);

@@ -179,8 +179,8 @@ const GuardPhotosList = () => {
       const guards = normalizedList.map(normalizeGuard);
       const paginationObj = rawData.pagination || {
         totalItems: guards.length,
-        totalPages: 1,
-        currentPage: 1,
+        totalPages: Math.max(1, Math.ceil(guards.length / limit)),
+        currentPage: page,
         pageSize: limit,
       };
       return { guards, pagination: paginationObj };

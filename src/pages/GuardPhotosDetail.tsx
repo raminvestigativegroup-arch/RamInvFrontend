@@ -145,19 +145,6 @@ const GuardPhotosDetail = () => {
               </div>
             </div>
           </div>
-
-          <div className="flex gap-4 border-t md:border-t-0 border-border/60 pt-4 md:pt-0">
-            <div className="bg-secondary/40 border border-border/50 rounded-lg px-4 py-2 text-center min-w-[100px]">
-              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Total Shifts</span>
-              <span className="text-lg font-bold text-foreground mt-0.5 block">{results.length}</span>
-            </div>
-            <div className="bg-secondary/40 border border-border/50 rounded-lg px-4 py-2 text-center min-w-[100px]">
-              <span className="block text-[10px] uppercase tracking-wider text-muted-foreground font-bold">With Photo</span>
-              <span className="text-lg font-bold text-primary mt-0.5 block">
-                {results.reduce((count, r) => count + (r.events?.some((e: any) => e.image) ? 1 : 0), 0)}
-              </span>
-            </div>
-          </div>
         </div>
       )}
 
