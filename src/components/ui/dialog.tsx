@@ -63,7 +63,7 @@ const DialogContent = React.forwardRef<
       {children}
 
       {/* Close button — always anchored top-right */}
-      <DialogPrimitive.Close className="absolute right-4 top-5 rounded-md p-1 opacity-55 transition-all hover:opacity-100 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+      <DialogPrimitive.Close className="absolute right-4 top-5 rounded-md opacity-55 transition-all hover:opacity-100 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -79,7 +79,7 @@ DialogContent.displayName = DialogPrimitive.Content.displayName;
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "shrink-0 flex flex-col gap-1 bg-white px-6 py-4 border-b border-border/60",
+      "shrink-0 flex flex-col gap-1 bg-muted px-6 py-4 border-b border-border/60",
       className,
     )}
     {...props}
@@ -94,7 +94,7 @@ DialogHeader.displayName = "DialogHeader";
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "shrink-0 flex items-center justify-end gap-3 bg-white px-6 py-4 border-t border-border/60",
+      "shrink-0 flex items-center justify-end gap-3 bg-muted px-6 py-4 border-t border-border/60",
       className,
     )}
     {...props}

@@ -17,6 +17,7 @@ const badgeVariants = cva(
         info: "bg-info/10 text-info border-info/20 hover:bg-info/20",
         inactive: "bg-muted text-muted-foreground border-muted-foreground/10 hover:bg-muted/80",
         danger: "bg-destructive/10 text-destructive border-destructive/20 hover:bg-destructive/20",
+        primary: "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20",
       },
     },
     defaultVariants: {

@@ -112,7 +112,7 @@ const Dashboard = () => {
 
       {/* Map & Guard Status */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 relative group flex flex-col min-h-[400px] hud-panel hud-corners-container overflow-hidden rounded-xl">
+        <div className="lg:col-span-2 relative group flex flex-col min-h-[400px] overflow-hidden rounded-xl">
           <LiveMapView selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} sites={siteList} />
           <button
             onClick={() => setMapFullscreen(true)}
@@ -122,7 +122,7 @@ const Dashboard = () => {
             <Maximize2 className="w-4 h-4 text-foreground" />
           </button>
         </div>
-        <div className="hud-panel hud-corners-container overflow-hidden rounded-xl">
+        <div className=" overflow-hidden rounded-xl">
           <GuardStatusPanel selectedGuardId={selectedGuardId} onSelectGuard={setSelectedGuardId} guards={guardStatusList} />
         </div>
       </div>

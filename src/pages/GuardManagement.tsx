@@ -1013,8 +1013,8 @@ const GuardManagement = () => {
                                   <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0 status-pulse-success" title="Verified" />
                                 )} */}
                                 <span className={`w-2 h-2 rounded-full shrink-0 ${status === "valid" ? "bg-success status-pulse-success" :
-                                    status === "expiring" ? "bg-warning status-pulse-warning" :
-                                      "bg-destructive status-pulse-danger"
+                                  status === "expiring" ? "bg-warning status-pulse-warning" :
+                                    "bg-destructive status-pulse-danger"
                                   }`} />
                               </div>
                             </button>
@@ -1189,18 +1189,27 @@ const GuardManagement = () => {
               <>
                 {/* Header */}
                 <DialogHeader>
-                  <DialogTitle>Guard Schedule Overview</DialogTitle>
-                  <p className="text-xs text-muted-foreground mt-0.5">{guard.name}</p>
-                  {/* Summary chips */}
-                  <div className="flex items-center gap-2 mt-3 flex-wrap">
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
-                      <MapPin className="w-3 h-3" />
-                      {siteNames.length} Site{siteNames.length !== 1 ? "s" : ""}
-                    </span>
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-foreground text-xs font-semibold border border-border">
-                      <Calendar className="w-3 h-3" />
-                      {totalShifts} Active Schedule{totalShifts !== 1 ? "s" : ""}
-                    </span>
+                  <div className="flex items-start justify-between gap-4">
+                    {/* Left */}
+                    <div>
+                      <DialogTitle>Guard Schedule Overview</DialogTitle>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {guard.name}
+                      </p>
+                    </div>
+
+                    {/* Right */}
+                    <div className="flex items-center gap-2 flex-wrap justify-end pr-5">
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
+                        <MapPin className="w-3 h-3" />
+                        {siteNames.length} Site{siteNames.length !== 1 ? "s" : ""}
+                      </span>
+
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary text-foreground text-xs font-semibold border border-border">
+                        <Calendar className="w-3 h-3" />
+                        {totalShifts} Active Schedule{totalShifts !== 1 ? "s" : ""}
+                      </span>
+                    </div>
                   </div>
                 </DialogHeader>
 
