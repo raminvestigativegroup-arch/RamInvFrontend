@@ -74,7 +74,7 @@ const GuardPhotosDetail = () => {
   const formatEventTime = (timestamp: string) => {
     try {
       const d = new Date(timestamp);
-      return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      return d.toLocaleTimeString("en-US", { timeZone: "UTC", hour: "2-digit", minute: "2-digit", second: "2-digit" });
     } catch {
       return timestamp;
     }
@@ -82,8 +82,8 @@ const GuardPhotosDetail = () => {
 
   const formatLocalDate = (dateStr: string) => {
     try {
-      const d = new Date(dateStr + "T00:00:00");
-      return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+      const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00Z`);
+      return d.toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric", year: "numeric" });
     } catch {
       return dateStr;
     }

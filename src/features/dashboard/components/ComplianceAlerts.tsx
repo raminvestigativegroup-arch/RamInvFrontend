@@ -82,7 +82,7 @@ const ComplianceAlerts = () => {
       // Calculate status based on expiryDate if status is not already marked as expired
       let expiryStatus = statusStr;
       if (doc.expiryDate) {
-        const expDate = new Date(doc.expiryDate);
+        const expDate = new Date(doc.expiryDate + (doc.expiryDate.includes("T") ? "" : "T00:00:00Z"));
         const today = new Date();
         const diffMs = expDate.getTime() - today.getTime();
         const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));

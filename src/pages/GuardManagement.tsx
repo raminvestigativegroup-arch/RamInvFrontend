@@ -976,7 +976,7 @@ const GuardManagement = () => {
                       <div className="space-y-2">
                         {guardDocs.map((doc: any, idx: number) => {
                           let status = "expired";
-                          const expiry = doc.expiryDate ? new Date(doc.expiryDate) : null;
+                          const expiry = doc.expiryDate ? new Date(doc.expiryDate + (doc.expiryDate.includes("T") ? "" : "T00:00:00Z")) : null;
                           const today = new Date();
                           if (expiry) {
                             const diffTime = expiry.getTime() - today.getTime();

@@ -45,7 +45,17 @@ const Reports = () => {
     
     let content = `=========================================\n`;
     content += `${title.toUpperCase()}\n`;
-    content += `Generated on: ${new Date().toLocaleString()}\n`;
+    const formattedDate = new Date().toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+      timeZone: "UTC",
+    });
+    content += `Generated on: ${formattedDate} UTC\n`;
     content += `=========================================\n\n`;
 
     sections.forEach((s) => {

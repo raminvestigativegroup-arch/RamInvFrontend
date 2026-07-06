@@ -15,22 +15,25 @@ const months = [
 ];
 
 const ScheduleCalendarView = ({ entries, onSelectDate, selectedDate }: Props) => {
-  // Use today's date as reference for initial view and "Today" marker
+  // Use today's date in UTC as reference for initial view and "Today" marker
   const todayDate = new Date();
-  const [viewDate, setViewDate] = useState(new Date());
+  const [viewDate, setViewDate] = useState(() => {
+    const d = new Date();
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+  });
 
-  const currentMonth = viewDate.getMonth();
-  const currentYear = viewDate.getFullYear();
+  const currentMonth = viewDate.getUTCMonth();
+  const currentYear = viewDate.getUTCFullYear();
 
-  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDay = new Date(Date.UTC(currentYear, currentMonth, 1)).getUTCDay();
+  const daysInMonth = new Date(Date.UTC(currentYear, currentMonth + 1, 0)).getUTCDate();
 
   const handlePrevMonth = () => {
-    setViewDate(new Date(currentYear, currentMonth - 1, 1));
+    setViewDate(new Date(Date.UTC(currentYear, currentMonth - 1, 1)));
   };
 
   const handleNextMonth = () => {
-    setViewDate(new Date(currentYear, currentMonth + 1, 1));
+    setViewDate(new Date(Date.UTC(currentYear, currentMonth + 1, 1)));
   };
 
   const getDateStr = (day: number) =>
@@ -79,11 +82,11 @@ const ScheduleCalendarView = ({ entries, onSelectDate, selectedDate }: Props) =>
           const dateStr = getDateStr(day);
           const shifts = getShiftsForDay(day);
           
-          // Check if this cell is "today"
+          // Check if this cell is "today" in UTC
           const isToday = 
-            todayDate.getDate() === day && 
-            todayDate.getMonth() === currentMonth && 
-            todayDate.getFullYear() === currentYear;
+            todayDate.getUTCDate() === day && 
+            todayDate.getUTCMonth() === currentMonth && 
+            todayDate.getUTCFullYear() === currentYear;
             
           const isSelected = dateStr === selectedDate;
 

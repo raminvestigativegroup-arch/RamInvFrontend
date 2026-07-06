@@ -101,26 +101,20 @@ const HoursTracking = () => {
 
     const now = new Date();
     if (p === "this-week") {
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-      const monday = new Date(now.setDate(diff));
-      monday.setHours(0, 0, 0, 0);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
+      const day = now.getUTCDay();
+      const diff = now.getUTCDate() - day + (day === 0 ? -6 : 1); // Monday
+      const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), diff));
+      const sunday = new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 6));
       return {
         startDate: monday.toISOString().split("T")[0],
         endDate: sunday.toISOString().split("T")[0]
       };
     } else {
       // last-week
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1) - 7;
-      const monday = new Date(now.setDate(diff));
-      monday.setHours(0, 0, 0, 0);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
+      const day = now.getUTCDay();
+      const diff = now.getUTCDate() - day + (day === 0 ? -6 : 1) - 7;
+      const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), diff));
+      const sunday = new Date(Date.UTC(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate() + 6));
       return {
         startDate: monday.toISOString().split("T")[0],
         endDate: sunday.toISOString().split("T")[0]
