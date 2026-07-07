@@ -38,6 +38,7 @@ export const httpClient: AxiosInstance = axios.create({
  */
 httpClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    config.headers["X-Timezone-Offset"] = String(new Date().getTimezoneOffset());
     return config;
   },
   (error: AxiosError) => {

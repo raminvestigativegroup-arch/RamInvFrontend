@@ -20,92 +20,11 @@ const timeToMinutes = (timeStr: string): number => {
 };
 
 const convertUTCToLocal = (startDateStr: string, endDateStr: string, shiftStartStr: string, shiftEndStr: string) => {
-  try {
-    if (!startDateStr || !shiftStartStr) {
-      return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
-    }
-    const cleanStartStr = shiftStartStr.substring(0, 5);
-    const cleanEndStr = (shiftEndStr || shiftStartStr).substring(0, 5);
-
-    const startUTC = new Date(`${startDateStr}T${cleanStartStr}Z`);
-    if (isNaN(startUTC.getTime())) {
-      return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
-    }
-    const startMins = timeToMinutes(cleanStartStr);
-    let endMins = timeToMinutes(cleanEndStr);
-    if (endMins === startMins) {
-      endMins = startMins + 24 * 60;
-    } else if (endMins < startMins) {
-      endMins += 24 * 60;
-    }
-    const durationMins = endMins - startMins;
-
-    const endUTC = new Date(startUTC.getTime() + durationMins * 60 * 1000);
-
-    const localStartDate = `${startUTC.getFullYear()}-${String(startUTC.getMonth() + 1).padStart(2, "0")}-${String(startUTC.getDate()).padStart(2, "0")}`;
-    const localShiftStart = `${String(startUTC.getHours()).padStart(2, "0")}:${String(startUTC.getMinutes()).padStart(2, "0")}:00`;
-
-    const startDiffMs = new Date(localStartDate).getTime() - new Date(startDateStr).getTime();
-    const localEndDateObj = new Date(new Date(endDateStr || startDateStr).getTime() + startDiffMs);
-    const localEndDate = `${localEndDateObj.getFullYear()}-${String(localEndDateObj.getMonth() + 1).padStart(2, "0")}-${String(localEndDateObj.getDate()).padStart(2, "0")}`;
-
-    const localShiftEnd = `${String(endUTC.getHours()).padStart(2, "0")}:${String(endUTC.getMinutes()).padStart(2, "0")}:00`;
-
-    return {
-      startDate: localStartDate,
-      endDate: localEndDate,
-      shiftStart: localShiftStart,
-      shiftEnd: localShiftEnd
-    };
-  } catch {
-    return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
-  }
+  return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
 };
 
 const convertLocalToUTC = (startDateStr: string, endDateStr: string, shiftStartStr: string, shiftEndStr: string) => {
-  try {
-    if (!startDateStr || !shiftStartStr) {
-      return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
-    }
-    const cleanStartStr = shiftStartStr.substring(0, 5);
-    const cleanEndStr = (shiftEndStr || shiftStartStr).substring(0, 5);
-
-    const startLocal = new Date(`${startDateStr}T${cleanStartStr}`);
-    if (isNaN(startLocal.getTime())) {
-      return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
-    }
-    const startMins = timeToMinutes(cleanStartStr);
-    let endMins = timeToMinutes(cleanEndStr);
-    if (endMins === startMins) {
-      endMins = startMins + 24 * 60;
-    } else if (endMins < startMins) {
-      endMins += 24 * 60;
-    }
-    const durationMins = endMins - startMins;
-
-    const endLocal = new Date(startLocal.getTime() + durationMins * 60 * 1000);
-
-    const utcStartISO = startLocal.toISOString();
-    const utcEndISO = endLocal.toISOString();
-
-    const utcStartDate = utcStartISO.split('T')[0];
-    const utcShiftStart = `${utcStartISO.split('T')[1].substring(0, 5)}:00`;
-
-    const startDiffMs = new Date(utcStartDate).getTime() - new Date(startDateStr).getTime();
-    const utcEndDateObj = new Date(new Date(endDateStr || startDateStr).getTime() + startDiffMs);
-    const utcEndDate = utcEndDateObj.toISOString().split('T')[0];
-
-    const utcShiftEnd = `${utcEndISO.split('T')[1].substring(0, 5)}:00`;
-
-    return {
-      startDate: utcStartDate,
-      endDate: utcEndDate,
-      shiftStart: utcShiftStart,
-      shiftEnd: utcShiftEnd
-    };
-  } catch {
-    return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
-  }
+  return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
 };
 
 export const api = {
