@@ -13,6 +13,101 @@ import httpClient from "@/lib/httpClient";
  * API Endpoints Configuration
  * Organize all endpoints by feature/module
  */
+const timeToMinutes = (timeStr: string): number => {
+  if (!timeStr) return 0;
+  const [h, m] = timeStr.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+
+const convertUTCToLocal = (startDateStr: string, endDateStr: string, shiftStartStr: string, shiftEndStr: string) => {
+  try {
+    if (!startDateStr || !shiftStartStr) {
+      return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
+    }
+    const cleanStartStr = shiftStartStr.substring(0, 5);
+    const cleanEndStr = (shiftEndStr || shiftStartStr).substring(0, 5);
+
+    const startUTC = new Date(`${startDateStr}T${cleanStartStr}Z`);
+    if (isNaN(startUTC.getTime())) {
+      return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
+    }
+    const startMins = timeToMinutes(cleanStartStr);
+    let endMins = timeToMinutes(cleanEndStr);
+    if (endMins === startMins) {
+      endMins = startMins + 24 * 60;
+    } else if (endMins < startMins) {
+      endMins += 24 * 60;
+    }
+    const durationMins = endMins - startMins;
+
+    const endUTC = new Date(startUTC.getTime() + durationMins * 60 * 1000);
+
+    const localStartDate = `${startUTC.getFullYear()}-${String(startUTC.getMonth() + 1).padStart(2, "0")}-${String(startUTC.getDate()).padStart(2, "0")}`;
+    const localShiftStart = `${String(startUTC.getHours()).padStart(2, "0")}:${String(startUTC.getMinutes()).padStart(2, "0")}:00`;
+
+    const startDiffMs = new Date(localStartDate).getTime() - new Date(startDateStr).getTime();
+    const localEndDateObj = new Date(new Date(endDateStr || startDateStr).getTime() + startDiffMs);
+    const localEndDate = `${localEndDateObj.getFullYear()}-${String(localEndDateObj.getMonth() + 1).padStart(2, "0")}-${String(localEndDateObj.getDate()).padStart(2, "0")}`;
+
+    const localShiftEnd = `${String(endUTC.getHours()).padStart(2, "0")}:${String(endUTC.getMinutes()).padStart(2, "0")}:00`;
+
+    return {
+      startDate: localStartDate,
+      endDate: localEndDate,
+      shiftStart: localShiftStart,
+      shiftEnd: localShiftEnd
+    };
+  } catch {
+    return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
+  }
+};
+
+const convertLocalToUTC = (startDateStr: string, endDateStr: string, shiftStartStr: string, shiftEndStr: string) => {
+  try {
+    if (!startDateStr || !shiftStartStr) {
+      return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
+    }
+    const cleanStartStr = shiftStartStr.substring(0, 5);
+    const cleanEndStr = (shiftEndStr || shiftStartStr).substring(0, 5);
+
+    const startLocal = new Date(`${startDateStr}T${cleanStartStr}`);
+    if (isNaN(startLocal.getTime())) {
+      return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
+    }
+    const startMins = timeToMinutes(cleanStartStr);
+    let endMins = timeToMinutes(cleanEndStr);
+    if (endMins === startMins) {
+      endMins = startMins + 24 * 60;
+    } else if (endMins < startMins) {
+      endMins += 24 * 60;
+    }
+    const durationMins = endMins - startMins;
+
+    const endLocal = new Date(startLocal.getTime() + durationMins * 60 * 1000);
+
+    const utcStartISO = startLocal.toISOString();
+    const utcEndISO = endLocal.toISOString();
+
+    const utcStartDate = utcStartISO.split('T')[0];
+    const utcShiftStart = `${utcStartISO.split('T')[1].substring(0, 5)}:00`;
+
+    const startDiffMs = new Date(utcStartDate).getTime() - new Date(startDateStr).getTime();
+    const utcEndDateObj = new Date(new Date(endDateStr || startDateStr).getTime() + startDiffMs);
+    const utcEndDate = utcEndDateObj.toISOString().split('T')[0];
+
+    const utcShiftEnd = `${utcEndISO.split('T')[1].substring(0, 5)}:00`;
+
+    return {
+      startDate: utcStartDate,
+      endDate: utcEndDate,
+      shiftStart: utcShiftStart,
+      shiftEnd: utcShiftEnd
+    };
+  } catch {
+    return { startDate: startDateStr, endDate: endDateStr, shiftStart: shiftStartStr, shiftEnd: shiftEndStr };
+  }
+};
+
 export const api = {
   // Authentication
   auth: {
@@ -30,7 +125,22 @@ export const api = {
   guards: {
     list: (params?: any) => httpClient.get("/auth/guard", { params }),
     create: (data: any) => httpClient.post("/auth/guard", data),
-    getById: (id: string) => httpClient.get(`/guard/${id}`),
+    getById: async (id: string) => {
+      const res = await httpClient.get<any>(`/guard/${id}`);
+      if (res.data && res.data.data && Array.isArray(res.data.data.schedules)) {
+        res.data.data.schedules = res.data.data.schedules.map((item: any) => {
+          const local = convertUTCToLocal(item.startDate, item.endDate, item.shiftStart, item.shiftEnd);
+          return {
+            ...item,
+            startDate: local.startDate,
+            endDate: local.endDate,
+            shiftStart: local.shiftStart,
+            shiftEnd: local.shiftEnd,
+          };
+        });
+      }
+      return res;
+    },
     update: (id: string, data: any) => httpClient.patch(`/guard/${id}`, data),
     delete: (id: string) => httpClient.delete(`/guard/${id}`),
     search: (params?: any) => httpClient.get("/guard/search", { params }),
@@ -67,10 +177,66 @@ export const api = {
 
   // Scheduling
   scheduling: {
-    list: (params?: unknown) => httpClient.get("/schedule", { params }),
-    create: (data: any) => httpClient.post("/schedule", data),
-    getById: (id: string) => httpClient.get(`/schedule/${id}`),
-    update: (id: string, data: any) => httpClient.put(`/schedule/${id}`, data),
+    list: async (params?: unknown) => {
+      const res = await httpClient.get<any>("/schedule", { params });
+      if (res.data) {
+        const convertItem = (item: any) => {
+          const local = convertUTCToLocal(item.startDate, item.endDate, item.shiftStart, item.shiftEnd);
+          return {
+            ...item,
+            startDate: local.startDate,
+            endDate: local.endDate,
+            shiftStart: local.shiftStart,
+            shiftEnd: local.shiftEnd,
+          };
+        };
+        if (Array.isArray(res.data)) {
+          res.data = res.data.map(convertItem);
+        } else if (res.data.data && Array.isArray(res.data.data)) {
+          res.data.data = res.data.data.map(convertItem);
+        } else if (res.data.schedules && Array.isArray(res.data.schedules)) {
+          res.data.schedules = res.data.schedules.map(convertItem);
+        }
+      }
+      return res;
+    },
+    create: (data: any) => {
+      const utc = convertLocalToUTC(data.startDate, data.endDate, data.shiftStart, data.shiftEnd);
+      const payload = {
+        ...data,
+        startDate: utc.startDate,
+        endDate: utc.endDate,
+        shiftStart: utc.shiftStart,
+        shiftEnd: utc.shiftEnd,
+      };
+      return httpClient.post("/schedule", payload);
+    },
+    getById: async (id: string) => {
+      const res = await httpClient.get<any>(`/schedule/${id}`);
+      if (res.data && res.data.data) {
+        const item = res.data.data;
+        const local = convertUTCToLocal(item.startDate, item.endDate, item.shiftStart, item.shiftEnd);
+        res.data.data = {
+          ...item,
+          startDate: local.startDate,
+          endDate: local.endDate,
+          shiftStart: local.shiftStart,
+          shiftEnd: local.shiftEnd,
+        };
+      }
+      return res;
+    },
+    update: (id: string, data: any) => {
+      const utc = convertLocalToUTC(data.startDate, data.endDate, data.shiftStart, data.shiftEnd);
+      const payload = {
+        ...data,
+        startDate: utc.startDate,
+        endDate: utc.endDate,
+        shiftStart: utc.shiftStart,
+        shiftEnd: utc.shiftEnd,
+      };
+      return httpClient.put(`/schedule/${id}`, payload);
+    },
     delete: (id: string) => httpClient.delete(`/schedule/${id}`),
     getByMonth: (year: number, month: number) => httpClient.get(`/schedule/${year}/${month}`),
   },
@@ -107,12 +273,21 @@ export const api = {
 
   // Attendance details and clock-in images
   attendance: {
-    getDetails: (params: { guardId: string; date?: string; startDate?: string; endDate?: string }) =>
-      httpClient.get<{
-        details: any[]; success: boolean; guard: {
-          profilePhoto(profilePhoto: any): string; id: string; name: string; email: string
-        }; rangeStart: string; rangeEnd: string; results: any[]
-      }>("/attendance/details", { params }),
+    getDetails: async (params: { guardId: string; date?: string; startDate?: string; endDate?: string }) => {
+      const res = await httpClient.get<any>("/attendance/details", { params });
+      if (res.data && Array.isArray(res.data.details)) {
+        res.data.details = res.data.details.map((item: any) => {
+          const local = convertUTCToLocal(item.date, item.date, item.scheduledStart, item.scheduledEnd);
+          return {
+            ...item,
+            date: local.startDate,
+            scheduledStart: local.shiftStart,
+            scheduledEnd: local.shiftEnd,
+          };
+        });
+      }
+      return res;
+    },
   },
 
   // Reports
@@ -124,7 +299,6 @@ export const api = {
     getStats: () => httpClient.get("/reports/stats"),
     getPreview: (id: string) => httpClient.get(`/reports/${id}/preview`),
   },
-
 
   // Notifications
   notifications: {
@@ -160,7 +334,29 @@ export const api = {
   // Dashboard
   dashboard: {
     kpis: () => httpClient.get("/dashboard/kpis"),
-    guardStatus: () => httpClient.get("/dashboard/guard-status"),
+    guardStatus: async () => {
+      const res = await httpClient.get<any>("/dashboard/guard-status");
+      if (res.data && Array.isArray(res.data.data)) {
+        res.data.data = res.data.data.map((guard: any) => {
+          if (guard.nextShift && typeof guard.nextShift === 'string' && guard.nextShift.startsWith('Today ')) {
+            const timesStr = guard.nextShift.substring(6); // "HH:MM - HH:MM"
+            const [startStr, endStr] = timesStr.split(' - ');
+            if (startStr && endStr) {
+              const todayStr = new Date().toISOString().split('T')[0];
+              const local = convertUTCToLocal(todayStr, todayStr, startStr, endStr);
+              const localTodayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+              const prefix = local.startDate === localTodayStr ? 'Today' : 'Tomorrow';
+              return {
+                ...guard,
+                nextShift: `${prefix} ${local.shiftStart.substring(0, 5)} - ${local.shiftEnd.substring(0, 5)}`
+              };
+            }
+          }
+          return guard;
+        });
+      }
+      return res;
+    },
     recentIncidents: () => httpClient.get("/dashboard/recent-incidents"),
     complianceAlerts: () => httpClient.get("/dashboard/compliance-alerts"),
     hoursSummary: () => httpClient.get("/dashboard/hours-summary"),
