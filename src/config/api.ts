@@ -250,6 +250,15 @@ export const api = {
     update: (data: any) => httpClient.put("/settings", data),
   },
 
+  // Operation Management (Admins/Web Users)
+  operation: {
+    list: (params?: any) => httpClient.get("/operation/users", { params }),
+    create: (data: any) => httpClient.post("/operation/users", data),
+    getById: (id: string) => httpClient.get(`/operation/users/${id}`),
+    update: (id: string, data: any) => httpClient.put(`/operation/users/${id}`, data),
+    delete: (id: string) => httpClient.delete(`/operation/users/${id}`),
+  },
+
   // Dashboard
   dashboard: {
     kpis: () => httpClient.get("/dashboard/kpis"),

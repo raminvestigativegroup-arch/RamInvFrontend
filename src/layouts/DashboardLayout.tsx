@@ -3,7 +3,7 @@ import { NavLink, useNavigate, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, MapPin, FileWarning, Calendar,
   Clock, Bell, Settings, Shield, FileText, ChevronLeft,
-  ChevronRight, LogOut, ShieldCheck, UserCog, Camera,
+  ChevronRight, LogOut, ShieldCheck, UserCog, Camera, UserPlus,
 } from "lucide-react";
 import authService from "@/services/authService";
 import logoImg from "@/assets/logo.png";
@@ -23,6 +23,7 @@ const navItems = [
   { path: "/dashboard/guards", label: "Guard Management", icon: Users, permission: "guard" },
   { path: "/dashboard/guard-photos", label: "Uniform Compliance", icon: Camera, permission: "guard" },
   { path: "/dashboard/managers", label: "Manager Management", icon: UserCog, permission: "manager" },
+  { path: "/dashboard/operation-management", label: "Operation Management", icon: UserPlus, permission: "operation" },
   { path: "/dashboard/sites", label: "Site Management", icon: MapPin, permission: "site" },
   { path: "/dashboard/incidents", label: "Incidents", icon: FileWarning, permission: "incident" },
   { path: "/dashboard/scheduling", label: "Scheduling", icon: Calendar, permission: "scheduling" },
@@ -31,6 +32,7 @@ const navItems = [
   { path: "/dashboard/reports", label: "Reports & Export", icon: FileText, permission: "report" },
   { path: "/dashboard/notifications", label: "Notifications", icon: Bell, permission: "notification" },
   { path: "/dashboard/roles", label: "Roles & Permissions", icon: Shield, permission: "role" },
+
 ];
 
 const DashboardLayout = () => {
@@ -61,6 +63,7 @@ const DashboardLayout = () => {
 
   const isCompliant =
     user?.role === "admin" ||
+    user?.userType === "admin" ||
     (user?.securityLicenceUploaded && user?.stateIdUploaded);
 
   useEffect(() => {

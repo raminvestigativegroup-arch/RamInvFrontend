@@ -60,6 +60,16 @@ const PERMISSION_MODULES = [
     ]
   },
   {
+    title: "Operation Management",
+    baseKey: "operation",
+    actions: [
+      { action: "create", label: "Create Operation User", desc: "Register new operation user accounts" },
+      { action: "view", label: "View Operation Users", desc: "View lists and profiles of operation users" },
+      { action: "edit", label: "Edit Operation User", desc: "Update operation user profiles and settings" },
+      { action: "delete", label: "Delete Operation User", desc: "Remove operation users from the system" },
+    ]
+  },
+  {
     title: "Site Management",
     baseKey: "site",
     actions: [

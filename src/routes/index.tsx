@@ -16,6 +16,7 @@ import Notifications from "@/pages/Notifications";
 import Reports from "@/pages/Reports";
 import RolesPermissions from "@/pages/RolesPermissions";
 import SystemSettings from "@/pages/SystemSettings";
+import OperationManagement from "@/pages/OperationManagement";
 import NotFound from "@/pages/NotFound";
 
 export const AppRoutes = () => {
@@ -38,6 +39,7 @@ export const AppRoutes = () => {
         <Route path="notifications" element={<Notifications />} />
         <Route path="roles" element={<RolesPermissions />} />
         <Route path="settings" element={<SystemSettings />} />
+        <Route path="operation-management" element={<OperationManagement />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
