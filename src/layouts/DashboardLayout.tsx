@@ -18,21 +18,49 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const navItems = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard" },
-  { path: "/dashboard/guards", label: "Guard Management", icon: Users, permission: "guard" },
-  { path: "/dashboard/guard-photos", label: "Uniform Compliance", icon: Camera, permission: "guard" },
-  { path: "/dashboard/managers", label: "Manager Management", icon: UserCog, permission: "manager" },
-  { path: "/dashboard/operation-management", label: "Operation Management", icon: UserPlus, permission: "operation" },
-  { path: "/dashboard/sites", label: "Site Management", icon: MapPin, permission: "site" },
-  { path: "/dashboard/incidents", label: "Incidents", icon: FileWarning, permission: "incident" },
-  { path: "/dashboard/scheduling", label: "Scheduling", icon: Calendar, permission: "scheduling" },
-  { path: "/dashboard/compliance", label: "Compliance", icon: ShieldCheck, permission: "compliance" },
-  { path: "/dashboard/hours", label: "Hours & Attendance", icon: Clock, permission: "hour" },
-  { path: "/dashboard/reports", label: "Reports & Export", icon: FileText, permission: "report" },
-  { path: "/dashboard/notifications", label: "Notifications", icon: Bell, permission: "notification" },
-  { path: "/dashboard/roles", label: "Roles & Permissions", icon: Shield, permission: "role" },
-
+const navSections = [
+  {
+    id: "general",
+    items: [
+      { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard" }
+    ]
+  },
+  {
+    id: "people",
+    title: "PEOPLE",
+    items: [
+      { path: "/dashboard/guards", label: "Guard Management", icon: Users, permission: "guard" },
+      { path: "/dashboard/managers", label: "Manager Management", icon: UserCog, permission: "manager" },
+      { path: "/dashboard/operation-management", label: "Operation Management", icon: UserPlus, permission: "operation" },
+      { path: "/dashboard/roles", label: "Roles & Permissions", icon: Shield, permission: "role" }
+    ]
+  },
+  {
+    id: "operations",
+    title: "OPERATIONS",
+    items: [
+      { path: "/dashboard/sites", label: "Site Management", icon: MapPin, permission: "site" },
+      { path: "/dashboard/incidents", label: "Incidents", icon: FileWarning, permission: "incident" },
+      { path: "/dashboard/scheduling", label: "Scheduling", icon: Calendar, permission: "scheduling" },
+      { path: "/dashboard/hours", label: "Hours & Attendance", icon: Clock, permission: "hour" },
+      { path: "/dashboard/notifications", label: "Notifications", icon: Bell, permission: "notification" }
+    ]
+  },
+  {
+    id: "compliance",
+    title: "COMPLIANCE",
+    items: [
+      { path: "/dashboard/compliance", label: "Compliance & Documents", icon: ShieldCheck, permission: "compliance" },
+      { path: "/dashboard/guard-photos", label: "Uniform Compliance", icon: Camera, permission: "guard" }
+    ]
+  },
+  {
+    id: "insights",
+    title: "INSIGHTS",
+    items: [
+      { path: "/dashboard/reports", label: "Reports & Export", icon: FileText, permission: "report" }
+    ]
+  }
 ];
 
 const DashboardLayout = () => {
@@ -78,19 +106,26 @@ const DashboardLayout = () => {
 
   const permissions = user?.permissions || [];
 
-  const filteredNavItems = navItems.filter((item) => {
-    if (user?.role === "admin") return true;
+  const filteredNavSections = navSections.map((section) => {
+    const filteredItems = section.items.filter((item) => {
+      if (user?.role === "admin") return true;
 
-    // If not compliant, only show Compliance page
-    if (!isCompliant) {
-      return item.permission === "compliance";
-    }
+      // If not compliant, only show Compliance page
+      if (!isCompliant) {
+        return item.permission === "compliance";
+      }
 
-    return (
-      permissions.includes(item.permission) ||
-      permissions.includes(`view_${item.permission}`)
-    );
-  });
+      return (
+        permissions.includes(item.permission) ||
+        permissions.includes(`view_${item.permission}`)
+      );
+    });
+
+    return {
+      ...section,
+      items: filteredItems,
+    };
+  }).filter((section) => section.items.length > 0);
 
   const hasSettingsPermission =
     isCompliant && (
@@ -137,38 +172,43 @@ const DashboardLayout = () => {
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5">
-          {/* NAVIGATION label */}
-          {/* <div
-            className={`px-3 text-[10px] font-bold tracking-widest uppercase select-none mb-2 transition-all duration-300 overflow-hidden whitespace-nowrap ${collapsed ? "max-h-0 opacity-0 py-0" : "max-h-8 opacity-100 py-1"
-              }`}
-            style={{ color: "rgba(100, 116, 139, 0.6)" }}
-          >
-            Navigation
-          </div> */}
-
-          {filteredNavItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === "/dashboard"}
-              className={({ isActive }) =>
-                `flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5"
-                } ${isActive
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                }`
-              }
-              title={collapsed ? item.label : undefined}
-            >
-              <item.icon className="w-5 h-5 shrink-0" />
-              <span
-                className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0 w-0" : "max-w-[200px] opacity-100"
-                  }`}
-              >
-                {item.label}
-              </span>
-            </NavLink>
+        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-3">
+          {filteredNavSections.map((section) => (
+            <div key={section.id} className="space-y-1">
+              {section.title && !collapsed && (
+                <div className="px-3 pt-2 pb-0.5 text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-500 uppercase select-none">
+                  {section.title}
+                </div>
+              )}
+              {section.title && collapsed && (
+                <div className="my-2 border-t border-sidebar-border/50" />
+              )}
+              <div className="space-y-0.5 animate-in fade-in duration-200">
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.path === "/dashboard"}
+                    className={({ isActive }) =>
+                      `flex items-center rounded-lg text-sm font-medium transition-all duration-150 ${collapsed ? "justify-center px-0 w-10 h-10 mx-auto gap-0" : "gap-3 px-3 py-2.5"
+                      } ${isActive
+                        ? "bg-primary text-white shadow-sm"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      }`
+                    }
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <item.icon className="w-5 h-5 shrink-0" />
+                    <span
+                      className={`transition-all duration-300 ease-in-out whitespace-nowrap overflow-hidden ${collapsed ? "max-w-0 opacity-0 ml-0 w-0" : "max-w-[200px] opacity-100"
+                        }`}
+                    >
+                      {item.label}
+                    </span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
