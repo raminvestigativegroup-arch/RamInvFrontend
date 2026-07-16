@@ -4,7 +4,7 @@ import { api } from "@/config/api";
 import { useNavigate } from "react-router-dom";
 import { Eye, Sparkles, X, Camera, Download, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatUTCTime } from "@/lib/dateUtils";
+import { formatUTCTime, formatUTCDate } from "@/lib/dateUtils";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/common/UserAvatar";
 
@@ -63,13 +63,13 @@ const normalizeIncident = (inc: any, index: number): Incident => {
   if (data.time) {
     const d = new Date(data.time);
     if (!isNaN(d.getTime())) {
-      date = d.toISOString().split('T')[0];
+      date = formatUTCDate(d.toISOString());
       time = formatUTCTime(d.toISOString());
     }
   } else if (data.createdAt) {
     const d = new Date(data.createdAt);
     if (!isNaN(d.getTime())) {
-      date = d.toISOString().split('T')[0];
+      date = formatUTCDate(d.toISOString());
       time = formatUTCTime(d.toISOString());
     }
   }

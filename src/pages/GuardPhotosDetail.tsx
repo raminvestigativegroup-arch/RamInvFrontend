@@ -89,6 +89,16 @@ const GuardPhotosDetail = () => {
     }
   };
 
+  const formatHoursMinutes = (decimalHours: number): string => {
+    if (!decimalHours || decimalHours < 0) return '0h 0m';
+    const totalSeconds = Math.round(decimalHours * 3600);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Page Header */}
@@ -204,9 +214,9 @@ const GuardPhotosDetail = () => {
                     {day.totalWorkedHours !== undefined && (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-secondary/80 px-2 py-1 rounded-md">
                         <Clock className="w-3.5 h-3.5" />
-                        <span>Worked: {day.totalWorkedHours}h</span>
+                        <span>Worked: {formatHoursMinutes(day.totalWorkedHours)}</span>
                         {day.totalScheduledHours > 0 && (
-                          <span className="text-[10px] text-muted-foreground">/ Sch: {day.totalScheduledHours}h</span>
+                          <span className="text-[10px] text-muted-foreground">/ Sch: {formatHoursMinutes(day.totalScheduledHours)}</span>
                         )}
                       </span>
                     )}

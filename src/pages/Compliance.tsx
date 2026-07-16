@@ -31,6 +31,7 @@ import DateSelect from "@/components/common/DateSelect";
 import FormField from "@/components/common/FormField";
 import TableToolbar from "@/components/common/TableToolbar";
 import DataTable from "@/components/common/DataTable";
+import { formatDateOnly, formatUTCDate } from "@/lib/dateUtils";
 
 const normalizeImageUrl = (url?: string) => {
   if (!url) return undefined;
@@ -392,10 +393,10 @@ const Compliance = () => {
         personType: (doc.ownerType || "guard").toLowerCase() as "guard" | "manager",
         personPhoto: normalizeImageUrl(ownerPhoto),
         docType: String(doc.type || doc.name || "Document"),
-        expiryDate: String(doc.expiryDate || "N/A"),
+        expiryDate: doc.expiryDate ? formatDateOnly(doc.expiryDate) : 'N/A',
         status: doc.status || "valid",
         isApproved: Boolean(doc.isApproved),
-        uploadDate: String(doc.createdAt || ""),
+        uploadDate: doc.createdAt ? formatUTCDate(doc.createdAt) : '',
         docImage: normalizeImageUrl(doc.documentImage),
       };
     });

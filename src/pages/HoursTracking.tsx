@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import { UserAvatar } from "@/components/common/UserAvatar";
-import { formatUTCTime } from "@/lib/dateUtils";
+
 
 
 const HoursTracking = () => {
@@ -169,7 +169,18 @@ const HoursTracking = () => {
     return selectedSite;
   }, [processedSites, selectedSite]);
 
-  // Direct Completed/Scheduled Hours formater with requested color coding
+  // Convert decimal hours (float) to "Xh Ym" display string
+  const formatHoursMinutes = (decimalHours: number): string => {
+    if (!decimalHours || decimalHours < 0) return "0h 0m";
+    const totalSeconds = Math.round(decimalHours * 3600);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+  };
+
+  // Direct Completed/Scheduled Hours formatter with color coding
   const formatHoursText = (completed: number, scheduled: number) => {
     let colorClass = "text-slate-600 dark:text-slate-400"; // default if 0 completed
 
@@ -185,7 +196,7 @@ const HoursTracking = () => {
 
     return (
       <span className={`inline-flex items-center text-xs tracking-wide ${colorClass}`}>
-        {completed}/{scheduled} hours
+        {formatHoursMinutes(completed)} / {formatHoursMinutes(scheduled)}
       </span>
     );
   };
@@ -211,9 +222,9 @@ const HoursTracking = () => {
       s.name,
       s.client,
       s.manager,
-      `${s.totalScheduledHours}h`,
-      `${s.completedHours}h`,
-      `${s.remainingHours}h`,
+      formatHoursMinutes(s.totalScheduledHours),
+      formatHoursMinutes(s.completedHours),
+      formatHoursMinutes(s.remainingHours),
       `${s.progress}%`,
       s.totalGuardsAssigned,
       `${s.attendancePct}%`,
@@ -326,17 +337,17 @@ const HoursTracking = () => {
 
           <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-1 hover:border-border/80 transition-colors">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Scheduled Hours</span>
-            <p className="text-2xl font-bold text-foreground mt-1">{summary.totalScheduled}h</p>
+            <p className="text-2xl font-bold text-foreground mt-1">{formatHoursMinutes(summary.totalScheduled)}</p>
           </div>
 
           <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-1 hover:border-border/80 transition-colors">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Completed Hours</span>
-            <p className="text-2xl font-bold text-success mt-1">{summary.totalWorked}h</p>
+            <p className="text-2xl font-bold text-success mt-1">{formatHoursMinutes(summary.totalWorked)}</p>
           </div>
 
           <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-1 hover:border-border/80 transition-colors">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Remaining Hours</span>
-            <p className="text-2xl font-bold text-amber-500 mt-1">{summary.remainingHours}h</p>
+            <p className="text-2xl font-bold text-amber-500 mt-1">{formatHoursMinutes(summary.remainingHours)}</p>
           </div>
 
           <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-1 hover:border-border/80 transition-colors">
@@ -479,7 +490,7 @@ const HoursTracking = () => {
 
                               {/* Remaining hours */}
                               <td className="px-5 py-4 text-right font-semibold text-foreground">
-                                {site.remainingHours}h
+                                {formatHoursMinutes(site.remainingHours)}
                               </td>
 
                               {/* Attendance Rate */}
@@ -700,7 +711,7 @@ const HoursTracking = () => {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                           <Calendar className="w-3.5 h-3.5 text-muted-foreground" /> Scheduled
                         </span>
-                        <p className="text-xl font-extrabold text-foreground mt-2">{activeSelectedSite.totalScheduledHours}h</p>
+                        <p className="text-xl font-extrabold text-foreground mt-2">{formatHoursMinutes(activeSelectedSite.totalScheduledHours)}</p>
                       </div>
 
                       {/* Completed Card */}
@@ -709,7 +720,7 @@ const HoursTracking = () => {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-success" /> Completed
                         </span>
-                        <p className="text-xl font-extrabold text-success mt-2">{activeSelectedSite.completedHours}h</p>
+                        <p className="text-xl font-extrabold text-success mt-2">{formatHoursMinutes(activeSelectedSite.completedHours)}</p>
                       </div>
 
                       {/* Remaining Card */}
@@ -718,7 +729,7 @@ const HoursTracking = () => {
                         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                           <TrendingUp className="w-3.5 h-3.5 text-warning" /> Remaining
                         </span>
-                        <p className="text-xl font-extrabold text-warning mt-2">{activeSelectedSite.remainingHours}h</p>
+                        <p className="text-xl font-extrabold text-warning mt-2">{formatHoursMinutes(activeSelectedSite.remainingHours)}</p>
                       </div>
 
                       {/* Attendance Card */}
@@ -898,11 +909,22 @@ const HoursTracking = () => {
                               }
 
                               return filtered.map((guard: any, index: number) => {
-                                const formatTime = (ts: string | null) => formatUTCTime(ts);
+                                const formatTime = (ts: string | null | undefined): string => {
+                                  if (!ts) return '—';
+                                  try {
+                                    const d = new Date(ts);
+                                    if (isNaN(d.getTime())) return '—';
+                                    return d.toLocaleTimeString('en-US', {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: true,
+                                    });
+                                  } catch { return '—'; }
+                                };
                                 const clockInVal = formatTime(guard.clockIn);
                                 const clockOutVal = formatTime(guard.clockOut);
-                                const hasClockIn = guard.clockIn && clockInVal && clockInVal !== "-";
-                                const hasClockOut = guard.clockOut && clockOutVal && clockOutVal !== "-";
+                                const hasClockIn = !!guard.clockIn && clockInVal !== '—';
+                                const hasClockOut = !!guard.clockOut && clockOutVal !== '—';
 
                                 const statusDotClass =
                                   guard.status === 'Clocked In' ? 'bg-success animate-pulse' :
