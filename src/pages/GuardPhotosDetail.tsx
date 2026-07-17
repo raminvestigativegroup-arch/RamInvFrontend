@@ -2,13 +2,15 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
-import { ArrowLeft, Calendar, MapPin, Clock, Camera, Maximize2, Mail, ShieldAlert, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Clock, Camera, Maximize2, Mail, ShieldAlert, Loader2, CheckCircle2, AlertCircle, Download, Share2 } from "lucide-react";
 import StateMessage from "@/components/common/StateMessage";
 import DateSelect from "@/components/common/DateSelect";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
+import { jsPDF } from "jspdf";
 
 
 const resolveImageUrl = (pathOrData: string | undefined | null) => {
@@ -47,7 +49,229 @@ const GuardPhotosDetail = () => {
   const [selectedDate, setSelectedDate] = useState(formatDateStr(today));
 
   // Lightbox Zoom state
-  const [activePhoto, setActivePhoto] = useState<{ url: string; date: string; time: string; siteName: string; type: string } | null>(null);
+  const [activePhoto, setActivePhoto] = useState<{
+    url: string;
+    date: string;
+    time: string;
+    siteName: string;
+    type: string;
+    latitude?: number;
+    longitude?: number;
+  } | null>(null);
+
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const { toast } = useToast();
+
+  const createWatermarkedImage = (
+    imgUrl: string,
+    details: {
+      guardName: string;
+      siteName: string;
+      dateTime: string;
+      gps: string;
+    }
+  ): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(imgUrl);
+          return;
+        }
+
+        // Draw original image
+        ctx.drawImage(img, 0, 0);
+
+        // Configure overlay text style (scaling with image size)
+        const padding = Math.max(12, Math.round(canvas.width * 0.02));
+        const fontSize = Math.max(14, Math.round(canvas.width * 0.025));
+        ctx.font = `bold ${fontSize}px sans-serif`;
+
+        const lines = [
+          `Guard: ${details.guardName}`,
+          `Location: ${details.siteName}`,
+          `Date/Time: ${details.dateTime}`,
+          `GPS: ${details.gps}`,
+        ].filter(Boolean);
+
+        // Calculate maximum line width
+        let maxWidth = 0;
+        lines.forEach((line) => {
+          const width = ctx.measureText(line).width;
+          if (width > maxWidth) maxWidth = width;
+        });
+
+        const lineHeight = fontSize * 1.4;
+        const rectWidth = maxWidth + padding * 2;
+        const rectHeight = lineHeight * lines.length + padding * 2;
+
+        // Position: Bottom Right corner
+        const rectX = canvas.width - rectWidth - padding;
+        const rectY = canvas.height - rectHeight - padding;
+
+        // Draw translucent dark background with rounded corners fallback
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+        ctx.beginPath();
+        const radius = 8;
+        if (ctx.roundRect) {
+          ctx.roundRect(rectX, rectY, rectWidth, rectHeight, radius);
+        } else {
+          ctx.rect(rectX, rectY, rectWidth, rectHeight);
+        }
+        ctx.fill();
+
+        // Draw text lines
+        ctx.fillStyle = "#ffffff";
+        ctx.textBaseline = "top";
+        lines.forEach((line, index) => {
+          ctx.fillText(line, rectX + padding, rectY + padding + index * lineHeight);
+        });
+
+        resolve(canvas.toDataURL("image/jpeg", 0.95));
+      };
+      img.onerror = () => {
+        resolve(imgUrl);
+      };
+      img.src = imgUrl;
+    });
+  };
+
+  const downloadPDF = async () => {
+    if (!activePhoto) return;
+    try {
+      setIsDownloading(true);
+      const gpsText =
+        activePhoto.latitude !== undefined && activePhoto.longitude !== undefined
+          ? `${activePhoto.latitude.toFixed(6)}, ${activePhoto.longitude.toFixed(6)}`
+          : "N/A";
+
+      const stampedDataUrl = await createWatermarkedImage(activePhoto.url, {
+        guardName: guard?.name || "N/A",
+        siteName: activePhoto.siteName,
+        dateTime: `${activePhoto.date} ${activePhoto.time}`,
+        gps: gpsText,
+      });
+
+      const img = new window.Image();
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+
+        const orientation = width > height ? "l" : "p";
+        const pdf = new jsPDF({
+          orientation: orientation,
+          unit: "px",
+          format: [width, height],
+        });
+
+        pdf.addImage(stampedDataUrl, "JPEG", 0, 0, width, height);
+        pdf.save(
+          `Audit_${(guard?.name || "Guard").replace(/\s+/g, "_")}_${activePhoto.date.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`
+        );
+        setIsDownloading(false);
+        toast({
+          title: "PDF Downloaded",
+          description: "Audit photo PDF has been successfully downloaded.",
+        });
+      };
+      img.onerror = () => {
+        const pdf = new jsPDF();
+        pdf.text("Clock-In Photo Audit Details", 10, 10);
+        pdf.text(`Guard: ${guard?.name || "N/A"}`, 10, 20);
+        pdf.text(`Location: ${activePhoto.siteName}`, 10, 30);
+        pdf.text(`Date/Time: ${activePhoto.date} ${activePhoto.time}`, 10, 40);
+        pdf.text(`GPS: ${gpsText}`, 10, 50);
+        pdf.save(`Audit_${(guard?.name || "Guard").replace(/\s+/g, "_")}_details.pdf`);
+        setIsDownloading(false);
+        toast({
+          title: "PDF Downloaded",
+          description: "Audit photo details PDF downloaded (fallback text mode).",
+        });
+      };
+      img.src = stampedDataUrl;
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      setIsDownloading(false);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const sharePhoto = async () => {
+    if (!activePhoto) return;
+    try {
+      setIsSharing(true);
+      const gpsText =
+        activePhoto.latitude !== undefined && activePhoto.longitude !== undefined
+          ? `${activePhoto.latitude.toFixed(6)}, ${activePhoto.longitude.toFixed(6)}`
+          : "N/A";
+
+      const stampedDataUrl = await createWatermarkedImage(activePhoto.url, {
+        guardName: guard?.name || "N/A",
+        siteName: activePhoto.siteName,
+        dateTime: `${activePhoto.date} ${activePhoto.time}`,
+        gps: gpsText,
+      });
+
+      const res = await fetch(stampedDataUrl);
+      const blob = await res.blob();
+      const file = new File(
+        [blob],
+        `Audit_${(guard?.name || "Guard").replace(/\s+/g, "_")}.jpg`,
+        { type: "image/jpeg" }
+      );
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "Clock-In Photo Audit",
+          text: `Clock-In Photo Audit for ${guard?.name || "Guard"} at ${activePhoto.siteName} on ${activePhoto.date} ${activePhoto.time} (GPS: ${gpsText})`,
+        });
+        toast({
+          title: "Shared Successfully",
+          description: "Audit photo shared.",
+        });
+      } else {
+        const shareText = `Clock-In Photo Audit:\nGuard: ${guard?.name || "N/A"}\nLocation: ${activePhoto.siteName}\nDate/Time: ${activePhoto.date} ${activePhoto.time}\nGPS: ${gpsText}\nImage Link: ${activePhoto.url}`;
+        await navigator.clipboard.writeText(shareText);
+        toast({
+          title: "Details Copied",
+          description: "Audit details and image link copied to clipboard.",
+        });
+      }
+    } catch (err) {
+      console.error("Sharing failed:", err);
+      try {
+        const gpsText =
+          activePhoto.latitude !== undefined && activePhoto.longitude !== undefined
+            ? `${activePhoto.latitude.toFixed(6)}, ${activePhoto.longitude.toFixed(6)}`
+            : "N/A";
+        const shareText = `Clock-In Photo Audit:\nGuard: ${guard?.name || "N/A"}\nLocation: ${activePhoto.siteName}\nDate/Time: ${activePhoto.date} ${activePhoto.time}\nGPS: ${gpsText}\nImage Link: ${activePhoto.url}`;
+        await navigator.clipboard.writeText(shareText);
+        toast({
+          title: "Details Copied",
+          description: "Audit details and image link copied to clipboard.",
+        });
+      } catch (clipErr) {
+        toast({
+          title: "Error",
+          description: "Failed to share or copy details.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   // Query details
   const {
@@ -270,6 +494,8 @@ const GuardPhotosDetail = () => {
                                           time: formatEventTime(event.time),
                                           siteName: day.siteName,
                                           type: event.type,
+                                          latitude: event.latitude,
+                                          longitude: event.longitude,
                                         })
                                       }
                                       className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -324,7 +550,7 @@ const GuardPhotosDetail = () => {
             </DialogBody>
 
             {/* Modal Footer info */}
-            <div className="bg-slate-50 dark:bg-slate-900 px-5 py-4 border-t border-border/80 flex items-center justify-between text-xs text-muted-foreground shrink-0">
+            <div className="bg-slate-50 dark:bg-slate-900 px-5 py-4 border-t border-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-muted-foreground shrink-0">
               <div className="flex items-center gap-2">
                 <Avatar className="w-6 h-6 shrink-0">
                   <AvatarImage src={resolveImageUrl(guard?.profilePhoto)} alt={guard?.name} className="object-cover" />
@@ -332,7 +558,46 @@ const GuardPhotosDetail = () => {
                     {guard?.name ? getInitials(guard.name) : "G"}
                   </AvatarFallback>
                 </Avatar>
-                <span className="font-medium text-foreground">{guard?.name}</span>
+                <div className="flex flex-col">
+                  <span className="font-medium text-foreground leading-none">{guard?.name}</span>
+                  <span className="text-[10px] text-muted-foreground mt-1">
+                    {activePhoto.latitude !== undefined && activePhoto.longitude !== undefined
+                      ? `GPS: ${activePhoto.latitude.toFixed(6)}, ${activePhoto.longitude.toFixed(6)}`
+                      : "No GPS Coordinates"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Button
+                  onClick={downloadPDF}
+                  disabled={isDownloading}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 sm:flex-none gap-1.5 h-8 text-xs border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  {isDownloading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" />
+                  )}
+                  <span>Download PDF</span>
+                </Button>
+
+                <Button
+                  onClick={sharePhoto}
+                  disabled={isSharing}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 sm:flex-none gap-1.5 h-8 text-xs border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  {isSharing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Share2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>Share</span>
+                </Button>
               </div>
             </div>
           </DialogContent>
