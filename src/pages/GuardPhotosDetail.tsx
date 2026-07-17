@@ -264,7 +264,7 @@ const GuardPhotosDetail = () => {
     }
   };
 
-  const shareToPlatform = async (platform: "whatsapp" | "email" | "clipboard" | "native") => {
+  const shareToPlatform = async (platform: "whatsapp" | "email" | "native") => {
     if (!activePhoto) return;
     try {
       if (platform === "native") {
@@ -286,21 +286,11 @@ const GuardPhotosDetail = () => {
           description: "Details prepared for sharing.",
         });
       } else if (platform === "email") {
-        window.location.href = `mailto:?subject=${encodeURIComponent("Clock-In Photo Audit")}&body=${encodeURIComponent(plainText)}`;
+        window.open(`mailto:?subject=${encodeURIComponent("Clock-In Photo Audit")}&body=${encodeURIComponent(plainText)}`, "_blank");
         toast({
           title: "Email Client Opened",
           description: "Details prepared for email.",
         });
-      } else if (platform === "clipboard") {
-        const copied = await copyToClipboard(plainText);
-        if (copied) {
-          toast({
-            title: "Details Copied",
-            description: "Audit details and image link copied to clipboard.",
-          });
-        } else {
-          throw new Error("Clipboard copy failed");
-        }
       } else if (platform === "native") {
         const stampedDataUrl = await createWatermarkedImage(activePhoto.url, {
           guardName: guard?.name || "N/A",
@@ -665,13 +655,6 @@ const GuardPhotosDetail = () => {
                       <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
                       <span>Email</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => shareToPlatform("clipboard")}
-                      className="gap-2 cursor-pointer"
-                    >
-                      <Copy className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span>Copy Details & Link</span>
-                    </DropdownMenuItem>
                     {navigator.share && (
                       <DropdownMenuItem
                         onClick={() => shareToPlatform("native")}
@@ -696,7 +679,7 @@ const GuardPhotosDetail = () => {
             </DialogBody>
 
             {/* Modal Footer info */}
-            <div className="bg-slate-50 dark:bg-slate-900 px-5 py-4 border-t border-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-muted-foreground shrink-0">
+            <div className="bg-slate-50 dark:bg-slate-900 px-5 py-4 border-t border-border/80 flex items-center justify-between text-xs text-muted-foreground shrink-0">
               <div className="flex items-center gap-2">
                 <Avatar className="w-6 h-6 shrink-0">
                   <AvatarImage src={resolveImageUrl(guard?.profilePhoto)} alt={guard?.name} className="object-cover" />
@@ -712,73 +695,6 @@ const GuardPhotosDetail = () => {
                       : "No GPS Coordinates"}
                   </span>
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button
-                  onClick={downloadPDF}
-                  disabled={isDownloading}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 sm:flex-none gap-1.5 h-8 text-xs border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  {isDownloading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Download className="w-3.5 h-3.5" />
-                  )}
-                  <span>Download PDF</span>
-                </Button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      disabled={isSharing}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 sm:flex-none gap-1.5 h-8 text-xs border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    >
-                      {isSharing ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Share2 className="w-3.5 h-3.5" />
-                      )}
-                      <span>Share</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 bg-card border border-border">
-                    <DropdownMenuItem
-                      onClick={() => shareToPlatform("whatsapp")}
-                      className="gap-2 cursor-pointer"
-                    >
-                      <WhatsAppIcon />
-                      <span>WhatsApp</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => shareToPlatform("email")}
-                      className="gap-2 cursor-pointer"
-                    >
-                      <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span>Email</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => shareToPlatform("clipboard")}
-                      className="gap-2 cursor-pointer"
-                    >
-                      <Copy className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      <span>Copy Details & Link</span>
-                    </DropdownMenuItem>
-                    {navigator.share && (
-                      <DropdownMenuItem
-                        onClick={() => shareToPlatform("native")}
-                        className="gap-2 cursor-pointer"
-                      >
-                        <Share2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                        <span>Share Image File</span>
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
             </div>
           </DialogContent>
