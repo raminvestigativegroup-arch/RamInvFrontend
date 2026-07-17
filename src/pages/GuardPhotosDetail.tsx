@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
-import { ArrowLeft, Calendar, MapPin, Clock, Camera, Maximize2, Mail, ShieldAlert, Loader2, CheckCircle2, AlertCircle, Download, Share2 } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Clock, Camera, Maximize2, Mail, ShieldAlert, Loader2, CheckCircle2, AlertCircle, Download, Share2, Copy } from "lucide-react";
 import StateMessage from "@/components/common/StateMessage";
 import DateSelect from "@/components/common/DateSelect";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { jsPDF } from "jspdf";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 
 const resolveImageUrl = (pathOrData: string | undefined | null) => {
@@ -80,6 +86,12 @@ const copyToClipboard = async (text: string): Promise<boolean> => {
     return false;
   }
 };
+
+const WhatsAppIcon = () => (
+  <svg className="w-3.5 h-3.5 fill-current text-[#25D366] shrink-0" viewBox="0 0 24 24">
+    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.5-5.729-1.448L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.588 1.978 14.12 .951 11.5 .951c-5.442 0-9.866 4.372-9.87 9.802 0 1.714.452 3.393 1.31 4.877l-.994 3.633 3.711-.973zm11.236-4.57c-.101-.17-.373-.271-.78-.475-.407-.203-2.41-1.189-2.783-1.325-.373-.136-.644-.203-.915.203-.271.407-1.051 1.325-1.288 1.596-.237.271-.475.305-.881.102-.407-.203-1.72-.634-3.276-2.019-1.211-1.08-2.029-2.414-2.267-2.82-.237-.407-.025-.627.178-.83.182-.182.407-.475.61-.712.203-.237.271-.407.407-.678.136-.271.068-.509-.034-.712-.102-.203-.915-2.203-1.254-3.016-.33-.797-.665-.69-.915-.703-.238-.012-.51-.014-.78-.014-.271 0-.712.102-1.085.509-.373.407-1.424 1.39-1.424 3.39 0 2.000 1.458 3.932 1.661 4.203.203.271 2.87 4.382 6.953 6.143.971.42 1.73.67 2.32.859.975.31 1.86.267 2.56.163.78-.115 2.41-.983 2.749-1.932.339-.95.339-1.763.237-1.932z" />
+  </svg>
+);
 
 const GuardPhotosDetail = () => {
   const { guardId } = useParams<{ guardId: string }>();
@@ -252,50 +264,35 @@ const GuardPhotosDetail = () => {
     }
   };
 
-  const sharePhoto = async () => {
+  const shareToPlatform = async (platform: "whatsapp" | "email" | "clipboard" | "native") => {
     if (!activePhoto) return;
     try {
-      setIsSharing(true);
+      if (platform === "native") {
+        setIsSharing(true);
+      }
       const gpsText =
         activePhoto.latitude !== undefined && activePhoto.longitude !== undefined
           ? `${activePhoto.latitude.toFixed(6)}, ${activePhoto.longitude.toFixed(6)}`
           : "N/A";
 
-      const stampedDataUrl = await createWatermarkedImage(activePhoto.url, {
-        guardName: guard?.name || "N/A",
-        siteName: activePhoto.siteName,
-        dateTime: `${activePhoto.date} ${activePhoto.time}`,
-        gps: gpsText,
-      });
+      const plainText = `Clock-In Photo Audit\nGuard: ${guard?.name || "N/A"}\nLocation: ${activePhoto.siteName}\nDate/Time: ${activePhoto.date} ${activePhoto.time}\nGPS: ${gpsText}\nImage Link: ${activePhoto.url}`;
+      
+      const whatsappText = `*Clock-In Photo Audit*\n*Guard:* ${guard?.name || "N/A"}\n*Location:* ${activePhoto.siteName}\n*Date/Time:* ${activePhoto.date} ${activePhoto.time}\n*GPS:* ${gpsText}\n\n*View Image:* ${activePhoto.url}`;
 
-      let blob: Blob;
-      if (stampedDataUrl.startsWith("data:")) {
-        blob = dataURLtoBlob(stampedDataUrl);
-      } else {
-        const res = await fetch(stampedDataUrl);
-        blob = await res.blob();
-      }
-
-      const file = new File(
-        [blob],
-        `Audit_${(guard?.name || "Guard").replace(/\s+/g, "_")}.jpg`,
-        { type: "image/jpeg" }
-      );
-
-      const shareText = `Clock-In Photo Audit:\nGuard: ${guard?.name || "N/A"}\nLocation: ${activePhoto.siteName}\nDate/Time: ${activePhoto.date} ${activePhoto.time}\nGPS: ${gpsText}\nImage Link: ${activePhoto.url}`;
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: "Clock-In Photo Audit",
-          text: `Clock-In Photo Audit for ${guard?.name || "Guard"} at ${activePhoto.siteName} on ${activePhoto.date} ${activePhoto.time} (GPS: ${gpsText})`,
-        });
+      if (platform === "whatsapp") {
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappText)}`, "_blank");
         toast({
-          title: "Shared Successfully",
-          description: "Audit photo shared.",
+          title: "WhatsApp Opened",
+          description: "Details prepared for sharing.",
         });
-      } else {
-        const copied = await copyToClipboard(shareText);
+      } else if (platform === "email") {
+        window.location.href = `mailto:?subject=${encodeURIComponent("Clock-In Photo Audit")}&body=${encodeURIComponent(plainText)}`;
+        toast({
+          title: "Email Client Opened",
+          description: "Details prepared for email.",
+        });
+      } else if (platform === "clipboard") {
+        const copied = await copyToClipboard(plainText);
         if (copied) {
           toast({
             title: "Details Copied",
@@ -304,27 +301,49 @@ const GuardPhotosDetail = () => {
         } else {
           throw new Error("Clipboard copy failed");
         }
+      } else if (platform === "native") {
+        const stampedDataUrl = await createWatermarkedImage(activePhoto.url, {
+          guardName: guard?.name || "N/A",
+          siteName: activePhoto.siteName,
+          dateTime: `${activePhoto.date} ${activePhoto.time}`,
+          gps: gpsText,
+        });
+
+        let blob: Blob;
+        if (stampedDataUrl.startsWith("data:")) {
+          blob = dataURLtoBlob(stampedDataUrl);
+        } else {
+          const res = await fetch(stampedDataUrl);
+          blob = await res.blob();
+        }
+
+        const file = new File(
+          [blob],
+          `Audit_${(guard?.name || "Guard").replace(/\s+/g, "_")}.jpg`,
+          { type: "image/jpeg" }
+        );
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: "Clock-In Photo Audit",
+            text: `Clock-In Photo Audit for ${guard?.name || "Guard"} at ${activePhoto.siteName} on ${activePhoto.date} ${activePhoto.time} (GPS: ${gpsText})`,
+          });
+          toast({
+            title: "Shared Successfully",
+            description: "Audit photo shared.",
+          });
+        } else {
+          throw new Error("Native share not supported for this file.");
+        }
       }
     } catch (err) {
-      console.error("Sharing failed:", err);
-      const gpsText =
-        activePhoto.latitude !== undefined && activePhoto.longitude !== undefined
-          ? `${activePhoto.latitude.toFixed(6)}, ${activePhoto.longitude.toFixed(6)}`
-          : "N/A";
-      const shareText = `Clock-In Photo Audit:\nGuard: ${guard?.name || "N/A"}\nLocation: ${activePhoto.siteName}\nDate/Time: ${activePhoto.date} ${activePhoto.time}\nGPS: ${gpsText}\nImage Link: ${activePhoto.url}`;
-      const copied = await copyToClipboard(shareText);
-      if (copied) {
-        toast({
-          title: "Details Copied",
-          description: "Audit details and image link copied to clipboard.",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to share or copy details.",
-          variant: "destructive",
-        });
-      }
+      console.error(`Sharing via ${platform} failed:`, err);
+      toast({
+        title: "Error",
+        description: `Failed to share via ${platform}.`,
+        variant: "destructive",
+      });
     } finally {
       setIsSharing(false);
     }
@@ -587,14 +606,84 @@ const GuardPhotosDetail = () => {
         {activePhoto && (
           <DialogContent className="max-w-2xl bg-card border border-border/80 flex flex-col max-h-[90vh] p-0">
             {/* Modal Header */}
-            <DialogHeader className="px-5 py-4 border-b border-border/80">
-              <DialogTitle className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                <Camera className="w-4 h-4 text-primary" />
-                <span>Clock-In Photo Audit</span>
-              </DialogTitle>
-              <DialogDescription className="text-[11px] text-muted-foreground mt-0.5">
-                {activePhoto.siteName} • {activePhoto.date} at {activePhoto.time}
-              </DialogDescription>
+            <DialogHeader className="px-5 py-4 border-b border-border/80 flex flex-row items-center justify-between">
+              <div>
+                <DialogTitle className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                  <Camera className="w-4 h-4 text-primary" />
+                  <span>Clock-In Photo Audit</span>
+                </DialogTitle>
+                <DialogDescription className="text-[11px] text-muted-foreground mt-0.5">
+                  {activePhoto.siteName} • {activePhoto.date} at {activePhoto.time}
+                </DialogDescription>
+              </div>
+
+              {/* Header Actions */}
+              <div className="flex items-center gap-2 mr-8">
+                <Button
+                  onClick={downloadPDF}
+                  disabled={isDownloading}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  {isDownloading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5" />
+                  )}
+                  <span className="hidden sm:inline">Download PDF</span>
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      disabled={isSharing}
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs gap-1.5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      {isSharing ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Share2 className="w-3.5 h-3.5" />
+                      )}
+                      <span>Share</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-card border border-border">
+                    <DropdownMenuItem
+                      onClick={() => shareToPlatform("whatsapp")}
+                      className="gap-2 cursor-pointer"
+                    >
+                      <WhatsAppIcon />
+                      <span>WhatsApp</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => shareToPlatform("email")}
+                      className="gap-2 cursor-pointer"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span>Email</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => shareToPlatform("clipboard")}
+                      className="gap-2 cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>Copy Details & Link</span>
+                    </DropdownMenuItem>
+                    {navigator.share && (
+                      <DropdownMenuItem
+                        onClick={() => shareToPlatform("native")}
+                        className="gap-2 cursor-pointer"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span>Share Image File</span>
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </DialogHeader>
 
             {/* Modal Photo Body */}
@@ -641,20 +730,55 @@ const GuardPhotosDetail = () => {
                   <span>Download PDF</span>
                 </Button>
 
-                <Button
-                  onClick={sharePhoto}
-                  disabled={isSharing}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 sm:flex-none gap-1.5 h-8 text-xs border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  {isSharing ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Share2 className="w-3.5 h-3.5" />
-                  )}
-                  <span>Share</span>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      disabled={isSharing}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 sm:flex-none gap-1.5 h-8 text-xs border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      {isSharing ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Share2 className="w-3.5 h-3.5" />
+                      )}
+                      <span>Share</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-card border border-border">
+                    <DropdownMenuItem
+                      onClick={() => shareToPlatform("whatsapp")}
+                      className="gap-2 cursor-pointer"
+                    >
+                      <WhatsAppIcon />
+                      <span>WhatsApp</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => shareToPlatform("email")}
+                      className="gap-2 cursor-pointer"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span>Email</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => shareToPlatform("clipboard")}
+                      className="gap-2 cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      <span>Copy Details & Link</span>
+                    </DropdownMenuItem>
+                    {navigator.share && (
+                      <DropdownMenuItem
+                        onClick={() => shareToPlatform("native")}
+                        className="gap-2 cursor-pointer"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span>Share Image File</span>
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </DialogContent>
