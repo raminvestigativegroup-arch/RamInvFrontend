@@ -35,6 +35,52 @@ const getInitials = (name: string) =>
     .toUpperCase()
     .slice(0, 2);
 
+const dataURLtoBlob = (dataurl: string): Blob => {
+  const arr = dataurl.split(",");
+  const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+};
+
+const copyToClipboard = async (text: string): Promise<boolean> => {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fallback to execCommand
+    }
+  }
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.width = "2em";
+    textArea.style.height = "2em";
+    textArea.style.padding = "0";
+    textArea.style.border = "none";
+    textArea.style.outline = "none";
+    textArea.style.boxShadow = "none";
+    textArea.style.background = "transparent";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand("copy");
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error("Fallback clipboard copy failed:", err);
+    return false;
+  }
+};
+
 const GuardPhotosDetail = () => {
   const { guardId } = useParams<{ guardId: string }>();
   const navigate = useNavigate();
@@ -222,13 +268,21 @@ const GuardPhotosDetail = () => {
         gps: gpsText,
       });
 
-      const res = await fetch(stampedDataUrl);
-      const blob = await res.blob();
+      let blob: Blob;
+      if (stampedDataUrl.startsWith("data:")) {
+        blob = dataURLtoBlob(stampedDataUrl);
+      } else {
+        const res = await fetch(stampedDataUrl);
+        blob = await res.blob();
+      }
+
       const file = new File(
         [blob],
         `Audit_${(guard?.name || "Guard").replace(/\s+/g, "_")}.jpg`,
         { type: "image/jpeg" }
       );
+
+      const shareText = `Clock-In Photo Audit:\nGuard: ${guard?.name || "N/A"}\nLocation: ${activePhoto.siteName}\nDate/Time: ${activePhoto.date} ${activePhoto.time}\nGPS: ${gpsText}\nImage Link: ${activePhoto.url}`;
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
@@ -241,27 +295,30 @@ const GuardPhotosDetail = () => {
           description: "Audit photo shared.",
         });
       } else {
-        const shareText = `Clock-In Photo Audit:\nGuard: ${guard?.name || "N/A"}\nLocation: ${activePhoto.siteName}\nDate/Time: ${activePhoto.date} ${activePhoto.time}\nGPS: ${gpsText}\nImage Link: ${activePhoto.url}`;
-        await navigator.clipboard.writeText(shareText);
-        toast({
-          title: "Details Copied",
-          description: "Audit details and image link copied to clipboard.",
-        });
+        const copied = await copyToClipboard(shareText);
+        if (copied) {
+          toast({
+            title: "Details Copied",
+            description: "Audit details and image link copied to clipboard.",
+          });
+        } else {
+          throw new Error("Clipboard copy failed");
+        }
       }
     } catch (err) {
       console.error("Sharing failed:", err);
-      try {
-        const gpsText =
-          activePhoto.latitude !== undefined && activePhoto.longitude !== undefined
-            ? `${activePhoto.latitude.toFixed(6)}, ${activePhoto.longitude.toFixed(6)}`
-            : "N/A";
-        const shareText = `Clock-In Photo Audit:\nGuard: ${guard?.name || "N/A"}\nLocation: ${activePhoto.siteName}\nDate/Time: ${activePhoto.date} ${activePhoto.time}\nGPS: ${gpsText}\nImage Link: ${activePhoto.url}`;
-        await navigator.clipboard.writeText(shareText);
+      const gpsText =
+        activePhoto.latitude !== undefined && activePhoto.longitude !== undefined
+          ? `${activePhoto.latitude.toFixed(6)}, ${activePhoto.longitude.toFixed(6)}`
+          : "N/A";
+      const shareText = `Clock-In Photo Audit:\nGuard: ${guard?.name || "N/A"}\nLocation: ${activePhoto.siteName}\nDate/Time: ${activePhoto.date} ${activePhoto.time}\nGPS: ${gpsText}\nImage Link: ${activePhoto.url}`;
+      const copied = await copyToClipboard(shareText);
+      if (copied) {
         toast({
           title: "Details Copied",
           description: "Audit details and image link copied to clipboard.",
         });
-      } catch (clipErr) {
+      } else {
         toast({
           title: "Error",
           description: "Failed to share or copy details.",
