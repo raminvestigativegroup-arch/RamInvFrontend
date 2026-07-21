@@ -10,6 +10,8 @@ const mockNavItems = [
 const checkCompliance = (user: any) => {
   return (
     user?.role === "admin" ||
+    user?.userType === "admin" ||
+    user?.userType === "manager" ||
     (user?.securityLicenceUploaded && user?.stateIdUploaded)
   );
 };
@@ -38,6 +40,16 @@ describe("Compliance Gating Logic", () => {
       stateIdUploaded: false,
     };
     expect(checkCompliance(adminUser)).toBe(true);
+  });
+
+  it("should evaluate manager user as compliant regardless of document status", () => {
+    const managerUser = {
+      role: "Senior Manager",
+      userType: "manager",
+      securityLicenceUploaded: false,
+      stateIdUploaded: false,
+    };
+    expect(checkCompliance(managerUser)).toBe(true);
   });
 
   it("should evaluate guard without documents as non-compliant", () => {

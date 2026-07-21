@@ -92,6 +92,7 @@ const DashboardLayout = () => {
   const isCompliant =
     user?.role === "admin" ||
     user?.userType === "admin" ||
+    user?.userType === "manager" ||
     (user?.securityLicenceUploaded && user?.stateIdUploaded);
 
   useEffect(() => {
