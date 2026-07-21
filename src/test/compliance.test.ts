@@ -12,6 +12,7 @@ const checkCompliance = (user: any) => {
     user?.role === "admin" ||
     user?.userType === "admin" ||
     user?.userType === "manager" ||
+    user?.permissions?.some((p: string) => !["webLogin", "compliance", "view_compliance", "create_compliance", "edit_compliance", "delete_compliance"].includes(p)) ||
     (user?.securityLicenceUploaded && user?.stateIdUploaded)
   );
 };
@@ -84,8 +85,9 @@ describe("Compliance Gating Logic", () => {
       role: "guard",
       securityLicenceUploaded: false,
       stateIdUploaded: false,
+      permissions: ["webLogin", "compliance", "view_compliance"],
     };
-    const permissions = ["dashboard", "guard", "compliance"];
+    const permissions = ["webLogin", "compliance", "view_compliance"];
     const isCompliant = checkCompliance(guardUser);
 
     const filtered = filterNavItems(guardUser, permissions, isCompliant);
@@ -106,5 +108,16 @@ describe("Compliance Gating Logic", () => {
     expect(filtered).toHaveLength(2);
     expect(filtered.map(f => f.permission)).toContain("dashboard");
     expect(filtered.map(f => f.permission)).toContain("compliance");
+  });
+
+  it("should evaluate guard with other permissions (e.g. dashboard) as compliant regardless of document status", () => {
+    const guardUser = {
+      role: "Guard",
+      userType: "guard",
+      permissions: ["dashboard", "webLogin"],
+      securityLicenceUploaded: false,
+      stateIdUploaded: false,
+    };
+    expect(checkCompliance(guardUser)).toBe(true);
   });
 });

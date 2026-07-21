@@ -93,6 +93,7 @@ const DashboardLayout = () => {
     user?.role === "admin" ||
     user?.userType === "admin" ||
     user?.userType === "manager" ||
+    user?.permissions?.some((p: string) => !["webLogin", "compliance", "view_compliance", "create_compliance", "edit_compliance", "delete_compliance"].includes(p)) ||
     (user?.securityLicenceUploaded && user?.stateIdUploaded);
 
   useEffect(() => {
