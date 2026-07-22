@@ -27,7 +27,7 @@ interface Incident {
     name: string;
     profilePhoto: string | null;
   } | null;
-  priority: "high" | "medium" | "low";
+  priority: "high" | "medium" | "low" | "critical";
   status: "open" | "in-progress" | "resolved";
   date: string;
   time: string;
@@ -133,7 +133,7 @@ const normalizeIncident = (inc: any, index: number): Incident => {
     site: String(data.site || "Unknown Site"),
     guard: String(data.guardId || data.guard || "Unknown Guard"),
     guardDetails,
-    priority: (data.priority === "high" || data.priority === "medium" || data.priority === "low") ? data.priority : "medium",
+    priority: (data.priority === "high" || data.priority === "medium" || data.priority === "low" || data.priority === "critical") ? data.priority : "medium",
     // Use the 'solved' string field as the source of truth for status
     status: (data.solved === "resolved" || data.solved === "in-progress" || data.solved === "open")
       ? data.solved
@@ -415,7 +415,8 @@ const IncidentManagement = () => {
             { value: "all", label: "All Priorities" },
             { value: "high", label: "High" },
             { value: "medium", label: "Medium" },
-            { value: "low", label: "Low" }
+            { value: "low", label: "Low" },
+            { value: "critical", label: "Critical" }
           ]}
           placeholder="Priority"
           className="w-full sm:w-[130px]"

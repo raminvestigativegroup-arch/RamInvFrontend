@@ -538,7 +538,7 @@ const ManagerManagement = () => {
             className="w-full sm:w-[135px]"
           />
 
-          <SelectDropdown
+          {/* <SelectDropdown
             value={statusFilter}
             onChange={setStatusFilter}
             options={[
@@ -548,7 +548,7 @@ const ManagerManagement = () => {
             ]}
             placeholder="Account State"
             className="w-full sm:w-[135px]"
-          />
+          /> */}
 
           {(verifiedFilter !== "all" || statusFilter !== "all") && (
             <Button
@@ -774,10 +774,10 @@ const ManagerManagement = () => {
                         : "No sites assigned",
                   },
                 ]}
+                // footerLeft={
+                //   <Badge variant={mgr.status === "active" ? "success" : "inactive"} showDot>{mgr.status}</Badge>
+                // }
                 footerLeft={
-                  <Badge variant={mgr.status === "active" ? "success" : "inactive"} showDot>{mgr.status}</Badge>
-                }
-                footerMiddle={
                   <Badge variant={mgr.isVerified ? "success" : "inactive"} showDot>
                     {mgr.isVerified ? "Verified" : "Not Verified"}
                   </Badge>
