@@ -394,6 +394,7 @@ const Compliance = () => {
         personPhoto: normalizeImageUrl(ownerPhoto),
         docType: String(doc.type || doc.name || "Document"),
         expiryDate: doc.expiryDate ? formatDateOnly(doc.expiryDate) : 'N/A',
+        rawExpiryDate: doc.expiryDate ? String(doc.expiryDate) : '',
         status: doc.status || "valid",
         isApproved: Boolean(doc.isApproved),
         uploadDate: doc.createdAt ? formatUTCDate(doc.createdAt) : '',
@@ -898,7 +899,7 @@ const Compliance = () => {
                           const isCustom = !["State ID", "Security Licence", "Security License", "Pistol Licence", "Pistol License"].includes(selectedDoc.docType);
                           setEditDocType(isCustom ? "Other" : selectedDoc.docType);
                           setEditCustomDocType(isCustom ? selectedDoc.docType : "");
-                          setEditExpiryDate(selectedDoc.expiryDate || "");
+                          setEditExpiryDate(selectedDoc.rawExpiryDate || "");
                           setIsEditOpen(true);
                         }}
                         variant="secondary"

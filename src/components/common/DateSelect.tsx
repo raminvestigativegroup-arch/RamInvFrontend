@@ -22,7 +22,12 @@ const DateSelect: React.FC<DateSelectProps> = ({
   disabled = false,
   isFilter = false,
 }) => {
-  const selectedDate = value ? parseISO(value) : undefined;
+  const selectedDate = (() => {
+    if (!value) return undefined;
+    const date = parseISO(value);
+    return isNaN(date.getTime()) ? undefined : date;
+  })();
+
 
   const handleSelect = (date: Date | undefined) => {
     if (date) {

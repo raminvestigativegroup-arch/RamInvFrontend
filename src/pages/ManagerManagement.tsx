@@ -73,7 +73,12 @@ const normalizeManager = (manager: any, index: number): Manager => {
     lastName,
     email: String(manager.email || ""),
     phoneNumber: String(manager.phoneNumber || manager.mobile || ""),
-    role: String(manager.role || "Site Manager"),
+    role: typeof manager.role === "object" && manager.role?.name
+      ? String(manager.role.name)
+      : typeof manager.role === "string"
+        ? manager.role
+        : "Site Manager",
+
     sites: Array.isArray(manager.sites)
       ? manager.sites.map(String)
       : manager.site
@@ -466,7 +471,7 @@ const ManagerManagement = () => {
       lastName: mgr.lastName || "",
       email: mgr.email,
       phoneNumber: mgr.phoneNumber,
-      roleId: mgr.role === "Site Manager" ? "1" : mgr.role === "Regional Manager" ? "2" : "", // Fallback
+      roleId: mgr.roleId || rolesList.find((r: any) => r.name.toLowerCase() === mgr.role.toLowerCase())?.id || "",
       selectedSites: mgr.sites,
       status: mgr.status as "active" | "inactive",
       licenseExpiry: mgr.licenseExpiry,
