@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, UserCheck, Search, Mail, Phone, Calendar, Clock, CalendarClockIcon, Check } from "lucide-react";
@@ -81,6 +81,72 @@ const normalizeManager = (manager: any): any => ({
 });
 
 const SiteManagement = () => {
+  const [suggestions, setSuggestions] = useState<{ description: string; placeId: string }[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Close suggestions on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".autocomplete-container")) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
+
+  // Fetch suggestions when address changes
+  const fetchSuggestions = async (val: string) => {
+    if (val.trim().length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    setLoadingSuggestions(true);
+    try {
+      const response = await api.sites.autocomplete(val);
+      if (response.data?.success && Array.isArray(response.data?.data)) {
+        setSuggestions(response.data.data);
+        setShowSuggestions(response.data.data.length > 0);
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } catch (err) {
+      console.error("Error loading address suggestions:", err);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const handleSelectSuggestion = async (suggestion: { description: string; placeId: string }) => {
+    setForm(f => ({ ...f, address: suggestion.description }));
+    setSuggestions([]);
+    setShowSuggestions(false);
+
+    try {
+      const response = await api.sites.placeDetails(suggestion.placeId);
+      if (response.data?.success && response.data?.data) {
+        const { latitude, longitude } = response.data.data;
+        setForm(f => ({
+          ...f,
+          address: suggestion.description,
+          lat: String(latitude ?? ""),
+          lng: String(longitude ?? ""),
+        }));
+      }
+    } catch (err) {
+      console.error("Error fetching place details:", err);
+    }
+  };
+
+
+
+
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
   const permissions = user?.permissions || [];
@@ -476,17 +542,46 @@ const SiteManagement = () => {
           />
         </FormField>
         <FormField label="Address" required error={errors.address}>
-          <input
-            value={form.address}
-            onChange={e => {
-              setForm(f => ({ ...f, address: e.target.value }));
-              if (errors.address) setErrors(prev => ({ ...prev, address: undefined }));
-            }}
-            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${errors.address ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
-              }`}
-            placeholder="e.g. 100 Park Ave, New York, NY"
-          />
+          <div className="autocomplete-container relative">
+            <input
+              value={form.address}
+              onChange={e => {
+                const val = e.target.value;
+                setForm(f => ({ ...f, address: val }));
+                if (errors.address) setErrors(prev => ({ ...prev, address: undefined }));
+                fetchSuggestions(val);
+              }}
+              onFocus={() => {
+                if (suggestions.length > 0) {
+                  setShowSuggestions(true);
+                }
+              }}
+              className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed ${errors.address ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+                }`}
+              placeholder="e.g. 100 Park Ave, New York, NY"
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-[99999] w-full mt-1 bg-card border border-border rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                {suggestions.map((suggestion, idx) => (
+                  <div
+                    key={suggestion.placeId || idx}
+                    onClick={() => handleSelectSuggestion(suggestion)}
+                    className="px-4 py-2.5 text-sm text-foreground hover:bg-accent/80 hover:shadow-inner cursor-pointer border-b border-border/40 last:border-b-0 flex items-center gap-2 transition-colors"
+                  >
+                    <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span>{suggestion.description}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {loadingSuggestions && (
+              <div className="absolute right-3 top-2.5 text-xs text-muted-foreground animate-pulse">
+                Loading...
+              </div>
+            )}
+          </div>
         </FormField>
+
         <FormField label="Assigned Managers" error={errors.managers}>
           <div
             onClick={() => setManagerSelectOpen(true)}

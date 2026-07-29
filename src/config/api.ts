@@ -82,6 +82,8 @@ export const api = {
     update: (id: string, data: any) => httpClient.patch(`/site/${id}`, data),
     delete: (id: string) => httpClient.delete(`/site/${id}`),
     geocode: (address: string) => httpClient.get("/site/geocode", { params: { address } }),
+    autocomplete: (input: string) => httpClient.get("/site/autocomplete", { params: { input } }),
+    placeDetails: (placeId: string) => httpClient.get("/site/place-details", { params: { placeId } }),
   },
 
   // Incidents Management
