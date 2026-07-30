@@ -645,7 +645,7 @@ const IncidentManagement = () => {
                     </div>
                   )}
                   <div className="pt-4 border-t border-border flex gap-3 mt-auto">
-                    {!selectedIncident.isRefinedByAdmin && (
+                    {isAdmin && !selectedIncident.isRefinedByAdmin && (
                       <Button onClick={() => setAiIncidentId(selectedIncident.id)} size="sm">
                         <Sparkles className="w-4 h-4" />AI Summary
                       </Button>
