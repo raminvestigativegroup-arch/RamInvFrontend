@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { formatUTCTime, formatUTCDate } from "@/lib/dateUtils";
+import { downloadIncidentReportPDF } from "@/lib/incidentPdfGenerator";
 interface Incident {
   id: string;
   title: string;
@@ -34,6 +35,8 @@ interface Incident {
   description: string;
   hasPhotos?: boolean;
   images?: string[];
+  pdfUrl?: string | null;
+  isRefinedByAdmin?: boolean;
 }
 
 const resolveImageUrl = (pathOrData: string | undefined | null) => {
@@ -143,6 +146,8 @@ const normalizeIncident = (inc: any, index: number): Incident => {
     description: String(data.description || "No description provided."),
     hasPhotos,
     images: finalImages,
+    pdfUrl: data.pdfUrl || null,
+    isRefinedByAdmin: Boolean(data.isRefinedByAdmin),
   };
 };
 
@@ -187,6 +192,7 @@ const IncidentManagement = () => {
   const [aiIncidentId, setAiIncidentId] = useState<string | null>(null);
   const [aiActiveTab, setAiActiveTab] = useState<"refined" | "original">("refined");
   const [deletingIncident, setDeletingIncident] = useState<Incident | null>(null);
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -563,6 +569,12 @@ const IncidentManagement = () => {
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className={`priority-${selectedIncident.priority}`}>{selectedIncident.priority.toUpperCase()}</span>
+                    {selectedIncident.pdfUrl && (
+                      <div className="flex items-center gap-1.5 text-xs font-semibold py-1 px-2.5 rounded-full bg-primary/10 text-primary">
+                        <Sparkles className="w-3 h-3 text-primary animate-pulse" />
+                        Refined by {selectedIncident.isRefinedByAdmin ? 'Admin' : 'Manager'}
+                      </div>
+                    )}
                     <div className="relative w-32">
                       <SelectDropdown
                         value={selectedIncident.status}
@@ -633,11 +645,40 @@ const IncidentManagement = () => {
                     </div>
                   )}
                   <div className="pt-4 border-t border-border flex gap-3 mt-auto">
-                    <Button onClick={() => setAiIncidentId(selectedIncident.id)} size="sm">
-                      <Sparkles className="w-4 h-4" />AI Summary
-                    </Button>
-                    <Button variant="secondary" size="sm">
-                      <Download className="w-4 h-4" />Export PDF
+                    {!selectedIncident.isRefinedByAdmin && (
+                      <Button onClick={() => setAiIncidentId(selectedIncident.id)} size="sm">
+                        <Sparkles className="w-4 h-4" />AI Summary
+                      </Button>
+                    )}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={async () => {
+                        if (selectedIncident?.pdfUrl) {
+                          window.open(selectedIncident.pdfUrl, '_blank');
+                        } else {
+                          setIsPdfGenerating(true);
+                          try {
+                            await downloadIncidentReportPDF(selectedIncident.description, selectedIncident.title);
+                          } catch (err) {
+                            toast({
+                              title: "PDF Error",
+                              description: "Failed to generate PDF. Please try again.",
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setIsPdfGenerating(false);
+                          }
+                        }
+                      }}
+                      disabled={isPdfGenerating}
+                    >
+                      {isPdfGenerating ? (
+                        <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full inline-block" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
+                      Export PDF
                     </Button>
                   </div>
                 </div>
@@ -710,6 +751,37 @@ const IncidentManagement = () => {
           )}
           {aiSelected && aiActiveTab === "refined" && refinedData?.refined && !isRefining && !isRefineError && (
             <DialogFooter>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={isPdfGenerating}
+                onClick={async () => {
+                  setIsPdfGenerating(true);
+                  try {
+                    if (refinedData?.pdfUrl) {
+                      window.open(refinedData.pdfUrl, '_blank');
+                    } else {
+                      await downloadIncidentReportPDF(refinedData.refined, aiSelected.title);
+                    }
+                  } catch (err) {
+                    toast({
+                      title: "PDF Error",
+                      description: "Failed to generate PDF. Please try again.",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setIsPdfGenerating(false);
+                  }
+                }}
+                className="gap-2"
+              >
+                {isPdfGenerating ? (
+                  <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full inline-block" />
+                ) : (
+                  <Download className="w-4 h-4" />
+                )}
+                Download PDF
+              </Button>
               <Button
                 onClick={() =>
                   applyRefinedDescriptionMutation.mutate({
