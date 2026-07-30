@@ -668,7 +668,7 @@ const IncidentManagement = () => {
               </div>
 
               {isRefining ? (
-                <StateMessage type="loading" message="Gemini AI is refining raw notes..." className="py-6" />
+                <StateMessage type="loading" message="OpenAI GPT is refining your report..." className="py-6" />
               ) : isRefineError ? (
                 <div className="bg-destructive/10 text-destructive p-4 rounded-lg text-sm flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />
