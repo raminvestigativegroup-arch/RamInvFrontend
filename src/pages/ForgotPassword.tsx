@@ -95,7 +95,7 @@ const ForgotPassword = () => {
         title: "Password Reset Successful",
         description: "You can now log in with your new password.",
       });
-      navigate("/");
+      navigate("/login");
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Failed to reset password. Please check your OTP.";
       setErrors(prev => ({ ...prev, form: message }));
@@ -119,7 +119,7 @@ const ForgotPassword = () => {
         {/* Card */}
         <div className="glass-panel rounded-2xl p-8 shadow-xl">
           <div className="flex items-center gap-2 mb-6">
-            <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/login" className="text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <h2 className="text-xl font-semibold text-foreground">

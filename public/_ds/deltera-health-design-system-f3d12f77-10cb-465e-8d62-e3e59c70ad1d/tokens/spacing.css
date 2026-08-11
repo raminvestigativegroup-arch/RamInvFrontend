@@ -1,0 +1,62 @@
+/* ============================================================
+   Deltera Health — Spacing, radius, shadow & border tokens
+   The styleguide defines a radius/spacing family of
+   16 · 24 · 32 · 40 · 48 · 56 · 64 · 72.  Cards are generously
+   rounded with thin warm hairlines and soft, low shadows.
+   ============================================================ */
+
+:root {
+  /* ---- Spacing (4px base) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- Radius scale (from styleguide) ---- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;    /* default card */
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-pill: 999px; /* buttons, badges, tags, chips */
+
+  /* Component radii */
+  --radius-button: 999px;   /* pill buttons */
+  --radius-input: 12px;
+  --radius-card: 16px;
+
+  /* ---- Borders ---- */
+  --border-width: 1px;
+  --border-hairline: 1px solid var(--line-1);
+  --border-warm-line: 1px solid var(--line-2);
+
+  /* Icons: 1px stroke per styleguide */
+  --icon-stroke: 1.75;
+  --icon-size: 20px;
+
+  /* ---- Shadows (soft, cool, low-spread) ---- */
+  --shadow-xs: 0 1px 2px rgba(7, 9, 20, 0.04);
+  --shadow-sm: 0 1px 3px rgba(7, 9, 20, 0.06), 0 1px 2px rgba(7, 9, 20, 0.04);
+  --shadow-md: 0 4px 16px rgba(7, 9, 20, 0.06);
+  --shadow-lg: 0 12px 32px rgba(7, 9, 20, 0.10);
+  --shadow-card: 0 1px 2px rgba(7, 9, 20, 0.04), 0 6px 20px rgba(7, 9, 20, 0.05);
+  --shadow-brand: 0 8px 24px rgba(134, 84, 246, 0.32); /* purple lift on CTAs / FAB */
+
+  /* ---- Motion ---- */
+  --ease-standard: cubic-bezier(0.2, 0, 0.1, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
+
+  /* ---- Layout ---- */
+  --sidebar-width: 264px;
+  --topbar-height: 76px;
+  --content-max: 1440px;
+}

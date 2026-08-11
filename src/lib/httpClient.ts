@@ -103,7 +103,7 @@ httpClient.interceptors.response.use(
         console.error("Refresh token expired or invalid");
         localStorage.removeItem("user");
         localStorage.removeItem("securepro_auth");
-        window.location.href = "/";
+        window.location.href = "/login";
         return Promise.reject(error);
       }
 
@@ -143,7 +143,7 @@ httpClient.interceptors.response.use(
             // Refresh failed, redirect to login or clear auth state
             localStorage.removeItem("user");
             localStorage.removeItem("securepro_auth");
-            window.location.href = "/"; // The correct login route in this app
+            window.location.href = "/login"; // The correct login route in this app
             reject(refreshError);
             isRefreshing = false;
           });

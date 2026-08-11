@@ -98,7 +98,7 @@ const DashboardLayout = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate("/", { replace: true });
+      navigate("/login", { replace: true });
       return;
     }
     if (user && !isCompliant && pathname !== "/dashboard/compliance") {
@@ -139,7 +139,7 @@ const DashboardLayout = () => {
   const handleLogout = async () => {
     await authService.logout();
     localStorage.removeItem("securepro_auth");
-    navigate("/");
+    navigate("/login");
   };
 
   return (

@@ -1,0 +1,8 @@
+/* Deltera Health — Webfonts
+   Primary (display / headings): Outfit  (Google Fonts)
+   Secondary (body / UI):        Switzer (Fontshare)
+   Both are loaded from CDN. For an offline/production bundle, self-host the
+   .woff2 files and replace these @imports with local @font-face rules. */
+
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap");
+@import url("https://api.fontshare.com/v2/css?f[]=switzer@300,400,500,600,700&display=swap");

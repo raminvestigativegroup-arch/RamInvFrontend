@@ -1,0 +1,79 @@
+/* ============================================================
+   Deltera Health — Color tokens
+   Extracted from the Deltera Health Figma "Web Style Guide".
+   Brand expresses "emergence through continuity": a purple
+   identity that ranges across a single tonal family (light →
+   vibrant → deep), on near-white and rich-blue-black grounds.
+   ============================================================ */
+
+:root {
+  /* ---- Brand purple scale (core identity) ---- */
+  --purple-1: rgb(79, 32, 198);    /* #4F20C6  "Rich Blue" — deepest */
+  --purple-2: rgb(102, 66, 211);   /* #6642D3 */
+  --purple-3: rgb(134, 84, 246);   /* #8654F6  primary accent */
+  --purple-4: rgb(188, 154, 248);  /* #BC9AF8  light tint */
+  --purple-deep: rgb(58, 11, 188); /* #3A0BBC  gradient start */
+
+  /* purple-4 alphas (tints used for hovers, fills, rings) */
+  --purple-4-10: rgba(188, 154, 248, 0.10);
+  --purple-4-20: rgba(188, 154, 248, 0.20);
+  --purple-4-30: rgba(188, 154, 248, 0.30);
+  --purple-4-50: rgba(188, 154, 248, 0.50);
+  --purple-3-08: rgba(134, 84, 246, 0.08);
+  --purple-3-12: rgba(134, 84, 246, 0.12);
+
+  /* Signature gradient — used on the mark, primary CTAs (active), hero fields */
+  --gradient-brand: linear-gradient(135deg, #3A0BBC 0%, #8654F6 100%);
+  --gradient-brand-soft: linear-gradient(135deg, #6642D3 0%, #BC9AF8 100%);
+
+  /* ---- Neutrals ---- */
+  --blue-grey: rgb(7, 9, 20);      /* #070914  near-black ground (dark surfaces) */
+  --black-1: rgb(0, 0, 0);
+  --black-2: rgb(17, 17, 17);      /* #111111  primary text */
+  --black-3: rgb(40, 40, 40);
+  --black-4: rgb(63, 63, 63);      /* #3F3F3F  secondary text */
+  --grey-1: rgb(113, 113, 130);    /* #717182  muted / placeholder-ish */
+  --grey-2: rgb(127, 127, 127);    /* #7F7F7F  placeholder */
+  --grey-3: rgb(173, 173, 173);
+  --line-1: rgb(229, 231, 235);    /* #E5E7EB  hairline divider */
+  --line-2: rgb(216, 216, 212);    /* #D8D8D4  warm border */
+  --milk-white: rgb(255, 255, 245);/* #FFFFF5  brand off-white */
+  --white-2: rgb(239, 239, 232);   /* #EFEFE8  warm panel fill */
+  --white: rgb(255, 255, 255);
+  --background: rgb(253, 253, 254); /* #FDFDFE app background */
+
+  /* ---- Semantic status (paired main + soft bg) ---- */
+  --success: rgb(1, 102, 48);      /* #016630 */
+  --success-bg: rgb(220, 252, 231);/* #DCFCE7 */
+  --warning: rgb(157, 102, 0);     /* #9D6600 */
+  --warning-bg: rgb(255, 240, 223);/* #FFF0DF */
+  --orange: rgb(230, 100, 49);     /* #E66431 in-progress / attention */
+  --orange-bg: rgb(255, 237, 212); /* #FFEDD4 */
+  --danger: rgb(231, 0, 11);       /* #E7000B */
+  --danger-bg: rgb(245, 232, 232); /* #F5E8E8 */
+  --info: rgb(27, 173, 248);       /* #1BADF8 calendar / accent blue */
+  --info-bg: rgba(27, 173, 248, 0.18);
+
+  /* ---- Semantic aliases (use these in components) ---- */
+  --brand: var(--purple-3);
+  --brand-strong: var(--purple-1);
+  --brand-tint: var(--purple-3-12);
+
+  --text-primary: var(--black-2);
+  --text-secondary: var(--black-4);
+  --text-muted: var(--grey-1);
+  --text-placeholder: var(--grey-2);
+  --text-on-brand: var(--white);
+  --text-link: var(--purple-3);
+
+  --surface-page: var(--background);
+  --surface-card: var(--white);
+  --surface-panel: var(--white-2);
+  --surface-sunken: rgb(247, 247, 248);
+  --surface-inverse: var(--blue-grey);
+
+  --border: var(--line-1);
+  --border-warm: var(--line-2);
+  --border-strong: var(--black-4);
+  --ring: var(--purple-3);
+}
