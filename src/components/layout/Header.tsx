@@ -10,6 +10,14 @@ export default function Header() {
     if (location.pathname !== '/') {
       e.preventDefault();
       navigate('/' + targetHash);
+    } else {
+      e.preventDefault();
+      const id = targetHash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        window.history.pushState(null, '', targetHash);
+      }
     }
   };
 
@@ -53,7 +61,7 @@ export default function Header() {
             </svg>
             (800) 555-0142
           </a>
-          <Button variant="outline" size="md" onClick={() => navigate('/login')}>
+          <Button variant="outline" size="md" onClick={handleRequestConsultation}>
             Client Portal
           </Button>
           <Button variant="filled" size="md" onClick={handleRequestConsultation}>
