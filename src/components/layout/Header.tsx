@@ -31,12 +31,12 @@ export default function Header() {
       WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
       borderBottom: '1px solid rgba(10,35,66,0.08)'
     }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '14px 32px', minHeight: '78px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px 28px' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '10px 32px', minHeight: '72px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px 28px' }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', flex: '0 0 auto' }}>
-          <img 
-            src="/logo.png" 
-            alt="RAM Investigative Group" 
-            style={{ height: '42px', width: 'auto', display: 'block' }} 
+          <img
+            src="/logo.png"
+            alt="RAM Investigative Group"
+            style={{ height: '54px', width: 'auto', display: 'block', objectFit: 'contain', transform: 'translateY(-2px)' }}
           />
         </Link>
         <nav style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '2px', flex: '1 1 260px', minWidth: 0 }}>
