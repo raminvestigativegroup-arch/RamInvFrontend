@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { api } from "@/config/api";
-import { Download, Printer, ArrowLeft, AlertCircle, Sparkles } from "lucide-react";
+import { Printer, ArrowLeft, AlertCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo } from "react";
-import { downloadIncidentReportPDF, parseRefinedReport } from "@/lib/incidentPdfGenerator";
+import { useMemo } from "react";
+import { parseRefinedReport } from "@/lib/incidentPdfGenerator";
 import logoImg from "@/assets/logo.png";
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
@@ -30,7 +30,6 @@ const CheckboxItem = ({ label, checked }: { label: string; checked: boolean }) =
 export default function IncidentReportView() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
-  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
 
   const { data: incident, isLoading, isError } = useQuery({
     queryKey: ["incidents", id],
@@ -209,26 +208,7 @@ export default function IncidentReportView() {
     return list;
   }, [textData.witnesses]);
 
-  const handleDownloadPdf = async () => {
-    if (!incident) return;
-    if (incident.pdfUrl) {
-      window.open(incident.pdfUrl, '_blank');
-      return;
-    }
-    setIsPdfGenerating(true);
-    try {
-      await downloadIncidentReportPDF(incident.description, incident.title, incident);
-      toast({ title: "Success", description: "Official report PDF generated." });
-    } catch (err) {
-      toast({
-        title: "Download Failed",
-        description: "Could not compile the PDF report.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsPdfGenerating(false);
-    }
-  };
+
 
   if (isLoading) {
     return (
@@ -262,14 +242,6 @@ export default function IncidentReportView() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
             <Printer className="w-4 h-4" /> Print Document
-          </Button>
-          <Button size="sm" className="gap-2" onClick={handleDownloadPdf} disabled={isPdfGenerating}>
-            {isPdfGenerating ? (
-              <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            Download official PDF
           </Button>
         </div>
       </div>
