@@ -18,6 +18,7 @@ import RolesPermissions from "@/pages/RolesPermissions";
 import SystemSettings from "@/pages/SystemSettings";
 import OperationManagement from "@/pages/OperationManagement";
 import NotFound from "@/pages/NotFound";
+import IncidentReportView from "@/pages/IncidentReportView";
 
 // Merged pages from RamLandingPage
 import LandingPage from "@/pages/LandingPage";
@@ -161,6 +162,7 @@ export const AppRoutes = () => {
           <Route path="settings" element={<SystemSettings />} />
           <Route path="operation-management" element={<OperationManagement />} />
         </Route>
+        <Route path="/incident-report/:id" element={<IncidentReportView />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -193,6 +195,7 @@ export const AppRoutes = () => {
         </Route>
         {/* If user tries to access privacy-policy on subdomain, redirect to main domain */}
         <Route path="/privacy-policy" element={<SubdomainRedirect to="/privacy-policy" />} />
+        <Route path="/incident-report/:id" element={<IncidentReportView />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     );
@@ -206,6 +209,7 @@ export const AppRoutes = () => {
         <Route path="/login" element={<MainDomainRedirect to="/login" />} />
         <Route path="/forgot-password" element={<MainDomainRedirect to="/forgot-password" />} />
         <Route path="/dashboard/*" element={<MainDomainRedirect to="/dashboard" />} />
+        <Route path="/incident-report/:id" element={<IncidentReportView />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );

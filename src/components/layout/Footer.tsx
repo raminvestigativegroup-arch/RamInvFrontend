@@ -18,10 +18,14 @@ export default function Footer() {
               Professional security solutions powered by modern technology. Licensed, bonded, and insured.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '24px', fontSize: '14px', color: 'rgba(255,255,255,.6)' }}>
-              <span>1200 Corporate Center Dr, Suite 400</span>
-              <a href="tel:+18005550142" style={{ color: 'rgba(255,255,255,.78)' }}>(800) 555-0142</a>
-              <a href="mailto:info@raminvestigative.com" style={{ color: 'rgba(255,255,255,.78)' }}>info@raminvestigative.com</a>
-              <a href="#top" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--accent)', fontWeight: 600 }}>LinkedIn</a>
+              <span>22 Argyle Square Babylon, N.Y. 11702</span>
+              <a href="tel:+16313144180" style={{ color: 'rgba(255,255,255,.78)' }}>Office: (631) 314-4180</a>
+              <a href="tel:+16317664676" style={{ color: 'rgba(255,255,255,.78)' }}>Cell: (631) 766-4676</a>
+              <a href="mailto:Patrick@RamInvestigation.com" style={{ color: 'rgba(255,255,255,.78)' }}>Patrick@RamInvestigation.com</a>
+              <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
+                <a href="https://www.facebook.com/share/1HuVPTFC4W/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontWeight: 600 }}>Facebook</a>
+                <a href="https://www.linkedin.com/company/raminvestigation" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontWeight: 600 }}>LinkedIn</a>
+              </div>
             </div>
           </div>
           

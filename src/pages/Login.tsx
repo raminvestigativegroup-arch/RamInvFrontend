@@ -45,6 +45,8 @@ const Login = () => {
       const response = await authService.login(email, password);
 
       localStorage.setItem("user", JSON.stringify(response.data));
+      localStorage.setItem("accessToken", response.accessToken || response.token || "");
+      localStorage.setItem("refreshToken", response.refreshToken || "");
       localStorage.setItem("securepro_auth", "true");
 
       toast({

@@ -55,11 +55,11 @@ export default function Header() {
           <a href="#contact" onClick={(e) => handleNavClick(e, '#contact')} className="nav-link" style={{ padding: '9px 14px', borderRadius: '999px', fontSize: '14px', fontWeight: 500, color: '#3F4A5A' }}>Contact</a>
         </nav>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: '12px 14px', flex: '0 1 auto', minWidth: 0 }}>
-          <a href="tel:+18005550142" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600, color: '#0A2342', whiteSpace: 'nowrap' }}>
+          <a href="tel:+16313144180" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600, color: '#0A2342', whiteSpace: 'nowrap' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
               <path d="M5 4h3l2 5-2 1a11 11 0 005 5l1-2 5 2v3a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z" />
             </svg>
-            (800) 555-0142
+            (631) 314-4180
           </a>
           <Button variant="outline" size="md" onClick={handleRequestConsultation}>
             Client Portal

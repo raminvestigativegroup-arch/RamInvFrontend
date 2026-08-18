@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import TablePagination from "@/components/common/TablePagination";
-import { Download, Sparkles, Camera, X, AlertCircle, MoreVertical, CheckCircle2, Clock, AlertTriangle, FileWarning, Trash2 } from "lucide-react";
+import { Download, Sparkles, Camera, X, AlertCircle, MoreVertical, CheckCircle2, Clock, AlertTriangle, FileWarning, Trash2, Printer } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -16,7 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { formatUTCTime, formatUTCDate } from "@/lib/dateUtils";
-import { downloadIncidentReportPDF } from "@/lib/incidentPdfGenerator";
+import { downloadIncidentReportPDF, parseRefinedReport } from "@/lib/incidentPdfGenerator";
+import logoImg from "@/assets/logo.png";
 interface Incident {
   id: string;
   title: string;
@@ -160,6 +161,22 @@ const aiSummaries: Record<string, string> = {
   INC006: "Two individuals gained access through a secure door at Downtown Office Complex by following an authorized employee at 01:30 PM. Michael Brown identified and escorted them out. Both were visiting the wrong floor. Tailgating prevention training recommended.",
   INC007: "CCTV Camera 14 in Tech Park Campus Sector C went offline at 10:00 AM. David Kim reported the issue. Preliminary check suggests a power supply failure. Maintenance ticket created. Temporary mobile camera deployed as backup.",
 };
+
+const FieldBox = ({ label, value, className = "" }: { label: string; value: string; className?: string }) => (
+  <div className={`bg-[#f4f7f9] border border-[#c8d7e6] rounded p-1.5 flex flex-col justify-between ${className}`}>
+    <span className="text-[8px] font-bold text-[#184c78] tracking-wider uppercase leading-none">{label}</span>
+    <span className="text-[10px] text-foreground font-medium mt-1 truncate leading-tight">{value || "Select..."}</span>
+  </div>
+);
+
+const CheckboxItem = ({ label, checked }: { label: string; checked: boolean }) => (
+  <div className="flex items-center gap-1.5">
+    <div className={`w-3.5 h-3.5 border border-[#184c78] rounded-sm flex items-center justify-center bg-white shrink-0`}>
+      {checked && <span className="text-[10px] font-bold text-[#184c78] leading-none">✓</span>}
+    </div>
+    <span className="text-[10px] text-foreground font-medium leading-none">{label}</span>
+  </div>
+);
 
 const IncidentManagement = () => {
   const userStr = localStorage.getItem("user");
@@ -327,6 +344,118 @@ const IncidentManagement = () => {
     enabled: !!selectedIncidentId,
     retry: 1
   });
+
+  const textData = useMemo(() => {
+    if (!selectedIncident) return {
+      reportedBy: "N/A",
+      dateOfReport: "N/A",
+      timeOfReport: "N/A",
+      titleRole: "N/A",
+      incidentNo: "N/A",
+      incidentType: "N/A",
+      dateOfIncident: "N/A",
+      city: "N/A",
+      state: "N/A",
+      zipCode: "N/A",
+      specificArea: "N/A",
+      streetAddress: "N/A",
+      incidentDesc: "N/A",
+      startShift: "N/A",
+      endShift: "N/A",
+      bodyCam: "N",
+      weather: "N/A",
+      witnesses: "N/A",
+      narrative: "",
+      severity: "Select...",
+      priority: "Select...",
+      incidentTime: "N/A",
+      siteName: "N/A",
+      policeReport: "N",
+      emsCalled: "N",
+    };
+    const parsed = parseRefinedReport(selectedIncident.description);
+    // Fallbacks if not refined yet
+    if (!parsed.narrative || parsed.narrative.trim() === "") {
+      parsed.narrative = selectedIncident.description;
+    }
+    if (!parsed.incidentNo || parsed.incidentNo === 'N/A') {
+      parsed.incidentNo = String(selectedIncident.id).slice(-4).toUpperCase();
+    }
+    if (!parsed.incidentType || parsed.incidentType === 'N/A') {
+      parsed.incidentType = selectedIncident.type;
+    }
+    if (!parsed.priority || parsed.priority === 'Select...') {
+      parsed.priority = selectedIncident.priority.toUpperCase();
+    }
+    if (!parsed.severity || parsed.severity === 'Select...') {
+      parsed.severity = selectedIncident.priority.toUpperCase();
+    }
+    if (!parsed.dateOfIncident || parsed.dateOfIncident === 'N/A') {
+      parsed.dateOfIncident = selectedIncident.date;
+    }
+    if (!parsed.incidentTime || parsed.incidentTime === 'N/A') {
+      parsed.incidentTime = selectedIncident.time;
+    }
+    if (!parsed.siteName || parsed.siteName === 'N/A') {
+      parsed.siteName = selectedIncident.site;
+    }
+    if (!parsed.reportedBy || parsed.reportedBy === 'N/A') {
+      const guardObj = selectedIncident.guardDetails || guardMap[selectedIncident.guard];
+      parsed.reportedBy = guardObj ? guardObj.name : selectedIncident.guard;
+    }
+    return parsed;
+  }, [selectedIncident, guardMap]);
+
+  const flags = useMemo(() => {
+    if (!selectedIncident) return {
+      bodyCam: false, cctv: false, police: false, ems: false, fire: false, weapon: false, useOfForce: false, arrest: false
+    };
+    const checkKeyword = (regexes: RegExp[]) => regexes.some(r => r.test(textData.narrative) || r.test(textData.incidentType) || r.test(textData.incidentDesc));
+    return {
+      bodyCam: textData.bodyCam === 'Y' || checkKeyword([/body\s*cam|body\s*camera/i]),
+      cctv: checkKeyword([/cctv|surveillance|security\s*camera|camera\s*footage/i]),
+      police: textData.policeReport === 'Y' || (checkKeyword([/police|cop|sheriff|officer|911|precinct/i]) && !checkKeyword([/security\s*officer|guard/i])),
+      ems: textData.emsCalled === 'Y' || checkKeyword([/ems|ambulance|paramedic|hospital|medical/i]),
+      fire: checkKeyword([/fire\s*dept|fire\s*department|fireman|firemen|smoke\s*detector|fire\s*alarm/i]),
+      weapon: checkKeyword([/weapon|gun|knife|firearm|pistol|revolver/i]),
+      useOfForce: checkKeyword([/use of force|taser|baton|handcuff|restrained|tackled|physical|force/i]),
+      arrest: checkKeyword([/arrest|detain|detained|handcuffed|custody/i]),
+    };
+  }, [textData, selectedIncident]);
+
+  const witnesses = useMemo(() => {
+    const list: { name: string; role: string; contact: string; notes: string }[] = [];
+    if (!textData.witnesses || textData.witnesses.toLowerCase() === 'n/a') {
+      while (list.length < 4) {
+        list.push({ name: "", role: "Select...", contact: "", notes: "" });
+      }
+      return list;
+    }
+    const lines = textData.witnesses.split(/[;\n]+/).map(s => s.trim()).filter(s => s.length > 0);
+    for (const line of lines) {
+      if (list.length >= 4) break;
+      const roleMatch = line.match(/(.*?)\((.*?)\)(.*)/);
+      if (roleMatch) {
+        list.push({
+          name: roleMatch[1].trim(),
+          role: roleMatch[2].trim(),
+          contact: "N/A",
+          notes: roleMatch[3].replace(/^[-\s:]+/, '').trim() || "Cooperating"
+        });
+      } else {
+        list.push({
+          name: line,
+          role: "Witness",
+          contact: "N/A",
+          notes: "Cooperating"
+        });
+      }
+    }
+    while (list.length < 4) {
+      list.push({ name: "", role: "Select...", contact: "", notes: "" });
+    }
+    return list;
+  }, [textData.witnesses]);
 
   const updateStatusMutation = useMutation({
     mutationFn: (data: { id: string; status: string }) =>
@@ -566,13 +695,13 @@ const IncidentManagement = () => {
                   <h3 className="text-lg font-semibold text-foreground">{selectedIncident.title}</h3>
                   <Button variant="ghost" size="icon" onClick={() => setSelectedIncidentId(null)} className="text-muted-foreground hover:text-foreground h-8 w-8"><X className="w-5 h-5" /></Button>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-4 flex-1 flex flex-col">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className={`priority-${selectedIncident.priority}`}>{selectedIncident.priority.toUpperCase()}</span>
                     {selectedIncident.pdfUrl && (
                       <div className="flex items-center gap-1.5 text-xs font-semibold py-1 px-2.5 rounded-full bg-primary/10 text-primary">
                         <Sparkles className="w-3 h-3 text-primary animate-pulse" />
-                        Refined by {selectedIncident.isRefinedByAdmin ? 'Admin' : 'Manager'}
+                        Refined
                       </div>
                     )}
                     <div className="relative w-32">
@@ -611,7 +740,7 @@ const IncidentManagement = () => {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-foreground mb-1">Description</p>
-                    <p className="text-sm text-muted-foreground">{selectedIncident.description}</p>
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap max-h-[150px] overflow-y-auto bg-muted/40 p-2.5 rounded-lg border border-border">{selectedIncident.description}</p>
                   </div>
                   {selectedIncident.hasPhotos && (
                     <div className="space-y-2">
@@ -644,12 +773,20 @@ const IncidentManagement = () => {
                       )}
                     </div>
                   )}
-                  <div className="pt-4 border-t border-border flex gap-3 mt-auto">
+                  <div className="pt-4 border-t border-border flex flex-wrap gap-2 mt-auto">
                     {hasEditPermission && !selectedIncident.isRefinedByAdmin && (
                       <Button onClick={() => setAiIncidentId(selectedIncident.id)} size="sm">
-                        <Sparkles className="w-4 h-4" />AI Summary
+                        <Sparkles className="w-4 h-4" />AI Refine
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => window.open(`/incident-report/${selectedIncident.id}`, '_blank')}
+                    >
+                      <Printer className="w-4 h-4" />View/Print Report
+                    </Button>
                     <Button
                       variant="secondary"
                       size="sm"
@@ -659,7 +796,7 @@ const IncidentManagement = () => {
                         } else {
                           setIsPdfGenerating(true);
                           try {
-                            await downloadIncidentReportPDF(selectedIncident.description, selectedIncident.title);
+                            await downloadIncidentReportPDF(selectedIncident.description, selectedIncident.title, selectedIncident);
                           } catch (err) {
                             toast({
                               title: "PDF Error",
@@ -761,7 +898,7 @@ const IncidentManagement = () => {
                     if (refinedData?.pdfUrl) {
                       window.open(refinedData.pdfUrl, '_blank');
                     } else {
-                      await downloadIncidentReportPDF(refinedData.refined, aiSelected.title);
+                      await downloadIncidentReportPDF(refinedData.refined, aiSelected.title, aiSelected);
                     }
                   } catch (err) {
                     toast({

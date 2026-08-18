@@ -5,6 +5,8 @@ import Hero from '@/components/sections/Hero';
 import TrustBar from '@/components/sections/TrustBar';
 import Services from '@/components/sections/Services';
 import WhyRam from '@/components/sections/WhyRam';
+import Leadership from '@/components/sections/Leadership';
+import Brands from '@/components/sections/Brands';
 import Industries from '@/components/sections/Industries';
 import Process from '@/components/sections/Process';
 import StatsDivider from '@/components/sections/StatsDivider';
@@ -53,6 +55,8 @@ export default function LandingPage() {
       <Process />
       <StatsDivider animateCounters={true} />
       <Testimonials />
+      <Leadership />
+      <Brands />
       <ContactForm />
       <Footer />
       <StickyCTA showSticky={showSticky} />

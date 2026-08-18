@@ -31,14 +31,13 @@ export const httpClient: AxiosInstance = axios.create({
   },
 });
 
-/**
- * Request Interceptor
- * Browser automatically sends cookies with withCredentials: true
- * If you still need to send other headers, do it here.
- */
 httpClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     config.headers["X-Timezone-Offset"] = String(new Date().getTimezoneOffset());
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
     return config;
   },
   (error: AxiosError) => {
@@ -125,11 +124,20 @@ httpClient.interceptors.response.use(
 
       return new Promise((resolve, reject) => {
         console.log("Access token expired, attempting to refresh...");
-        // Try to refresh token - browser will send the refresh token cookie
-        // Using httpClient call to leverage config
-        httpClient.post("/auth/refresh-token")
-          .then(() => {
+        const storedRefreshToken = localStorage.getItem("refreshToken");
+        httpClient.post("/auth/refresh-token", { refreshToken: storedRefreshToken }, {
+          headers: storedRefreshToken ? { "x-refresh-token": storedRefreshToken } : undefined
+        })
+          .then((response: any) => {
             console.log("Token refreshed successfully, scheduling retries...");
+            const newAccessToken = response.data?.data?.accessToken || response.data?.data?.token;
+            const newRefreshToken = response.data?.data?.refreshToken;
+            if (newAccessToken) {
+              localStorage.setItem("accessToken", newAccessToken);
+            }
+            if (newRefreshToken) {
+              localStorage.setItem("refreshToken", newRefreshToken);
+            }
             // Yield to browser event loop (50ms) to ensure cookie storage is fully updated
             setTimeout(() => {
               processQueue(null);
@@ -142,6 +150,8 @@ httpClient.interceptors.response.use(
             processQueue(refreshError);
             // Refresh failed, redirect to login or clear auth state
             localStorage.removeItem("user");
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
             localStorage.removeItem("securepro_auth");
             window.location.href = "/login"; // The correct login route in this app
             reject(refreshError);

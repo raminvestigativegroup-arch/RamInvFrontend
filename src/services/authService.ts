@@ -54,10 +54,16 @@ export const authService = {
     try {
       await api.auth.logout();
       localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("securepro_auth");
     } catch (error) {
       console.error("Logout error:", error);
       // Logout even if request fails
       localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      localStorage.removeItem("securepro_auth");
     }
   },
 

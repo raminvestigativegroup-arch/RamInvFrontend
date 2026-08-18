@@ -84,9 +84,9 @@ export default function PrivacyPolicy() {
             </p>
             <div style={{ background: '#F9FAFB', borderLeft: '4px solid #071A31', padding: '16px 20px', borderRadius: '0 8px 8px 0', fontSize: '14px', color: '#374151' }}>
               <strong style={{ display: 'block', color: '#071A31', marginBottom: '4px' }}>RAM Investigative Group Inc.</strong>
-              <span>1200 Corporate Center Dr, Suite 400</span><br />
-              <span>Email: <a href="mailto:info@raminvestigative.com" style={{ color: '#0056b3', textDecoration: 'underline' }}>info@raminvestigative.com</a></span><br />
-              <span>Phone: (800) 555-0142</span>
+              <span>22 Argyle Square Babylon, N.Y. 11702</span><br />
+              <span>Email: <a href="mailto:Patrick@RamInvestigation.com" style={{ color: '#0056b3', textDecoration: 'underline' }}>Patrick@RamInvestigation.com</a></span><br />
+              <span>Phone: (631) 314-4180 (Office) / (631) 766-4676 (Cell)</span>
             </div>
           </section>
 
