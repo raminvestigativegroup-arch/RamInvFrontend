@@ -3,22 +3,22 @@ import { RevealWrapper } from '../utils/RevealWrapper';
 
 const TEAM = [
   {
-    name: "Patrick",
-    title: "Chief Executive Officer (CEO)",
+    name: "Mr. Patrick Fitzsimons",
+    title: "Owner/CEO",
     image: "/CEO.png"
   },
   {
-    name: "John Miller",
+    name: "Mr. Jason O'Neill",
     title: "President",
     image: "/President.png"
   },
   {
-    name: "Marcus Vance",
+    name: "Ms. Gina Morris",
     title: "Operations Center Director",
     image: "/OCenterDirector.png"
   },
   {
-    name: "Sarah Jenkins",
+    name: "Mr. Kevin M. Wustenhoff",
     title: "Business Development Manager",
     image: "/BDevManager.png"
   }
