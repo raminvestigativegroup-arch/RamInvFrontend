@@ -34,7 +34,7 @@ export default function StickyCTA({ showSticky }: StickyCTAProps) {
       boxShadow: '0 24px 60px rgba(0,0,0,.4)'
     }}>
       <span style={{ fontSize: '14.5px', fontWeight: 500, color: '#fff' }}>Need coverage fast? Talk to a licensed manager today.</span>
-      <Button size="md" onClick={() => document.getElementById('contact')?.scrollIntoView()}>
+      <Button size="md" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}>
         Get a Free Quote
       </Button>
     </div>

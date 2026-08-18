@@ -1,7 +1,25 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 
 export default function Footer() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetHash: string) => {
+    if (location.pathname !== '/') {
+      e.preventDefault();
+      navigate('/' + targetHash);
+    } else {
+      e.preventDefault();
+      const id = targetHash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        window.history.pushState(null, '', targetHash);
+      }
+    }
+  };
+
   return (
     <footer id="footer" style={{ background: '#071A31', padding: 'clamp(64px,7vw,96px) 32px 40px', scrollMarginTop: '90px' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
@@ -31,24 +49,22 @@ export default function Footer() {
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <span style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,.42)' }}>Company</span>
-            <a href="#about" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>About RAM</a>
-            <a href="#contact" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Contact</a>
+            <a href="#about" onClick={(e) => handleNavClick(e, '#about')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>About RAM</a>
+            <a href="#contact" onClick={(e) => handleNavClick(e, '#contact')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Contact</a>
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <span style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,.42)' }}>Services</span>
-            <a href="#services" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Guard services</a>
-            <a href="#services" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Mobile patrol</a>
-            <a href="#services" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Investigations</a>
-            <a href="#services" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Executive protection</a>
+            <a href="#services" onClick={(e) => handleNavClick(e, '#services')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Guard services</a>
+            <a href="#services" onClick={(e) => handleNavClick(e, '#services')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Mobile patrol</a>
+            <a href="#services" onClick={(e) => handleNavClick(e, '#services')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Investigations</a>
+            <a href="#services" onClick={(e) => handleNavClick(e, '#services')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Executive protection</a>
           </div>
           
-
-
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <span style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,.42)' }}>Resources</span>
-            <a href="#industries" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Industries</a>
-            <a href="#about" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Compliance</a>
+            <a href="#industries" onClick={(e) => handleNavClick(e, '#industries')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Industries</a>
+            <a href="#about" onClick={(e) => handleNavClick(e, '#about')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Compliance</a>
             <Link to="/privacy-policy" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Privacy policy</Link>
           </div>
         </div>
