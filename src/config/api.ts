@@ -31,6 +31,10 @@ export const api = {
   // Authentication
   auth: {
     login: (data: LoginRequest) => httpClient.post<LoginResponse>("/auth/admin", data),
+    loginMobile: (data: any) => httpClient.post<any>("/auth/login", data),
+    deleteAccount: (token: string) => httpClient.delete<any>("/auth/delete-account", {
+      headers: { Authorization: `Bearer ${token}` }
+    }),
     logout: () => httpClient.post("/auth/logout"),
     refresh: (data?: AuthRefreshRequest) => httpClient.post<ApiResponse<AuthRefreshResponse>>("/auth/refresh-token", data),
     me: () => httpClient.get("/auth/me"),
