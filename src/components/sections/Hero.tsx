@@ -31,10 +31,10 @@ export default function Hero({ animateCounters = true }: HeroProps) {
             Professional security guards, mobile patrol, investigative services, and workforce management solutions backed by modern technology.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginTop: '28px' }}>
-            <Button size="lg" onClick={() => document.getElementById('contact')?.scrollIntoView()}>
+            <Button size="lg" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}>
               Request a Free Consultation
             </Button>
-            <Button variant="outline" size="lg" onClick={() => document.getElementById('services')?.scrollIntoView()}>
+            <Button variant="outline" size="lg" onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}>
               Explore Services
             </Button>
           </div>

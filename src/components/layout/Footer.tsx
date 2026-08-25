@@ -66,6 +66,7 @@ export default function Footer() {
             <a href="#industries" onClick={(e) => handleNavClick(e, '#industries')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Industries</a>
             <a href="#about" onClick={(e) => handleNavClick(e, '#about')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Compliance</a>
             <Link to="/privacy-policy" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Privacy policy</Link>
+            <Link to="/terms-conditions" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Terms &amp; conditions</Link>
           </div>
         </div>
         

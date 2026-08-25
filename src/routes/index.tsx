@@ -23,6 +23,7 @@ import IncidentReportView from "@/pages/IncidentReportView";
 // Merged pages from RamLandingPage
 import LandingPage from "@/pages/LandingPage";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsConditions from "@/pages/TermsConditions";
 
 /**
  * Utility to extract subdomain from current hostname.
@@ -143,6 +144,8 @@ export const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-conditions" element={<TermsConditions />} />
+        <Route path="/terms-and-conditions" element={<Navigate to="/terms-conditions" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/dashboard" element={<DashboardLayout />}>
@@ -193,8 +196,10 @@ export const AppRoutes = () => {
           <Route path="settings" element={<SystemSettings />} />
           <Route path="operation-management" element={<OperationManagement />} />
         </Route>
-        {/* If user tries to access privacy-policy on subdomain, redirect to main domain */}
+        {/* If user tries to access landing pages on subdomain, redirect to main domain */}
         <Route path="/privacy-policy" element={<SubdomainRedirect to="/privacy-policy" />} />
+        <Route path="/terms-conditions" element={<SubdomainRedirect to="/terms-conditions" />} />
+        <Route path="/terms-and-conditions" element={<SubdomainRedirect to="/terms-conditions" />} />
         <Route path="/incident-report/:id" element={<IncidentReportView />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -205,6 +210,8 @@ export const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-conditions" element={<TermsConditions />} />
+        <Route path="/terms-and-conditions" element={<Navigate to="/terms-conditions" replace />} />
         {/* Redirect auth & dashboard requests to the subdomain */}
         <Route path="/login" element={<MainDomainRedirect to="/login" />} />
         <Route path="/forgot-password" element={<MainDomainRedirect to="/forgot-password" />} />
