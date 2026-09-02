@@ -39,7 +39,7 @@ export default function Footer() {
               <span>22 Argyle Square Babylon, N.Y. 11702</span>
               <a href="tel:+16313144180" style={{ color: 'rgba(255,255,255,.78)' }}>Office: (631) 314-4180</a>
               <a href="tel:+16317664676" style={{ color: 'rgba(255,255,255,.78)' }}>Cell: (631) 766-4676</a>
-              <a href="mailto:Patrick@RamInvestigation.com" style={{ color: 'rgba(255,255,255,.78)' }}>Patrick@RamInvestigation.com</a>
+              <a href="mailto:kw@raminvestigation.com" style={{ color: 'rgba(255,255,255,.78)' }}>kw@raminvestigation.com</a>
               <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
                 <a href="https://www.facebook.com/share/1HuVPTFC4W/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontWeight: 600 }}>Facebook</a>
                 <a href="https://www.linkedin.com/company/raminvestigation" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontWeight: 600 }}>LinkedIn</a>
@@ -67,7 +67,6 @@ export default function Footer() {
             <a href="#about" onClick={(e) => handleNavClick(e, '#about')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Compliance</a>
             <Link to="/privacy-policy" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Privacy policy</Link>
             <Link to="/terms-conditions" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Terms &amp; conditions</Link>
-            <Link to="/delete-account" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Delete account</Link>
           </div>
         </div>
         

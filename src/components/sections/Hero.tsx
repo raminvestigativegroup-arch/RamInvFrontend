@@ -44,7 +44,7 @@ export default function Hero({ animateCounters = true }: HeroProps) {
               ['500+', 'Security professionals'],
               ['100+', 'Protected sites'],
               ['24/7', 'Live monitoring'],
-              ['15+', 'Years experience']
+              ['30+', 'Years experience']
             ].map(([val, label]) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                 {animateCounters && val !== '24/7' ? (

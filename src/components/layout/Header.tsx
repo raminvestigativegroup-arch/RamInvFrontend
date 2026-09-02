@@ -54,7 +54,6 @@ export default function Header() {
           <a href="#about" onClick={(e) => handleNavClick(e, '#about')} className="nav-link" style={{ padding: '9px 14px', borderRadius: '999px', fontSize: '14px', fontWeight: 500, color: '#3F4A5A' }}>About</a>
           <a href="#contact" onClick={(e) => handleNavClick(e, '#contact')} className="nav-link" style={{ padding: '9px 14px', borderRadius: '999px', fontSize: '14px', fontWeight: 500, color: '#3F4A5A' }}>Contact</a>
           <Link to="/terms-conditions" className="nav-link" style={{ padding: '9px 14px', borderRadius: '999px', fontSize: '14px', fontWeight: 500, color: '#3F4A5A', textDecoration: 'none' }}>Terms</Link>
-          <Link to="/delete-account" className="nav-link" style={{ padding: '9px 14px', borderRadius: '999px', fontSize: '14px', fontWeight: 500, color: '#3F4A5A', textDecoration: 'none' }}>Delete Account</Link>
         </nav>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', gap: '12px 14px', flex: '0 1 auto', minWidth: 0 }}>
           <a href="tel:+16313144180" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 600, color: '#0A2342', whiteSpace: 'nowrap' }}>

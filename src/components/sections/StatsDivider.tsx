@@ -12,7 +12,7 @@ export default function StatsDivider({ animateCounters = true }: StatsDividerPro
     { label: "Protected sites", val: "100+" },
     { label: "Monitoring & dispatch", val: "24/7", static: true },
     { label: "Client satisfaction", val: "99%" },
-    { label: "Years experience", val: "15+" }
+    { label: "Years experience", val: "30+" }
   ];
 
   return (

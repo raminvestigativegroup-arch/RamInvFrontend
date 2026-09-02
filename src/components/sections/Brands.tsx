@@ -7,7 +7,8 @@ const BRANDS = [
   { name: "Brand 6", image: "/logo-6.jpeg" },
   { name: "Brand 7", image: "/logo-7.jpeg" },
   { name: "Brand 8", image: "/logo-8.jpeg" },
-  { name: "Brand 9", image: "/logo-9.jpeg" }
+  { name: "Brand 9", image: "/logo-9.jpeg" },
+  { name: "Brand 10", image: "/logo-10.jpeg" }
 ];
 
 export default function Brands() {

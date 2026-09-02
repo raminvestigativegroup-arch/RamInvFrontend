@@ -4,12 +4,12 @@ import { RevealWrapper } from '../utils/RevealWrapper';
 const TEAM = [
   {
     name: "Mr. Patrick Fitzsimons",
-    title: "Owner/CEO",
+    title: "Owner/President",
     image: "/CEO.png"
   },
   {
     name: "Mr. Jason O'Neill",
-    title: "President",
+    title: "Owner/President",
     image: "/President.png"
   },
   {
@@ -52,27 +52,27 @@ export default function Leadership() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '32px' }}>
           {TEAM.map((member, idx) => (
             <RevealWrapper key={idx}>
-              <div 
+              <div
                 className="team-card"
-                style={{ 
-                  background: '#FFFFFF', 
-                  border: '1px solid #E6EBF2', 
-                  borderRadius: '16px', 
-                  overflow: 'hidden', 
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #E6EBF2',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
                   boxShadow: 'var(--shadow-card)',
                   transition: 'transform 0.3s ease, box-shadow 0.3s ease'
                 }}
               >
                 <div style={{ overflow: 'hidden', position: 'relative', paddingTop: '100%', background: '#F8FAFC' }}>
-                  <img 
-                    src={member.image} 
+                  <img
+                    src={member.image}
                     alt={`${member.name} - ${member.title}`}
-                    style={{ 
-                      position: 'absolute', 
-                      top: 0, 
-                      left: 0, 
-                      width: '100%', 
-                      height: '100%', 
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
                       objectFit: 'cover',
                       transition: 'transform 0.4s ease'
                     }}
