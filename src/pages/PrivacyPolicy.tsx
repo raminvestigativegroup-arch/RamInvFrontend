@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
@@ -78,7 +79,25 @@ export default function PrivacyPolicy() {
           </section>
 
           <section>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#071A31', marginBottom: '16px' }}>6. Contact Us</h2>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#071A31', marginBottom: '16px' }}>6. Account &amp; Data Deletion Rights</h2>
+            <p style={{ marginBottom: '12px' }}>
+              Users of the RAM Investigative Group mobile application (guards and managers) have the right to request permanent account deletion and removal of associated personal data at any time.
+            </p>
+            <p style={{ marginBottom: '12px' }}>
+              You may initiate an instant self-service deletion request by visiting our dedicated webpage:
+            </p>
+            <p style={{ marginBottom: '16px' }}>
+              <Link to="/delete-account" style={{ color: '#0056b3', fontWeight: 600, textDecoration: 'underline' }}>
+                Submit Account Deletion Request &rarr;
+              </Link>
+            </p>
+            <p>
+              Alternatively, you can submit a deletion request via email to <a href="mailto:kw@raminvestigation.com" style={{ color: '#0056b3', textDecoration: 'underline' }}>kw@raminvestigation.com</a>. Upon verification, active user credentials, session tokens, and push notification tokens are permanently erased. Operational history (such as completed schedules and incident reports) is preserved in accordance with regulatory security and legal retention obligations.
+            </p>
+          </section>
+
+          <section>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#071A31', marginBottom: '16px' }}>7. Contact Us</h2>
             <p style={{ marginBottom: '12px' }}>
               If you have any questions or feedback regarding this Privacy Policy, please contact our privacy compliance team:
             </p>
