@@ -28,7 +28,7 @@ export default function Hero({ animateCounters = true }: HeroProps) {
             Protecting People, Property &amp; Businesses with Confidence.
           </h1>
           <p style={{ fontSize: 'clamp(16px,1.2vw,18px)', lineHeight: 1.62, color: '#3F4A5A', margin: '20px 0 0', textWrap: 'pretty' }}>
-            Professional security guards, mobile patrol, investigative services, and workforce management solutions backed by modern technology.
+            Professional protection personnel, mobile patrol, investigative services, and workforce management solutions—powered by modern technology and built around your security needs.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginTop: '28px' }}>
             <Button size="lg" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}>
