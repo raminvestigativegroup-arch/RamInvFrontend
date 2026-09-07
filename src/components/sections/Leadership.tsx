@@ -63,7 +63,7 @@ export default function Leadership() {
                   transition: 'transform 0.3s ease, box-shadow 0.3s ease'
                 }}
               >
-                <div style={{ overflow: 'hidden', position: 'relative', paddingTop: '100%', background: '#F8FAFC' }}>
+                <div style={{ overflow: 'hidden', position: 'relative', paddingTop: '109%', background: '#F8FAFC' }}>
                   <img
                     src={member.image}
                     alt={`${member.name} - ${member.title}`}
