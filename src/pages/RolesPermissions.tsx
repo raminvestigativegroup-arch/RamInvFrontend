@@ -641,7 +641,7 @@ const RolesPermissions = () => {
               setNewRoleName(e.target.value);
               if (errors.name) setErrors(prev => ({ ...prev, name: undefined }));
             }}
-            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm mb-2 text-foreground focus:outline-none focus:ring-2 ${errors.name ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
+            className={`w-full px-3 py-2 bg-secondary border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 ${errors.name ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"
               }`}
           />
         </FormField>
