@@ -26,13 +26,16 @@ const TEAM = [
 
 export default function Leadership() {
   return (
-    <section id="leadership" style={{ padding: 'clamp(80px,9vw,132px) 32px', background: '#FFFFFF', borderTop: '1px solid #EEF2F7', scrollMarginTop: '90px' }}>
+    <section id="leadership" style={{ padding: 'clamp(80px,9vw,132px) 32px clamp(48px,5vw,72px)', background: '#FFFFFF', borderTop: '1px solid #EEF2F7', scrollMarginTop: '90px' }}>
       <style>{`
         .team-card:hover {
           transform: translateY(-6px);
           box-shadow: 0 20px 40px rgba(10,35,66,0.1) !important;
         }
         .team-card:hover .team-image {
+          transform: scale(1.04);
+        }
+        .leadership-photo-frame:hover img {
           transform: scale(1.04);
         }
       `}</style>
@@ -91,6 +94,39 @@ export default function Leadership() {
             </RevealWrapper>
           ))}
         </div>
+
+        <RevealWrapper>
+          <div style={{ width: '240px', margin: '48px auto 0', textAlign: 'center' }}>
+            <div
+              className="leadership-photo-frame"
+              style={{
+                borderRadius: '14px',
+                overflow: 'hidden',
+                boxShadow: 'var(--shadow-card)',
+                border: '1px solid #E6EBF2',
+                background: '#F8FAFC'
+              }}
+            >
+              <img
+                src="/Team.jpeg"
+                alt="RAM Investigative Group leadership team"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  height: 'auto',
+                  objectFit: 'cover',
+                  transition: 'transform 0.4s ease'
+                }}
+              />
+            </div>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '16px', fontWeight: 700, color: '#0A2342', margin: '14px 0 4px' }}>
+              This Is Our Team
+            </h3>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              On-Site at RAM Headquarters
+            </span>
+          </div>
+        </RevealWrapper>
       </div>
     </section>
   );
