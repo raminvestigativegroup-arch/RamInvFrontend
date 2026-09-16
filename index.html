@@ -36,6 +36,23 @@
 
 <body>
   <div id="root"></div>
+  <script>
+    (function () {
+      var KEY = 'ram-reload-on-asset-error';
+      window.addEventListener('error', function (e) {
+        var t = e.target;
+        if (!t || !t.tagName) return;
+        var url = t.src || t.href;
+        var isStaleAsset = (t.tagName === 'SCRIPT' || t.tagName === 'LINK') && url && url.indexOf('/assets/') !== -1;
+        if (!isStaleAsset) return;
+        var last = Number(sessionStorage.getItem(KEY) || 0);
+        if (Date.now() - last > 15000) {
+          sessionStorage.setItem(KEY, String(Date.now()));
+          location.reload();
+        }
+      }, true);
+    })();
+  </script>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

@@ -15,7 +15,11 @@ async function loadGlobalSlots() {
   if (globalLoadPromise) return globalLoadPromise;
 
   globalLoadPromise = fetch('/.image-slots.state.json')
-    .then((r) => (r.ok ? r.json() : {}))
+    .then((r) => {
+      const contentType = r.headers.get('content-type') || '';
+      if (!r.ok || !contentType.includes('application/json')) return {};
+      return r.json();
+    })
     .then((data: unknown) => {
       const record = data as Record<string, string | { u: string; s: number; x: number; y: number }>;
       const normalized: Record<string, { u: string; s: number; x: number; y: number }> = {};
