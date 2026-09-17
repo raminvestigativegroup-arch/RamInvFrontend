@@ -96,6 +96,9 @@ dist
 # Vite build output
 dist/
 
+# Prerender SSR bundle (temporary, removed by scripts/prerender.mjs)
+.prerender/
+
 # SvelteKit build output
 .svelte-kit
 
