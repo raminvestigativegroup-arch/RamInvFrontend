@@ -688,6 +688,93 @@
   transform: translateY(-3px);
 }
 
+.landing-page-theme .testimonial-card {
+  background: #ffffff;
+  border: 1px solid #E6EBF2;
+  box-shadow: var(--shadow-card);
+  transition: background 0.3s var(--ease-out), border-color 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out), transform 0.3s var(--ease-out);
+}
+
+.landing-page-theme .testimonial-card:hover {
+  background: #0A2342;
+  border-color: #0A2342;
+  box-shadow: 0 24px 48px rgba(10, 35, 66, 0.22);
+  transform: translateY(-4px);
+}
+
+.landing-page-theme .testimonial-quote,
+.landing-page-theme .testimonial-name,
+.landing-page-theme .testimonial-role,
+.landing-page-theme .testimonial-meta {
+  transition: color 0.3s var(--ease-out), border-color 0.3s var(--ease-out);
+}
+
+.landing-page-theme .testimonial-quote { color: #1F2937; }
+.landing-page-theme .testimonial-name { color: #0A2342; }
+.landing-page-theme .testimonial-role { color: #6B7684; }
+.landing-page-theme .testimonial-meta { border-top: 1px solid #EEF2F7; }
+
+.landing-page-theme .testimonial-card:hover .testimonial-quote,
+.landing-page-theme .testimonial-card:hover .testimonial-name { color: #ffffff; }
+.landing-page-theme .testimonial-card:hover .testimonial-role { color: rgba(255, 255, 255, 0.6); }
+.landing-page-theme .testimonial-card:hover .testimonial-meta { border-top-color: rgba(255, 255, 255, 0.14); }
+
+@media (hover: none) {
+  .landing-page-theme .testimonial-card:hover {
+    background: #ffffff;
+    border-color: #E6EBF2;
+    box-shadow: var(--shadow-card);
+    transform: none;
+  }
+
+  .landing-page-theme .testimonial-card:hover .testimonial-quote { color: #1F2937; }
+  .landing-page-theme .testimonial-card:hover .testimonial-name { color: #0A2342; }
+  .landing-page-theme .testimonial-card:hover .testimonial-role { color: #6B7684; }
+  .landing-page-theme .testimonial-card:hover .testimonial-meta { border-top-color: #EEF2F7; }
+}
+
+.landing-page-theme .process-card {
+  position: relative;
+  padding: 26px 22px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #E6EBF2;
+  box-shadow: var(--shadow-card);
+  height: 100%;
+  box-sizing: border-box;
+  transition: background 0.3s var(--ease-out), border-color 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out), transform 0.3s var(--ease-out);
+}
+
+.landing-page-theme .process-card:hover {
+  background: #0A2342;
+  border-color: #0A2342;
+  box-shadow: 0 16px 36px rgba(10, 35, 66, 0.24);
+  transform: translateY(-3px);
+}
+
+.landing-page-theme .process-title,
+.landing-page-theme .process-desc {
+  transition: color 0.3s var(--ease-out);
+}
+
+.landing-page-theme .process-title { color: #0A2342; }
+.landing-page-theme .process-desc { color: #3F4A5A; }
+
+.landing-page-theme .process-card:hover .process-title { color: #ffffff; }
+.landing-page-theme .process-card:hover .process-desc { color: rgba(255, 255, 255, 0.7); }
+
+@media (hover: none) {
+  .landing-page-theme .process-card:hover {
+    background: #ffffff;
+    border-color: #E6EBF2;
+    box-shadow: var(--shadow-card);
+    transform: none;
+  }
+
+  .landing-page-theme .process-card:hover .process-title { color: #0A2342; }
+  .landing-page-theme .process-card:hover .process-desc { color: #3F4A5A; }
+}
+
 /* ImageSlot controls hover display */
 .landing-page-theme .image-slot-controls {
   opacity: 0;

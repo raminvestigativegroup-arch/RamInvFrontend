@@ -2,13 +2,13 @@ import React from 'react';
 import { RevealWrapper } from '../utils/RevealWrapper';
 
 const BRANDS = [
+  { name: "Brand 10", image: "/logo-10.jpeg" },
   { name: "Brand 4", image: "/logo-4.jpeg" },
-  { name: "Brand 5", image: "/logo-5.jpeg" },
   { name: "Brand 6", image: "/logo-6.jpeg" },
   { name: "Brand 7", image: "/logo-7.jpeg" },
   { name: "Brand 8", image: "/logo-8.jpeg" },
   { name: "Brand 9", image: "/logo-9.jpeg" },
-  { name: "Brand 10", image: "/logo-10.jpeg" }
+  
 ];
 
 export default function Brands() {

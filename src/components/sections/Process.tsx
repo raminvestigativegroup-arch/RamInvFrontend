@@ -7,7 +7,8 @@ export default function Process() {
     { num: "02", title: "Site assessment", desc: "On-site walkthrough documenting vulnerabilities, lighting, and access points." },
     { num: "03", title: "Custom security plan", desc: "Written post orders, staffing model, and escalation tree built for your site." },
     { num: "04", title: "Guard deployment", desc: "Vetted officers matched to the post, briefed and supervised from day one." },
-    { num: "05", title: "Live monitoring", desc: "GPS check-ins and dispatch oversight on every shift, around the clock." }
+    { num: "05", title: "Live monitoring", desc: "GPS check-ins and dispatch oversight on every shift, around the clock." },
+    { num: "06", title: "Continuous reporting", desc: "Daily activity logs, incident reports, and quarterly program reviews." }
   ];
 
   return (
@@ -25,22 +26,13 @@ export default function Process() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '20px', marginTop: '52px' }}>
           {steps.map((p, idx) => (
             <RevealWrapper key={p.num} delay={idx * 30}>
-              <div style={{ position: 'relative', padding: '26px 22px', borderRadius: '16px', background: '#fff', border: '1px solid #E6EBF2', boxShadow: 'var(--shadow-card)', height: '100%', boxSizing: 'border-box' }}>
+              <div className="process-card">
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.06em', color: 'var(--accent)' }}>{p.num}</span>
-                <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '18px', color: '#0A2342', marginTop: '12px' }}>{p.title}</span>
-                <p style={{ fontSize: '13.5px', lineHeight: 1.6, color: '#3F4A5A', margin: '8px 0 0' }}>{p.desc}</p>
+                <span className="process-title" style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '18px', marginTop: '12px' }}>{p.title}</span>
+                <p className="process-desc" style={{ fontSize: '13.5px', lineHeight: 1.6, margin: '8px 0 0' }}>{p.desc}</p>
               </div>
             </RevealWrapper>
           ))}
-
-          {/* Final Callout Step */}
-          <RevealWrapper delay={150}>
-            <div style={{ position: 'relative', padding: '26px 22px', borderRadius: '16px', background: '#0A2342', border: '1px solid #0A2342', boxShadow: '0 16px 36px rgba(10,35,66,.24)', height: '100%', boxSizing: 'border-box' }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '13px', letterSpacing: '0.06em', color: 'var(--accent)' }}>06</span>
-              <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '18px', color: '#fff', marginTop: '12px' }}>Continuous reporting</span>
-              <p style={{ fontSize: '13.5px', lineHeight: 1.6, color: 'rgba(255,255,255,.7)', margin: '8px 0 0' }}>Daily activity logs, incident reports, and quarterly program reviews.</p>
-            </div>
-          </RevealWrapper>
         </div>
       </div>
     </section>
