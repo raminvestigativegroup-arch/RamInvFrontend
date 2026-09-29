@@ -10,7 +10,7 @@ const TEAM = [
   {
     name: "Mr. Jason O'Neill",
     title: "Owner/President",
-    image: "/President.png"
+    image: "/BDevManager.png"
   },
   {
     name: "Ms. Gina Morris",
@@ -20,7 +20,8 @@ const TEAM = [
   {
     name: "Mr. Kevin M. Wustenhoff",
     title: "Business Development Manager",
-    image: "/BDevManager.png"
+    image: "/President.png"
+
   }
 ];
 
