@@ -17,7 +17,7 @@ export default function StatsDivider({ animateCounters = true }: StatsDividerPro
 
   return (
     <section style={{ padding: 'clamp(72px,8vw,110px) 32px', background: '#fff' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '24px' }}>
+      <div style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,190px),1fr))', gap: '24px' }}>
         {statsList.map((item, idx) => (
           <RevealWrapper key={item.label} delay={idx * 30}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '20px', borderLeft: '2px solid rgba(212,175,55,.5)' }}>

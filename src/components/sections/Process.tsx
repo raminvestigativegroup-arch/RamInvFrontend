@@ -13,7 +13,7 @@ export default function Process() {
 
   return (
     <section style={{ padding: 'clamp(80px,9vw,132px) 32px', background: '#F8FAFC', borderTop: '1px solid #EEF2F7', borderBottom: '1px solid #EEF2F7' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+      <div style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto' }}>
         <RevealWrapper>
           <div style={{ maxWidth: '620px' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Process</span>
@@ -23,7 +23,7 @@ export default function Process() {
           </div>
         </RevealWrapper>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '20px', marginTop: '52px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,200px),1fr))', gap: '20px', marginTop: '52px' }}>
           {steps.map((p, idx) => (
             <RevealWrapper key={p.num} delay={idx * 30}>
               <div className="process-card">

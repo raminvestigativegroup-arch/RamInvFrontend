@@ -44,7 +44,7 @@ const TESTIMONIALS = [
 export default function Testimonials() {
   return (
     <section id="testimonials" style={{ padding: 'clamp(80px,9vw,132px) 32px', background: 'linear-gradient(180deg,#FFFFFF,#F8FAFC)', borderTop: '1px solid #EEF2F7' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+      <div style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto' }}>
         <RevealWrapper>
           <div style={{ maxWidth: '620px' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Client results</span>
@@ -54,7 +54,7 @@ export default function Testimonials() {
           </div>
         </RevealWrapper>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '24px', marginTop: '48px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,320px),1fr))', gap: '24px', marginTop: '48px' }}>
 
           {TESTIMONIALS.map((t, index) => (
             <RevealWrapper key={t.slotId} delay={index * 60}>

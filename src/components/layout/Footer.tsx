@@ -22,8 +22,8 @@ export default function Footer() {
 
   return (
     <footer id="footer" style={{ background: '#071A31', padding: 'clamp(64px,7vw,96px) 32px 40px', scrollMarginTop: '90px' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1.3fr) repeat(auto-fit, minmax(140px, 1fr))', gap: '40px' }}>
+      <div style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto' }}>
+        <div className="site-footer-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1.3fr) repeat(auto-fit, minmax(140px, 1fr))', gap: '40px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <img 
@@ -64,7 +64,7 @@ export default function Footer() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <span style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,.42)' }}>Resources</span>
             <a href="#industries" onClick={(e) => handleNavClick(e, '#industries')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Industries</a>
-            <a href="#about" onClick={(e) => handleNavClick(e, '#about')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Compliance</a>
+            <a href="#why-ram" onClick={(e) => handleNavClick(e, '#why-ram')} style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Compliance</a>
             <Link to="/privacy-policy" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Privacy policy</Link>
             <Link to="/terms-conditions" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Terms &amp; conditions</Link>
             <Link to="/delete-account" style={{ fontSize: '14px', color: 'rgba(255,255,255,.68)' }}>Delete account</Link>

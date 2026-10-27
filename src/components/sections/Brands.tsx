@@ -24,7 +24,7 @@ export default function Brands() {
           grid-template-columns: 1fr;
           gap: 48px;
           align-items: center;
-          max-width: 1280px;
+          max-width: var(--container-max, 1280px);
           margin: 0 auto;
           position: relative;
           z-index: 1;

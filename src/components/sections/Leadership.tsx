@@ -14,7 +14,7 @@ const TEAM = [
   },
   {
     name: "Ms. Gina Morris",
-    title: "Operations Center Director",
+    title: "Director Of Operations",
     image: "/OCenterDirector.png"
   },
   {
@@ -40,7 +40,7 @@ export default function Leadership() {
           transform: scale(1.04);
         }
       `}</style>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+      <div style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto' }}>
         <RevealWrapper>
           <div style={{ maxWidth: '660px', marginBottom: '56px' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Leadership Team</span>
@@ -53,7 +53,7 @@ export default function Leadership() {
           </div>
         </RevealWrapper>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '32px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%,250px),1fr))', gap: '32px' }}>
           {TEAM.map((member, idx) => (
             <RevealWrapper key={idx}>
               <div

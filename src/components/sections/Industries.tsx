@@ -4,18 +4,23 @@ import { RevealWrapper } from '../utils/RevealWrapper';
 export default function Industries() {
   const industriesList = [
     {
+      name: "Corporate & Financial",
+      desc: "Corporate offices, financial institutions, executive floors",
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A2342" strokeWidth="1.75" strokeLinecap="round"><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2" /><path d="M3 13h18" /></svg>
+    },
+    {
       name: "Healthcare",
       desc: "De-escalation, ER coverage, HIPAA-aware protocols",
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A2342" strokeWidth="1.75" strokeLinecap="round"><path d="M12 7v10M7 12h10" /><rect x="3" y="3" width="18" height="18" rx="3" /></svg>
     },
     {
       name: "Retail",
-      desc: "Shrink control, ORC deterrence, mall coverage",
+      desc: "Luxury retail, shrink control, loss prevention support",
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A2342" strokeWidth="1.75" strokeLinecap="round"><path d="M4 6h16l-1.6 9H6.6z" /><circle cx="9" cy="19" r="1.4" /><circle cx="17" cy="19" r="1.4" /></svg>
     },
     {
       name: "Commercial",
-      desc: "Lobby ambassadors, tenant services, after hours",
+      desc: "Commercial real estate, lobbies, tenant services",
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A2342" strokeWidth="1.75" strokeLinecap="round"><path d="M4 21V6l8-3v18" /><path d="M12 10h8v11" /><path d="M7 9h2M7 13h2M16 14h2" /></svg>
     },
     {
@@ -44,20 +49,25 @@ export default function Industries() {
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A2342" strokeWidth="1.75" strokeLinecap="round"><path d="M3 20h18" /><path d="M5 20V9M9 20V9M15 20V9M19 20V9" /><path d="M3 9l9-5 9 5" /></svg>
     },
     {
-      name: "Warehousing",
-      desc: "Dock supervision, trailer seals, inventory integrity",
+      name: "Logistics & Distribution",
+      desc: "Warehouses, dock supervision, inventory integrity",
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A2342" strokeWidth="1.75" strokeLinecap="round"><path d="M3 8l9-4 9 4v12H3z" /><path d="M9 20v-7h6v7" /></svg>
     },
     {
       name: "Hospitality",
       desc: "Guest safety, night audit support, event control",
       icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A2342" strokeWidth="1.75" strokeLinecap="round"><path d="M3 17v-4a3 3 0 013-3h12a3 3 0 013 3v4" /><path d="M3 17h18v3H3z" /><path d="M7 10V7h10v3" /></svg>
+    },
+    {
+      name: "Special Events",
+      desc: "Temporary coverage, crowd management, credentialing",
+      icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A2342" strokeWidth="1.75" strokeLinecap="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18" /><path d="M8 3v4M16 3v4" /></svg>
     }
   ];
 
   return (
     <section id="industries" style={{ padding: 'clamp(80px,9vw,132px) 32px', background: '#fff', scrollMarginTop: '90px' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+      <div style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto' }}>
         <RevealWrapper>
           <div style={{ maxWidth: '620px' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Industries</span>
@@ -67,7 +77,7 @@ export default function Industries() {
           </div>
         </RevealWrapper>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(228px,1fr))', gap: '16px', marginTop: '48px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,228px),1fr))', gap: '16px', marginTop: '48px' }}>
           {industriesList.map((ind, idx) => (
             <RevealWrapper key={ind.name} delay={idx * 20}>
               <div className="industry-card-lift">

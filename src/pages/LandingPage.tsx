@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Hero from '@/components/sections/Hero';
 import TrustBar from '@/components/sections/TrustBar';
+import About from '@/components/sections/About';
 import Services from '@/components/sections/Services';
 import WhyRam from '@/components/sections/WhyRam';
 import Leadership from '@/components/sections/Leadership';
@@ -67,6 +68,7 @@ export default function LandingPage() {
       <Testimonials />
       <Leadership />
       <Brands />
+      <About />
       <ContactForm />
       <Footer />
       <StickyCTA showSticky={showSticky} />

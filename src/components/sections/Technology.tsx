@@ -8,7 +8,7 @@ export default function Technology() {
       <span style={{ position: 'absolute', left: '-10%', top: '-10%', width: '640px', height: '640px', borderRadius: '999px', background: 'radial-gradient(circle,rgba(212,175,55,0.16),transparent 65%)', pointerEvents: 'none' }} />
       <span style={{ position: 'absolute', right: '-8%', bottom: '-20%', width: '720px', height: '720px', borderRadius: '999px', background: 'radial-gradient(circle,rgba(120,170,255,0.14),transparent 65%)', pointerEvents: 'none' }} />
       
-      <div style={{ maxWidth: '1280px', margin: '0 auto', position: 'relative' }}>
+      <div style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto', position: 'relative' }}>
         <RevealWrapper>
           <div style={{ maxWidth: '700px' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Technology</span>
@@ -54,7 +54,7 @@ export default function Technology() {
                 
                 {/* Right Dashboard grid */}
                 <div style={{ padding: '26px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,150px),1fr))', gap: '14px' }}>
                     <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
                       <span style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.55)' }}>Officers on shift</span>
                       <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '26px', color: '#fff', marginTop: '6px' }}>214</span>
@@ -73,7 +73,7 @@ export default function Technology() {
                     </div>
                   </div>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: '18px', flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,240px),1fr))', gap: '18px', flex: 1 }}>
                     
                     {/* Completion Chart */}
                     <div style={{ padding: '20px', borderRadius: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column' }}>
@@ -135,7 +135,7 @@ export default function Technology() {
         </RevealWrapper>
 
         {/* Technology Cards Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '20px', marginTop: '96px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,220px),1fr))', gap: '20px', marginTop: '96px' }}>
           <div style={{ padding: '22px', borderRadius: '16px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)', backdropFilter: 'blur(12px)' }}>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '17px', color: '#fff' }}>Guard mobile app</span>
             <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'rgba(255,255,255,0.66)', margin: '10px 0 0' }}>GPS check-in, checkpoint scanning, photo capture, incident forms offline-capable.</p>

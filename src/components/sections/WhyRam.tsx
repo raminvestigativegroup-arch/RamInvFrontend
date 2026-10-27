@@ -43,8 +43,8 @@ export default function WhyRam() {
   const [activeFeature, setActiveFeature] = useState(0);
 
   return (
-    <section id="about" style={{ padding: 'clamp(80px,9vw,132px) 32px', background: 'linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%)', borderTop: '1px solid #EEF2F7', scrollMarginTop: '90px' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+    <section id="why-ram" style={{ padding: 'clamp(80px,9vw,132px) 32px', background: 'linear-gradient(180deg,#F8FAFC 0%,#FFFFFF 100%)', borderTop: '1px solid #EEF2F7', scrollMarginTop: '90px' }}>
+      <div style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto' }}>
         <RevealWrapper>
           <div style={{ maxWidth: '660px' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Why RAM</span>
@@ -57,7 +57,7 @@ export default function WhyRam() {
           </div>
         </RevealWrapper>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))', gap: '32px', marginTop: '48px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,340px),1fr))', gap: '32px', marginTop: '48px', alignItems: 'start' }}>
           {/* Tabs List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {FEATURES.map((feat, index) => {

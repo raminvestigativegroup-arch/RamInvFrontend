@@ -5,7 +5,7 @@ export default function Services() {
   const servicesList = [
     {
       title: "Security Guard Services",
-      desc: "Armed and unarmed officers for fixed posts, lobbies, and perimeters — supervised on every shift.",
+      desc: "Armed and unarmed officers for corporate offices, retail, warehouses, residential communities, and schools — short-term, long-term, or around the clock.",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 3v6c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6l7-3z" /><path d="M9 12l2 2 4-4" /></svg>
     },
     {
@@ -15,13 +15,23 @@ export default function Services() {
     },
     {
       title: "Private Investigation",
-      desc: "Licensed investigators for surveillance, due diligence, fraud, and workplace misconduct cases.",
+      desc: "Background investigations, surveillance, corporate and fraud investigations, witness interviews, and litigation support for attorneys and businesses.",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="6" /><path d="M15.5 15.5L21 21" /></svg>
     },
     {
       title: "Executive Protection",
-      desc: "Discreet close protection and secure transport for leadership, boards, and visiting delegations.",
+      desc: "Protective personnel, advance planning, threat assessments, and secure movement coordination for executives, VIPs, and private clients.",
       icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.2" /><path d="M5 20c0-3.4 3.1-5.5 7-5.5s7 2.1 7 5.5" /></svg>
+    },
+    {
+      title: "Off-Duty & Retired Law Enforcement",
+      desc: "Qualified off-duty and retired police officers, detectives, and supervisors for specialized assignments, subject to licensing requirements.",
+      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.4l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8z" /><path d="M8 21h8" /></svg>
+    },
+    {
+      title: "Emergency & Temporary Coverage",
+      desc: "Rapid staffing for unexpected shortages, security incidents, elevated threats, and emergency property protection.",
+      icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5" /><path d="M9 2h6" /></svg>
     },
     {
       title: "Construction Security",
@@ -57,9 +67,9 @@ export default function Services() {
 
   return (
     <section id="services" style={{ padding: 'clamp(80px,9vw,132px) 32px', background: '#fff', scrollMarginTop: '90px' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+      <div style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto' }}>
         <RevealWrapper>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '32px', alignItems: 'end', marginBottom: '56px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,320px),1fr))', gap: '32px', alignItems: 'end', marginBottom: '56px' }}>
             <div>
               <span style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--accent)' }}>Services</span>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(34px,3.4vw,48px)', lineHeight: 1.1, letterSpacing: '-0.02em', color: '#0A2342', margin: '16px 0 0', maxWidth: '620px', textWrap: 'balance' }}>
@@ -73,7 +83,7 @@ export default function Services() {
         </RevealWrapper>
 
         {/* Services Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(292px,1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,292px),1fr))', gap: '20px' }}>
           {servicesList.map((srv, idx) => (
             <RevealWrapper key={srv.title} delay={idx * 30}>
               <div className="service-card-lift">

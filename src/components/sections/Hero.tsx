@@ -16,7 +16,7 @@ export default function Hero({ animateCounters = true }: HeroProps) {
       overflow: 'hidden'
     }}>
       {/* 2-column hero: text left, image right — both visible on first paint */}
-      <div className="hero-grid" style={{ maxWidth: '1280px', margin: '0 auto' }}>
+      <div className="hero-grid" style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto' }}>
 
         {/* Left — text content */}
         <div>
@@ -27,7 +27,7 @@ export default function Hero({ animateCounters = true }: HeroProps) {
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(36px,3.8vw,60px)', lineHeight: 1.05, letterSpacing: '-0.02em', color: '#0A2342', margin: '20px 0 0', textWrap: 'balance' }}>
             Protecting People, Property &amp; Businesses with Confidence.
           </h1>
-          <p style={{ fontSize: 'clamp(16px,1.2vw,18px)', lineHeight: 1.62, color: '#3F4A5A', margin: '20px 0 0', textWrap: 'pretty' }}>
+          <p style={{ fontSize: 'clamp(16px,1.2vw,18px)', lineHeight: 1.62, color: '#3F4A5A', margin: '20px 0 0', maxWidth: '640px', textWrap: 'pretty' }}>
             Professional protection personnel, mobile patrol, investigative services, and workforce management solutions—powered by modern technology and built around your security needs.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginTop: '28px' }}>

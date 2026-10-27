@@ -90,7 +90,7 @@ export default function ContactForm() {
 
   return (
     <section id="contact" style={{ padding: 'clamp(80px,9vw,132px) 32px', background: 'radial-gradient(900px 500px at 85% 0%,rgba(212,175,55,0.14),transparent 60%),linear-gradient(135deg,#071A31 0%,#0A2342 60%,#16345B 100%)', scrollMarginTop: '90px' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(380px,1fr))', gap: 'clamp(40px,5vw,72px)', alignItems: 'center' }}>
+      <div style={{ maxWidth: 'var(--container-max, 1280px)', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,380px),1fr))', gap: 'clamp(40px,5vw,72px)', alignItems: 'center' }}>
         
         {/* Left copy column */}
         <RevealWrapper>
@@ -130,7 +130,7 @@ export default function ContactForm() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,150px),1fr))', gap: '14px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <Input 
                     label="Full name" 

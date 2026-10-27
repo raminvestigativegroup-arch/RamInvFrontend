@@ -572,6 +572,8 @@
 
 /* ─── LANDING PAGE DESIGN SYSTEM THEME ─── */
 .landing-page-theme {
+  /* Content width: 1280px on laptops, then grows with the viewport so wide or zoomed-out screens don't show empty side gutters */
+  --container-max: clamp(1280px, 90vw, 2400px);
   --purple-1: #0A2342;
   --purple-2: #1E3A5F;
   --purple-3: #0A2342;
@@ -791,6 +793,71 @@
   grid-template-columns: 1fr;
   gap: clamp(32px, 4vw, 56px);
   align-items: center;
+}
+
+/* Footer: two link columns under the brand block on phones */
+@media (max-width: 640px) {
+  .landing-page-theme .site-footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 32px 24px !important;
+  }
+
+  .landing-page-theme .site-footer-grid > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Header: collapse nav and actions behind a menu button below 992px */
+.landing-page-theme .site-header-toggle {
+  display: none;
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid rgba(10, 35, 66, 0.14);
+  background: #fff;
+  color: #0A2342;
+  cursor: pointer;
+}
+
+@media (max-width: 991px) {
+  .landing-page-theme .site-header-inner {
+    padding: 8px 16px !important;
+    min-height: 64px !important;
+  }
+
+  .landing-page-theme .site-header-toggle {
+    display: inline-flex;
+  }
+
+  .landing-page-theme .site-header-nav,
+  .landing-page-theme .site-header-actions {
+    display: none !important;
+  }
+
+  .landing-page-theme .site-header-inner.is-open .site-header-nav {
+    display: flex !important;
+    flex: 1 1 100% !important;
+    flex-direction: column;
+    align-items: stretch !important;
+    padding-top: 8px;
+    border-top: 1px solid rgba(10, 35, 66, 0.08);
+  }
+
+  .landing-page-theme .site-header-inner.is-open .site-header-actions {
+    display: flex !important;
+    flex: 1 1 100% !important;
+    flex-direction: column;
+    align-items: stretch !important;
+    padding-bottom: 12px;
+  }
+
+  .landing-page-theme .site-header-inner.is-open .site-header-actions > a {
+    justify-content: center;
+    padding: 6px 0;
+  }
 }
 
 @media (min-width: 992px) {
