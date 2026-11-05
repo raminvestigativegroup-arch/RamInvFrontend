@@ -480,9 +480,6 @@ const GuardManagement = () => {
         newErrors.phoneNumber = "Invalid format";
       }
     }
-    if (!form.roleType.trim()) {
-      newErrors.roleType = "Role is required";
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -499,7 +496,6 @@ const GuardManagement = () => {
         middleName: form.middleName,
         lastName: form.lastName,
         phoneNumber: form.phoneNumber,
-        roleType: form.roleType,
         profilePhoto: form.image,
         managerId: form.managerId || null,
       });
@@ -510,7 +506,7 @@ const GuardManagement = () => {
         lastName: form.lastName,
         email: form.email,
         phoneNumber: form.phoneNumber,
-        roleType: form.roleType || "guard",
+        roleType: "guard",
         profilePhoto: form.image,
         managerId: form.managerId || null,
       });
@@ -879,19 +875,6 @@ const GuardManagement = () => {
               }`}
           />
         </FormField>
-        <FormField label="Role" required error={errors.roleType}>
-          <SelectDropdown
-            value={form.roleType}
-            onChange={val => {
-              setForm(f => ({ ...f, roleType: val }));
-              if (errors.roleType) setErrors(prev => ({ ...prev, roleType: undefined }));
-            }}
-            options={rolesList.map(role => ({ value: role.name, label: role.name }))}
-            placeholder="Select a role"
-            className={errors.roleType ? "border-destructive focus:ring-destructive/20" : "border-border focus:ring-primary"}
-          />
-        </FormField>
-
         {/* <FormField label="Assigned Site">
           <select value={form.site} onChange={(e) => setForm((f) => ({ ...f, site: e.target.value }))} className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">
             {sites.filter((s) => s.status === "active").map((s) => (
