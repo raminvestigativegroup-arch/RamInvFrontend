@@ -461,7 +461,7 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
                     const end = endD.toISOString().split("T")[0];
 
                     const isActive = activePresetDays === preset.days &&
-                      (preset.fullDay ? form.shiftStart === "00:00" && form.shiftEnd === "23:59" : true);
+                      (preset.fullDay ? form.shiftStart === "00:00" && form.shiftEnd === "00:00" : true);
 
                     return (
                       <button
@@ -470,13 +470,13 @@ const ShiftFormDialog = ({ open, onOpenChange, onSave, editEntry, existingEntrie
                         onClick={() => {
                           setActivePresetDays(preset.days);
                           if (preset.fullDay) {
-                            setActivePresetTimeMins(1439);
+                            setActivePresetTimeMins(1440);
                             setForm(f => ({
                               ...f,
                               startDate: start,
                               endDate: end,
                               shiftStart: "00:00",
-                              shiftEnd: "23:59",
+                              shiftEnd: "00:00",
                             }));
                           } else {
                             setForm(f => ({

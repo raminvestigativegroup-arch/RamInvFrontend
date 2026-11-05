@@ -40,16 +40,17 @@ const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const ScheduleWeekView = ({ entries, guards, onEdit, onDelete, filterSite, weekStart }: Props) => {
   const filteredGuards = useMemo(() => {
-    if (filterSite === "all") {
-      return guards.filter((g) => g.isVerified);
-    }
-    // Find guard names with at least one shift at this site
+    // Guards with at least one shift (at the selected site, if any). Shown even when not verified,
+    // so the weekly view always matches the calendar and by-site views.
     const guardNamesWithShifts = new Set(
       entries
-        .filter((e) => e.site === filterSite)
+        .filter((e) => filterSite === "all" || e.site === filterSite)
         .map((e) => e.guard)
     );
-    return guards.filter((g) => g.isVerified && guardNamesWithShifts.has(g.name));
+    if (filterSite === "all") {
+      return guards.filter((g) => g.isVerified || guardNamesWithShifts.has(g.name));
+    }
+    return guards.filter((g) => guardNamesWithShifts.has(g.name));
   }, [guards, filterSite, entries]);
 
   // Generate the 7 days of the week based on weekStart (enforces UTC timezone alignment)
