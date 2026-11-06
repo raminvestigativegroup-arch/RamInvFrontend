@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
+import SortButton from "@/components/common/SortButton";
+import { SortState, ariaSort, nextSort, sortRows } from "@/lib/tableSort";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { ScheduleEntry } from "@/data/dummyData";
@@ -325,6 +327,12 @@ const Scheduling = () => {
 
   const todayShifts = useMemo(() => filteredEntries.filter((s: ScheduleEntry) => s.date === selectedDate), [filteredEntries, selectedDate]);
 
+  const [shiftSort, setShiftSort] = useState<SortState | null>(null);
+  const sortedTodayShifts = useMemo(
+    () => sortRows(todayShifts, shiftSort, (entry: any, key) => (key === "scheduled" ? entry.shiftStart : entry[key])),
+    [todayShifts, shiftSort],
+  );
+
   const viewTabs: { id: ViewMode; label: string; icon: React.ReactNode }[] = [
     { id: "calendar", label: "Calendar", icon: <CalendarDays className="w-4 h-4" /> },
     { id: "week", label: "Weekly", icon: <LayoutGrid className="w-4 h-4" /> },
@@ -511,16 +519,26 @@ const Scheduling = () => {
               <table className="w-full">
                 <thead>
                   <tr className="bg-secondary/50 border-b border-border">
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">GUARD</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">SITE</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">SCHEDULED</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">ACTUAL START</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">STATUS</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(shiftSort, "guard")}>
+                      <SortButton label="GUARD" direction={shiftSort?.key === "guard" ? shiftSort.direction : undefined} onClick={() => setShiftSort(nextSort(shiftSort, "guard"))} />
+                    </th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(shiftSort, "site")}>
+                      <SortButton label="SITE" direction={shiftSort?.key === "site" ? shiftSort.direction : undefined} onClick={() => setShiftSort(nextSort(shiftSort, "site"))} />
+                    </th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(shiftSort, "scheduled")}>
+                      <SortButton label="SCHEDULED" direction={shiftSort?.key === "scheduled" ? shiftSort.direction : undefined} onClick={() => setShiftSort(nextSort(shiftSort, "scheduled"))} />
+                    </th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(shiftSort, "actualStart")}>
+                      <SortButton label="ACTUAL START" direction={shiftSort?.key === "actualStart" ? shiftSort.direction : undefined} onClick={() => setShiftSort(nextSort(shiftSort, "actualStart"))} />
+                    </th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(shiftSort, "status")}>
+                      <SortButton label="STATUS" direction={shiftSort?.key === "status" ? shiftSort.direction : undefined} onClick={() => setShiftSort(nextSort(shiftSort, "status"))} />
+                    </th>
                     <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {todayShifts.map((entry) => (
+                  {sortedTodayShifts.map((entry) => (
                     <tr key={entry.id} className="hover:bg-secondary/30 transition-colors">
                       <td className="px-5 py-4 text-sm font-medium text-foreground">
                         <div className="flex items-center gap-2">

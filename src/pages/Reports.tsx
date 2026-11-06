@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Download, FileText, BarChart3, Eye, TrendingUp, Shield, Clock, AlertTriangle, Users, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import StateMessage from "@/components/common/StateMessage";
 import { Button } from "@/components/ui/button";
+import SortButton from "@/components/common/SortButton";
+import { downloadCsv } from "@/lib/csv";
+import { useToast } from "@/hooks/use-toast";
+import { SortState, ariaSort, nextSort, sortRows } from "@/lib/tableSort";
 
 const Reports = () => {
+  const { toast } = useToast();
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
   const permissions = user?.permissions || [];
@@ -17,6 +22,7 @@ const Reports = () => {
 
   const [previewReport, setPreviewReport] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [templateSort, setTemplateSort] = useState<SortState | null>(null);
 
   // 1. Fetch Dynamic Reports templates list from Backend
   const { data: listResponse, isLoading: listLoading, error: listError } = useQuery({
@@ -24,6 +30,14 @@ const Reports = () => {
     queryFn: () => api.reports.list().then((res) => res.data),
     enabled: hasViewPermission,
   });
+
+  const sortedReports = useMemo(
+    () =>
+      sortRows<any>(listResponse?.reports ?? [], templateSort, (r, key) =>
+        key === "lastGenerated" ? Date.parse(r.lastGenerated) || null : r[key],
+      ),
+    [listResponse, templateSort],
+  );
 
   // 2. Fetch Dynamic Stats Cards from Backend
   const { data: statsResponse, isLoading: statsLoading, error: statsError } = useQuery({
@@ -42,9 +56,7 @@ const Reports = () => {
 
   const downloadReport = (title: string, sections: any[]) => {
     if (!sections || sections.length === 0) return;
-    
-    let content = `=========================================\n`;
-    content += `${title.toUpperCase()}\n`;
+
     const formattedDate = new Date().toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -55,23 +67,49 @@ const Reports = () => {
       hour12: true,
       timeZone: "UTC",
     });
-    content += `Generated on: ${formattedDate} UTC\n`;
-    content += `=========================================\n\n`;
 
+    const rows: string[][] = [
+      ["Report", title],
+      ["Generated on", `${formattedDate} UTC`],
+      [],
+      ["Section", "Detail"],
+    ];
     sections.forEach((s) => {
-      content += `${s.heading.toUpperCase()}\n`;
-      content += `${"-".repeat(s.heading.length)}\n`;
-      content += `${s.content}\n\n`;
+      // One row per line of content; bullets are dropped since each line is its own row
+      const lines = String(s.content ?? "")
+        .split(/\r?\n/)
+        .map((line) => line.replace(/^\s*[•\-*]\s+/, "").trim())
+        .filter(Boolean);
+      (lines.length ? lines : [""]).forEach((line, idx) => {
+        rows.push([idx === 0 ? s.heading : "", line]);
+      });
     });
 
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${title.replace(/\s+/g, "_")}_${new Date().toISOString().split('T')[0]}.txt`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCsv(`${title.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}`, rows);
+  };
+
+  // Quick-export cards: the full listing behind a report, one row per record
+  const handleExport = async (reportId: string, label: string) => {
+    try {
+      setDownloadingId(`export-${reportId}`);
+      const res = await api.reports.getExport(reportId);
+      const { filename, columns, rows } = res.data || {};
+      if (!columns) throw new Error("Unexpected response from the server.");
+      if (!rows || rows.length === 0) {
+        toast({ title: "Nothing to export", description: `There are no records for the ${label} yet.` });
+        return;
+      }
+      downloadCsv(filename || `report_${reportId}`, [columns, ...rows]);
+    } catch (err: any) {
+      console.error("Failed to export report listing:", err);
+      toast({
+        title: "Export failed",
+        description: err?.response?.data?.message || err?.message || "Could not export this report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const handleDownload = async (reportId: string) => {
@@ -148,9 +186,9 @@ const Reports = () => {
       {hasCreatePermission && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { id: "R1", label: "Incident Report", desc: "Export all incidents as TXT", icon: FileText },
-            { id: "R2", label: "Hours Report", desc: "Export hours data as TXT", icon: BarChart3 },
-            { id: "R3", label: "Compliance Report", desc: "Export compliance status as TXT", icon: FileText },
+            { id: "R1", label: "Incident Report", desc: "Export all incidents as CSV", icon: FileText },
+            { id: "R2", label: "Hours Report", desc: "Export hours data as CSV", icon: BarChart3 },
+            { id: "R3", label: "Compliance Report", desc: "Export compliance status as CSV", icon: FileText },
           ].map((item) => (
             <div key={item.label} className="bg-card rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3 mb-3">
@@ -165,11 +203,11 @@ const Reports = () => {
               <Button
                 variant="link"
                 size="sm"
-                disabled={downloadingId === item.id}
-                onClick={() => handleDownload(item.id)}
+                disabled={downloadingId === `export-${item.id}`}
+                onClick={() => handleExport(item.id, item.label)}
                 className="flex items-center gap-2 text-primary font-medium hover:underline p-0 h-auto shadow-none"
               >
-                {downloadingId === item.id ? (
+                {downloadingId === `export-${item.id}` ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <Download className="w-3.5 h-3.5" />
@@ -189,10 +227,18 @@ const Reports = () => {
         <table className="w-full">
           <thead>
             <tr className="bg-secondary/50 border-b border-border">
-              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">REPORT NAME</th>
-              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">TYPE</th>
-              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">FORMAT</th>
-              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">LAST GENERATED</th>
+              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(templateSort, "name")}>
+                <SortButton label="REPORT NAME" direction={templateSort?.key === "name" ? templateSort.direction : undefined} onClick={() => setTemplateSort(nextSort(templateSort, "name"))} />
+              </th>
+              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(templateSort, "type")}>
+                <SortButton label="TYPE" direction={templateSort?.key === "type" ? templateSort.direction : undefined} onClick={() => setTemplateSort(nextSort(templateSort, "type"))} />
+              </th>
+              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(templateSort, "format")}>
+                <SortButton label="FORMAT" direction={templateSort?.key === "format" ? templateSort.direction : undefined} onClick={() => setTemplateSort(nextSort(templateSort, "format"))} />
+              </th>
+              <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(templateSort, "lastGenerated")}>
+                <SortButton label="LAST GENERATED" direction={templateSort?.key === "lastGenerated" ? templateSort.direction : undefined} onClick={() => setTemplateSort(nextSort(templateSort, "lastGenerated"))} />
+              </th>
               <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">ACTIONS</th>
             </tr>
           </thead>
@@ -214,7 +260,7 @@ const Reports = () => {
                 </td>
               </tr>
             ) : listResponse?.reports && listResponse.reports.length > 0 ? (
-              listResponse.reports.map((r: any) => (
+              sortedReports.map((r: any) => (
                 <tr key={r.id} className="hover:bg-secondary/30 transition-colors">
                   <td className="px-5 py-4 text-sm font-medium text-foreground">{r.name}</td>
                   <td className="px-5 py-4 text-sm text-muted-foreground">{r.type}</td>

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { sites, Manager } from "@/data/dummyData";
-import { Plus, MoreVertical, Mail, Phone, MapPin, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, UserCog, Search, Filter, FileText, Calendar, ExternalLink } from "lucide-react";
+import { Plus, MoreVertical, Mail, Phone, MapPin, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, UserCog, Search, Filter, FileText, Calendar, ExternalLink, UserX, UserCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -84,7 +84,7 @@ const normalizeManager = (manager: any, index: number): Manager => {
       : manager.site
         ? [String(manager.site)]
         : [],
-    status: manager.status === "inactive" ? "inactive" : "active",
+    status: manager.isActive === false || manager.status === "inactive" ? "inactive" : "active",
     licenseExpiry: String(manager.licenseExpiry || manager.license_expiry || "N/A"),
     avatar: String(manager.profilePhoto || manager.avatar || ""),
     isVerified: manager.isVerified === true || manager.verified === true || manager.verified === "true" || manager.isVerified === "true",
@@ -157,7 +157,6 @@ const ManagerManagement = () => {
 
   const [search, setSearch] = useState("");
   const [verifiedFilter, setVerifiedFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const limit = 10;
   const [open, setOpen] = useState(false);
@@ -196,7 +195,7 @@ const ManagerManagement = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, verifiedFilter, statusFilter]);
+  }, [debouncedSearch, verifiedFilter]);
 
   const {
     data: managerData = { managers: [], pagination: { totalItems: 0, totalPages: 1, currentPage: 1, pageSize: limit } },
@@ -204,7 +203,7 @@ const ManagerManagement = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["managers", debouncedSearch, verifiedFilter, statusFilter, page],
+    queryKey: ["managers", debouncedSearch, verifiedFilter, page],
     queryFn: async () => {
       const params: any = {
         page,
@@ -214,10 +213,11 @@ const ManagerManagement = () => {
         params.search = debouncedSearch.trim();
       }
       if (verifiedFilter !== "all") {
-        params.verified = verifiedFilter === "verified" ? "true" : "false";
-      }
-      if (statusFilter !== "all") {
-        params.status = statusFilter;
+        if (verifiedFilter === "active" || verifiedFilter === "inactive") {
+          params.accountStatus = verifiedFilter;
+        } else {
+          params.verified = verifiedFilter === "verified" ? "true" : "false";
+        }
       }
       const response = await api.managers.list(params);
       const rawData = response.data?.data || response.data || {};
@@ -336,6 +336,37 @@ const ManagerManagement = () => {
       setErrors(prev => ({ ...prev, form: errMsg }));
     }
   });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => api.managers.setStatus(id, isActive),
+    onSettled: () => setStatusTarget(null),
+    onSuccess: async (_data, vars) => {
+      await queryClient.invalidateQueries({ queryKey: ["managers"] });
+      toast({
+        title: vars.isActive ? "Manager Activated" : "Manager Deactivated",
+        description: vars.isActive
+          ? "The account can sign in again."
+          : "The account has been signed out and can no longer sign in.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Status Update Failed",
+        description: error.response?.data?.message || "Failed to update account status.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Deactivating asks for confirmation first; activating applies straight away
+  const [statusTarget, setStatusTarget] = useState<{ id: string; name: string } | null>(null);
+  const toggleAccountStatus = (id: string, name: string, currentlyActive: boolean) => {
+    if (currentlyActive) {
+      setStatusTarget({ id, name });
+      return;
+    }
+    statusMutation.mutate({ id, isActive: true });
+  };
 
   const deleteManagerMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -538,28 +569,17 @@ const ManagerManagement = () => {
               { value: "all", label: "All Statuses" },
               { value: "verified", label: "Verified Only" },
               { value: "unverified", label: "Unverified Only" },
+              { value: "active", label: "Active Only" },
+              { value: "inactive", label: "Deactivated Only" },
             ]}
             placeholder="Status"
-            className="w-full sm:w-[135px]"
+            className="w-full sm:w-[160px]"
           />
 
-          {/* <SelectDropdown
-            value={statusFilter}
-            onChange={setStatusFilter}
-            options={[
-              { value: "all", label: "All Accounts" },
-              { value: "active", label: "Active Only" },
-              { value: "inactive", label: "Inactive Only" },
-            ]}
-            placeholder="Account State"
-            className="w-full sm:w-[135px]"
-          /> */}
-
-          {(verifiedFilter !== "all" || statusFilter !== "all") && (
+          {verifiedFilter !== "all" && (
             <Button
               onClick={() => {
                 setVerifiedFilter("all");
-                setStatusFilter("all");
               }}
               variant="ghost"
               size="sm"
@@ -598,7 +618,7 @@ const ManagerManagement = () => {
           >
             {form.image ? (
               <>
-                <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
+                <img src={form.image} alt="Preview" className="w-full h-full object-contain" />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Upload className="w-6 h-6 text-white" />
                 </div>
@@ -787,6 +807,9 @@ const ManagerManagement = () => {
                     {mgr.isVerified ? "Verified" : "Not Verified"}
                   </Badge>
                 }
+                footerRight={
+                  mgr.status === "inactive" ? <Badge variant="danger" showDot>Deactivated</Badge> : undefined
+                }
                 menuItems={[
                   ...(hasEditPermission ? [
                     {
@@ -798,6 +821,11 @@ const ManagerManagement = () => {
                       label: "Document Verify",
                       icon: ShieldCheck,
                       onClick: () => setVerifyingManager(mgr)
+                    },
+                    {
+                      label: mgr.status === "inactive" ? "Activate Account" : "Deactivate Account",
+                      icon: mgr.status === "inactive" ? UserCheck : UserX,
+                      onClick: () => toggleAccountStatus(mgr.id, mgr.name, mgr.status !== "inactive")
                     }
                   ] : []),
                   ...(hasDeletePermission ? [
@@ -879,6 +907,42 @@ const ManagerManagement = () => {
                 loading={deleteManagerMutation.isPending}
               >
                 Delete Account
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Deactivate Confirmation Dialog */}
+      <AlertDialog open={!!statusTarget} onOpenChange={(val) => !val && setStatusTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-destructive" />
+              </div>
+              <AlertDialogTitle>Deactivate Manager Account?</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate <strong>{statusTarget?.name}</strong>? They will be signed out immediately and cannot sign in until the account is reactivated.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={statusMutation.isPending}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (statusTarget) statusMutation.mutate({ id: statusTarget.id, isActive: false });
+                }}
+                loading={statusMutation.isPending}
+              >
+                Deactivate Account
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>

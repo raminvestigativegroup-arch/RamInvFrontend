@@ -65,6 +65,7 @@ export const api = {
       return res;
     },
     update: (id: string, data: any) => httpClient.patch(`/guard/${id}`, data),
+    setStatus: (id: string, isActive: boolean) => httpClient.patch(`/guard/${id}/status`, { isActive }),
     delete: (id: string) => httpClient.delete(`/guard/${id}`),
     search: (params?: any) => httpClient.get("/guard/search", { params }),
   },
@@ -75,6 +76,7 @@ export const api = {
     create: (data: any) => httpClient.post("/auth/manager", data),
     getById: (id: string) => httpClient.get(`/manager/${id}`),
     update: (id: string, data: any) => httpClient.patch(`/manager/${id}`, data),
+    setStatus: (id: string, isActive: boolean) => httpClient.patch(`/manager/${id}/status`, { isActive }),
     delete: (id: string) => httpClient.delete(`/manager/${id}`),
   },
 
@@ -223,6 +225,7 @@ export const api = {
     download: (id: string) => httpClient.get(`/reports/${id}/download`, { responseType: 'blob' }),
     getStats: () => httpClient.get("/reports/stats"),
     getPreview: (id: string) => httpClient.get(`/reports/${id}/preview`),
+    getExport: (id: string) => httpClient.get(`/reports/${id}/export`),
   },
 
   // Notifications
@@ -262,6 +265,7 @@ export const api = {
     create: (data: any) => httpClient.post("/operation/users", data),
     getById: (id: string) => httpClient.get(`/operation/users/${id}`),
     update: (id: string, data: any) => httpClient.put(`/operation/users/${id}`, data),
+    setStatus: (id: string, isActive: boolean) => httpClient.patch(`/operation/users/${id}/status`, { isActive }),
     delete: (id: string) => httpClient.delete(`/operation/users/${id}`),
   },
 

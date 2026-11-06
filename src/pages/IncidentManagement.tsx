@@ -16,7 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { formatUTCTime, formatUTCDate } from "@/lib/dateUtils";
-import { downloadIncidentReportPDF, parseRefinedReport } from "@/lib/incidentPdfGenerator";
+import { SortState } from "@/lib/tableSort";
+import { downloadIncidentReportPDF, downloadIncidentListPDF, parseRefinedReport } from "@/lib/incidentPdfGenerator";
 import logoImg from "@/assets/logo.png";
 interface Incident {
   id: string;
@@ -40,6 +41,16 @@ interface Incident {
   isRefinedByAdmin?: boolean;
 }
 
+// Table column -> field the API sorts by
+const INCIDENT_SORT_FIELDS: Record<string, string> = {
+  incident: "incidentType",
+  site: "site",
+  guard: "guard",
+  priority: "priority",
+  status: "solved",
+  date: "time",
+};
+
 const resolveImageUrl = (pathOrData: string | undefined | null) => {
   if (!pathOrData) return "";
   if (pathOrData.startsWith("data:") || pathOrData.startsWith("http:") || pathOrData.startsWith("https:")) {
@@ -56,11 +67,12 @@ const resolveImageUrl = (pathOrData: string | undefined | null) => {
 
 const normalizeIncidentsResponse = (response: any): Incident[] => {
   if (!response) return [];
+  // Unpaginated requests return a bare array
+  if (Array.isArray(response)) return response;
   // The user confirmed the data is in the "incidents" key
-  const list = response.incidents || (response.data && response.data.incidents) || [];
+  const list = response.incidents || (response.data && response.data.incidents);
   if (Array.isArray(list)) return list;
 
-  if (Array.isArray(response)) return response;
   if (Array.isArray(response.data)) return response.data;
   const data = response.data || response;
   return data.incidents || data.items || data.results || data.data || [];
@@ -206,16 +218,18 @@ const IncidentManagement = () => {
   const [siteFilter, setSiteFilter] = useState("all");
   const [guardFilter, setGuardFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [sort, setSort] = useState<SortState | null>(null);
   const [aiIncidentId, setAiIncidentId] = useState<string | null>(null);
   const [aiActiveTab, setAiActiveTab] = useState<"refined" | "original">("refined");
   const [deletingIncident, setDeletingIncident] = useState<Incident | null>(null);
   const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+  const [isExportingList, setIsExportingList] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, priorityFilter, siteFilter, guardFilter, dateFilter]);
+  }, [debouncedSearch, priorityFilter, siteFilter, guardFilter, dateFilter, sort]);
 
   const { data: refinedData, isLoading: isRefining, isError: isRefineError } = useQuery({
     queryKey: ["incidents", aiIncidentId, "refine"],
@@ -283,7 +297,7 @@ const IncidentManagement = () => {
   });
 
   const { data: incidentData = { incidents: [], pagination: { totalItems: 0, totalPages: 1, currentPage: 1, pageSize: limit } }, isLoading, isError, error } = useQuery({
-    queryKey: ["incidents", debouncedSearch, priorityFilter, siteFilter, guardFilter, dateFilter, page],
+    queryKey: ["incidents", debouncedSearch, priorityFilter, siteFilter, guardFilter, dateFilter, sort, page],
     queryFn: async () => {
       const params: any = {
         page,
@@ -299,6 +313,10 @@ const IncidentManagement = () => {
         params.guardId = guardFilter;
       }
       if (dateFilter !== "all") params.date = dateFilter;
+      if (sort && INCIDENT_SORT_FIELDS[sort.key]) {
+        params.sortBy = INCIDENT_SORT_FIELDS[sort.key];
+        params.sortOrder = sort.direction;
+      }
 
       const response = await api.incidents.list(params);
       const rawData = response.data?.data || response.data || {};
@@ -506,6 +524,62 @@ const IncidentManagement = () => {
 
   const activeFilters = [priorityFilter, siteFilter, guardFilter, dateFilter].filter((f) => f !== "all").length;
 
+  // Export every incident matching the selected filters (not just the current page)
+  const handleExportListPdf = async () => {
+    if (isExportingList) return;
+    setIsExportingList(true);
+    try {
+      const params: any = {};
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
+      if (priorityFilter !== "all") params.priority = priorityFilter;
+      if (siteFilter !== "all") {
+        const selectedSite = siteList.find((s) => s.name === siteFilter);
+        params.siteId = selectedSite ? selectedSite.id : siteFilter;
+      }
+      if (guardFilter !== "all") params.guardId = guardFilter;
+      if (dateFilter !== "all") params.date = dateFilter;
+      if (sort && INCIDENT_SORT_FIELDS[sort.key]) {
+        params.sortBy = INCIDENT_SORT_FIELDS[sort.key];
+        params.sortOrder = sort.direction;
+      }
+
+      const response = await api.incidents.list(params);
+      const rawData = response.data?.data || response.data || {};
+      const all = normalizeIncidentsResponse(rawData).map((inc, index) => normalizeIncident(inc, index));
+
+      const guardName = (inc: Incident) => inc.guardDetails?.name || guardMap[inc.guard]?.name || "Unknown Guard";
+      const filterLines = [
+        debouncedSearch.trim() && `Search: "${debouncedSearch.trim()}"`,
+        priorityFilter !== "all" && `Priority: ${priorityFilter}`,
+        dateFilter !== "all" && `Date: ${dateFilter}`,
+        siteFilter !== "all" && `Site: ${siteFilter}`,
+        guardFilter !== "all" && `Guard: ${guardMap[guardFilter]?.name || guardFilter}`,
+      ].filter(Boolean) as string[];
+
+      downloadIncidentListPDF(
+        all.map((inc) => ({
+          type: inc.type,
+          site: inc.site,
+          guard: guardName(inc),
+          priority: inc.priority,
+          status: inc.status,
+          date: inc.date,
+          time: inc.time,
+        })),
+        filterLines,
+      );
+    } catch (err) {
+      console.error("Failed to export incident list PDF:", err);
+      toast({
+        title: "PDF Error",
+        description: "Failed to export incidents. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExportingList(false);
+    }
+  };
+
   if (!hasViewPermission) {
     return (
       <div className="p-6">
@@ -525,8 +599,8 @@ const IncidentManagement = () => {
           <h1 className="module-page-title">Incident Management</h1>
           <p className="text-sm text-muted-foreground">{incidentList.length} total incidents · {filtered.length} shown</p>
         </div>
-        <Button variant="secondary">
-          <Download className="w-4 h-4" />Export PDF
+        <Button variant="secondary" onClick={handleExportListPdf} disabled={isExportingList || isLoading}>
+          <Download className="w-4 h-4" />{isExportingList ? "Exporting..." : "Export PDF"}
         </Button>
       </div>
 
@@ -585,13 +659,15 @@ const IncidentManagement = () => {
         {/* Incident List */}
         <div className={`${selectedIncident ? "w-1/2" : "w-full"} transition-all`}>
           <DataTable
+            sort={sort}
+            onSortChange={setSort}
             columns={[
-              { key: "incident", label: "Incident" },
-              { key: "site", label: "Site" },
-              { key: "guard", label: "Guard" },
-              { key: "priority", label: "Priority" },
-              { key: "status", label: "Status" },
-              { key: "date", label: "Date" },
+              { key: "incident", label: "Incident", sortable: true },
+              { key: "site", label: "Site", sortable: true },
+              { key: "guard", label: "Guard", sortable: true },
+              { key: "priority", label: "Priority", sortable: true },
+              { key: "status", label: "Status", sortable: true },
+              { key: "date", label: "Date", sortable: true },
               { key: "actions", label: "Actions", align: "right" },
             ]}
             data={filtered}

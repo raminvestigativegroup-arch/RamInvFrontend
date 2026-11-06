@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import StateMessage from "./StateMessage";
+import SortButton from "./SortButton";
 import { LucideIcon } from "lucide-react";
+import { SortState, SortValue, ariaSort, nextSort, sortRows } from "@/lib/tableSort";
 
 export interface DataTableColumn<T = any> {
   key: string;
@@ -9,6 +11,10 @@ export interface DataTableColumn<T = any> {
   align?: "left" | "center" | "right";
   className?: string;
   headerClassName?: string;
+  /** Makes the header clickable to sort by this column */
+  sortable?: boolean;
+  /** Value used to sort a row in the browser; defaults to item[key] */
+  sortValue?: (item: T) => SortValue;
 }
 
 interface DataTableProps<T = any> {
@@ -32,6 +38,13 @@ interface DataTableProps<T = any> {
   selectedId?: string | null;
   /** Extra header row content rendered after the last column header (for action-column alignment) */
   trailingColumn?: React.ReactNode;
+  /**
+   * Controlled sort for server-side sorting (tables that are paged by the API).
+   * When onSortChange is given, rows are shown in the order received and the parent refetches.
+   * Without it, the table sorts the rows it has in the browser.
+   */
+  sort?: SortState | null;
+  onSortChange?: (sort: SortState | null) => void;
 }
 
 function DataTable<T = any>({
@@ -50,7 +63,26 @@ function DataTable<T = any>({
   footer,
   className,
   tableClassName,
+  sort: controlledSort,
+  onSortChange,
 }: DataTableProps<T>) {
+  const isServerSort = !!onSortChange;
+  const [localSort, setLocalSort] = useState<SortState | null>(null);
+  const sort = isServerSort ? controlledSort ?? null : localSort;
+
+  const rows = useMemo(() => {
+    if (isServerSort || !sort) return data;
+    const col = columns.find((c) => c.key === sort.key);
+    if (!col) return data;
+    return sortRows(data, sort, (item) => (col.sortValue ? col.sortValue(item) : (item as any)?.[col.key]));
+  }, [data, columns, sort, isServerSort]);
+
+  const handleSort = (key: string) => {
+    const next = nextSort(sort, key);
+    if (isServerSort) onSortChange!(next);
+    else setLocalSort(next);
+  };
+
   return (
     <div className={cn("data-table", className)}>
       {isLoading ? (
@@ -78,19 +110,28 @@ function DataTable<T = any>({
                 {columns.map((col) => (
                   <th
                     key={col.key}
+                    aria-sort={col.sortable ? ariaSort(sort, col.key) : undefined}
                     className={cn(
                       col.align === "right" && "text-right",
                       col.align === "center" && "text-center",
                       col.headerClassName
                     )}
                   >
-                    {col.label}
+                    {col.sortable ? (
+                      <SortButton
+                        label={col.label}
+                        direction={sort?.key === col.key ? sort.direction : undefined}
+                        onClick={() => handleSort(col.key)}
+                      />
+                    ) : (
+                      col.label
+                    )}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {data.map((item, index) => renderRow(item, index))}
+              {rows.map((item, index) => renderRow(item, index))}
             </tbody>
           </table>
         </div>

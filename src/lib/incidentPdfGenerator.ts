@@ -665,3 +665,120 @@ export async function downloadIncidentReportPDF(
   const safeName = incidentTitle.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
   doc.save(`incident_report_${safeName}_${textData.dateOfReport.replace(/\./g, '')}.pdf`);
 }
+
+// ─── Incident list export (respects the filters selected on the page) ───────────
+export interface IncidentListRow {
+  type: string;
+  site: string;
+  guard: string;
+  priority: string;
+  status: string;
+  date: string;
+  time: string;
+}
+
+export function downloadIncidentListPDF(rows: IncidentListRow[], filterLines: string[]) {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const W = 297;
+  const H = 210;
+  const ML = 12;
+  const MR = W - 12;
+
+  const columns = [
+    { label: 'INCIDENT', x: ML, w: 52 },
+    { label: 'SITE', x: ML + 52, w: 62 },
+    { label: 'GUARD', x: ML + 114, w: 44 },
+    { label: 'PRIORITY', x: ML + 158, w: 26 },
+    { label: 'STATUS', x: ML + 184, w: 28 },
+    { label: 'DATE / TIME', x: ML + 212, w: 61 },
+  ];
+
+  const drawPageHeader = () => {
+    doc.setFillColor(...DARK_NAVY);
+    doc.rect(0, 0, W, 22, 'F');
+    doc.setTextColor(...WHITE);
+    doc.setFont(FONT_BOLD, 'bold');
+    doc.setFontSize(14);
+    doc.text('RAM Investigative Group Inc. — Incident Report List', ML, 10);
+    doc.setFont(FONT_NORMAL, 'normal');
+    doc.setFontSize(8.5);
+    doc.text(
+      `Generated: ${new Date().toLocaleString('en-US', { timeZone: 'UTC' })} UTC   |   ${rows.length} incident${rows.length === 1 ? '' : 's'}`,
+      ML,
+      17,
+    );
+  };
+
+  const drawTableHeader = (y: number) => {
+    doc.setFillColor(...BOX_BG);
+    doc.rect(ML, y, MR - ML, 8, 'F');
+    doc.setTextColor(...RAM_BLUE);
+    doc.setFont(FONT_BOLD, 'bold');
+    doc.setFontSize(8);
+    columns.forEach((c) => doc.text(c.label, c.x + 2, y + 5.4));
+    return y + 8;
+  };
+
+  drawPageHeader();
+  let y = 28;
+
+  // Active filters
+  doc.setTextColor(...BLACK);
+  doc.setFont(FONT_BOLD, 'bold');
+  doc.setFontSize(9);
+  doc.text('Filters applied', ML, y);
+  doc.setFont(FONT_NORMAL, 'normal');
+  doc.setFontSize(8.5);
+  const filterText = filterLines.length ? filterLines.join('   •   ') : 'None (all incidents)';
+  const wrapped = doc.splitTextToSize(filterText, MR - ML - 30) as string[];
+  doc.text(wrapped, ML + 30, y);
+  y += Math.max(6, wrapped.length * 4.2) + 3;
+
+  y = drawTableHeader(y);
+
+  if (rows.length === 0) {
+    doc.setTextColor(...BLACK);
+    doc.setFontSize(10);
+    doc.text('No incidents match the selected filters.', ML + 2, y + 10);
+  }
+
+  rows.forEach((r) => {
+    const cells = [
+      r.type,
+      r.site,
+      r.guard,
+      r.priority.toUpperCase(),
+      r.status.replace(/-/g, ' ').toUpperCase(),
+      `${r.date}  ${r.time}`,
+    ].map((text, i) => doc.splitTextToSize(String(text || '-'), columns[i].w - 4) as string[]);
+
+    const lines = Math.max(...cells.map((c) => c.length));
+    const rowH = lines * 4.2 + 3.5;
+
+    if (y + rowH > H - 14) {
+      doc.addPage();
+      drawPageHeader();
+      y = drawTableHeader(28);
+    }
+
+    doc.setTextColor(...BLACK);
+    doc.setFont(FONT_NORMAL, 'normal');
+    doc.setFontSize(8.5);
+    cells.forEach((c, i) => doc.text(c, columns[i].x + 2, y + 5));
+
+    doc.setDrawColor(...BORDER_COLOR);
+    doc.line(ML, y + rowH, MR, y + rowH);
+    y += rowH;
+  });
+
+  const pages = doc.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    doc.setTextColor(120, 120, 120);
+    doc.setFont(FONT_NORMAL, 'normal');
+    doc.setFontSize(8);
+    doc.text(`Page ${p} of ${pages}`, MR, H - 6, { align: 'right' });
+  }
+
+  doc.save(`incident_list_${new Date().toISOString().split('T')[0]}.pdf`);
+}

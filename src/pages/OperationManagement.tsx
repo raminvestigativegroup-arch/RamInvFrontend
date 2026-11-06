@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
-import { Search, Plus, Mail, Phone, User, Trash2, Loader2, UserCheck, Upload } from "lucide-react";
+import { Search, Plus, Mail, Phone, User, Trash2, Loader2, UserCheck, UserX, Upload, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import EntityCard from "@/components/common/EntityCard";
 import EntityDialog from "@/components/common/EntityDialog";
@@ -10,6 +10,16 @@ import SelectDropdown from "@/components/common/SelectDropdown";
 import FormField from "@/components/common/FormField";
 import StateMessage from "@/components/common/StateMessage";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 
 const getInitials = (name: string) =>
@@ -68,6 +78,7 @@ const OperationManagement = () => {
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const limit = 10;
   const [open, setOpen] = useState(false);
@@ -97,7 +108,7 @@ const OperationManagement = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, roleFilter]);
+  }, [debouncedSearch, roleFilter, statusFilter]);
 
   const queryClient = useQueryClient();
 
@@ -118,7 +129,7 @@ const OperationManagement = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["operationUsers", debouncedSearch, roleFilter],
+    queryKey: ["operationUsers", debouncedSearch, roleFilter, statusFilter],
     queryFn: async () => {
       const response = await api.operation.list();
       const list = normalizeUsersResponse(response.data);
@@ -140,9 +151,13 @@ const OperationManagement = () => {
 
       const matchesRole = roleFilter === "all" || String(user.roleId) === String(roleFilter);
 
-      return matchesSearch && matchesRole;
+      const isActive = user.isActive !== false;
+      const matchesStatus =
+        statusFilter === "all" || (statusFilter === "active" ? isActive : !isActive);
+
+      return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [allUsers, debouncedSearch, roleFilter]);
+  }, [allUsers, debouncedSearch, roleFilter, statusFilter]);
 
   // Paginated chunk
   const paginatedUsers = useMemo(() => {
@@ -181,6 +196,37 @@ const OperationManagement = () => {
       setErrors((prev) => ({ ...prev, form: errMsg }));
     },
   });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => api.operation.setStatus(id, isActive),
+    onSettled: () => setStatusTarget(null),
+    onSuccess: async (_data, vars) => {
+      await queryClient.invalidateQueries({ queryKey: ["operationUsers"] });
+      toast({
+        title: vars.isActive ? "User Activated" : "User Deactivated",
+        description: vars.isActive
+          ? "The account can sign in again."
+          : "The account has been signed out and can no longer sign in.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Status Update Failed",
+        description: error.response?.data?.message || "Failed to update account status.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Deactivating asks for confirmation first; activating applies straight away
+  const [statusTarget, setStatusTarget] = useState<{ id: string; name: string } | null>(null);
+  const toggleAccountStatus = (id: string, name: string, currentlyActive: boolean) => {
+    if (currentlyActive) {
+      setStatusTarget({ id, name });
+      return;
+    }
+    statusMutation.mutate({ id, isActive: true });
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.operation.delete(id),
@@ -338,10 +384,23 @@ const OperationManagement = () => {
             className="w-full sm:w-[180px]"
           />
 
-          {(roleFilter !== "all" || search) && (
+          <SelectDropdown
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: "all", label: "All Statuses" },
+              { value: "active", label: "Active Only" },
+              { value: "inactive", label: "Deactivated Only" },
+            ]}
+            placeholder="Status"
+            className="w-full sm:w-[160px]"
+          />
+
+          {(roleFilter !== "all" || statusFilter !== "all" || search) && (
             <Button
               onClick={() => {
                 setRoleFilter("all");
+                setStatusFilter("all");
                 setSearch("");
               }}
               variant="ghost"
@@ -399,11 +458,19 @@ const OperationManagement = () => {
                     </Badge>
                   )
                 }
+                footerRight={
+                  user.isActive === false ? <Badge variant="danger" showDot>Deactivated</Badge> : undefined
+                }
                 menuItems={[
                   hasEditPermission && {
                     label: "Edit User",
                     icon: User,
                     onClick: () => handleEditClick(user),
+                  },
+                  hasEditPermission && !isSelf && {
+                    label: user.isActive === false ? "Activate Account" : "Deactivate Account",
+                    icon: user.isActive === false ? UserCheck : UserX,
+                    onClick: () => toggleAccountStatus(user.id, user.name, user.isActive !== false),
                   },
                   hasDeletePermission && !isSelf && {
                     label: "Delete User",
@@ -467,7 +534,7 @@ const OperationManagement = () => {
             >
               {form.image ? (
                 <>
-                  <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
+                  <img src={form.image} alt="Preview" className="w-full h-full object-contain" />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Upload className="w-6 h-6 text-white" />
                   </div>
@@ -596,6 +663,41 @@ const OperationManagement = () => {
           </div>
         </EntityDialog>
       )}
+      {/* Deactivate Confirmation Dialog */}
+      <AlertDialog open={!!statusTarget} onOpenChange={(val) => !val && setStatusTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-destructive" />
+              </div>
+              <AlertDialogTitle>Deactivate User Account?</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate <strong>{statusTarget?.name}</strong>? They will be signed out immediately and cannot sign in until the account is reactivated.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={statusMutation.isPending}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (statusTarget) statusMutation.mutate({ id: statusTarget.id, isActive: false });
+                }}
+                loading={statusMutation.isPending}
+              >
+                Deactivate Account
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

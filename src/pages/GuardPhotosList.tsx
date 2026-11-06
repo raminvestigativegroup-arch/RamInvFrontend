@@ -6,6 +6,8 @@ import { Search, Mail, Phone, MapPin, Camera, Loader2, Users } from "lucide-reac
 import StateMessage from "@/components/common/StateMessage";
 import SelectDropdown from "@/components/common/SelectDropdown";
 import TablePagination from "@/components/common/TablePagination";
+import SortButton from "@/components/common/SortButton";
+import { SortState, ariaSort, nextSort } from "@/lib/tableSort";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -76,6 +78,7 @@ const GuardPhotosList = () => {
   const [verifiedFilter, setVerifiedFilter] = useState("all");
   const [siteFilter, setSiteFilter] = useState("all");
   const [complianceFilter, setComplianceFilter] = useState("all");
+  const [sort, setSort] = useState<SortState | null>(null);
   const [page, setPage] = useState(1);
   const limit = 10;
 
@@ -88,7 +91,7 @@ const GuardPhotosList = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, verifiedFilter, siteFilter, complianceFilter]);
+  }, [debouncedSearch, verifiedFilter, siteFilter, complianceFilter, sort]);
 
   const { data: siteList = [] } = useQuery({
     queryKey: ["sites"],
@@ -155,7 +158,7 @@ const GuardPhotosList = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["guards-photos-list", debouncedSearch, verifiedFilter, siteFilter, complianceFilter, page],
+    queryKey: ["guards-photos-list", debouncedSearch, verifiedFilter, siteFilter, complianceFilter, sort, page],
     queryFn: async () => {
       const params: any = {
         page,
@@ -172,6 +175,10 @@ const GuardPhotosList = () => {
       }
       if (complianceFilter !== "all") {
         params.complianceStatus = complianceFilter;
+      }
+      if (sort) {
+        params.sortBy = sort.key;
+        params.sortOrder = sort.direction;
       }
       const response = await api.guards.list(params);
       const rawData = response.data?.data || response.data || {};
@@ -297,9 +304,15 @@ const GuardPhotosList = () => {
               <table className="w-full">
                 <thead>
                   <tr className="bg-secondary/50 border-b border-border">
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Guard</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Email</th>
-                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Phone</th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(sort, "name")}>
+                      <SortButton label="Guard" direction={sort?.key === "name" ? sort.direction : undefined} onClick={() => setSort(nextSort(sort, "name"))} />
+                    </th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(sort, "email")}>
+                      <SortButton label="Email" direction={sort?.key === "email" ? sort.direction : undefined} onClick={() => setSort(nextSort(sort, "email"))} />
+                    </th>
+                    <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider" aria-sort={ariaSort(sort, "phoneNumber")}>
+                      <SortButton label="Phone" direction={sort?.key === "phoneNumber" ? sort.direction : undefined} onClick={() => setSort(nextSort(sort, "phoneNumber"))} />
+                    </th>
                     <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Assigned Site</th>
                     <th className="text-center text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Duty Status</th>
                     <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Action</th>

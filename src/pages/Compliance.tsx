@@ -49,6 +49,9 @@ const normalizeImageUrl = (url?: string) => {
   return `${serverRoot}/${cleanUrl}`;
 };
 
+// Sort order for statuses: the ones needing attention come first when ascending
+const STATUS_URGENCY: Record<string, number> = { expired: 0, expiring: 1, missing: 2, valid: 3 };
+
 const Compliance = () => {
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
@@ -112,12 +115,16 @@ const Compliance = () => {
 
   // Fetch documents from backend with live search and filtering parameters
   const { data: rawResponse, isLoading: isLoadingDocs, isFetching: isFetchingDocs, isError: isErrorDocs, error: errorDocs } = useQuery({
-    queryKey: ["documents", search, ownerTypeFilter, filter],
+    // Only All Uploads filters on the server. The Summary Matrix needs every document to work out
+    // each person's status, and applies its own filters in the browser.
+    queryKey: ["documents", activeTab === "list" ? [search, ownerTypeFilter, filter] : "all-documents"],
     queryFn: async () => {
       const params: any = {};
-      if (search) params.search = search;
-      if (ownerTypeFilter !== "all") params.ownerType = ownerTypeFilter === "guard" ? "Guard" : "Manager";
-      if (filter !== "all") params.status = filter;
+      if (activeTab === "list") {
+        if (search) params.search = search;
+        if (ownerTypeFilter !== "all") params.ownerType = ownerTypeFilter === "guard" ? "Guard" : "Manager";
+        if (filter !== "all") params.status = filter;
+      }
 
       const response = await api.documents.list(params);
       return response.data?.data || response.data || { documents: [], counts: { all: 0, valid: 0, expiring: 0, expired: 0 } };
@@ -449,9 +456,13 @@ const Compliance = () => {
     return documentsSummary.filter(person => {
       const matchesSearch = person.name.toLowerCase().includes(search.toLowerCase());
       const matchesType = ownerTypeFilter === "all" || person.type === ownerTypeFilter;
-      return matchesSearch && matchesType;
+      // Status filter: keep people with at least one of the three documents in that status
+      const matchesStatus =
+        filter === "all" ||
+        [person.stateId, person.securityLicense, person.pistolLicense].includes(filter);
+      return matchesSearch && matchesType && matchesStatus;
     });
-  }, [documentsSummary, search, ownerTypeFilter]);
+  }, [documentsSummary, search, ownerTypeFilter, filter]);
 
   const renderSummaryBadge = (status: string) => {
     switch (status) {
@@ -605,7 +616,10 @@ const Compliance = () => {
       {/* Tab Switcher */}
       <div className="flex gap-2">
         <Button
-          onClick={() => setActiveTab("list")}
+          onClick={() => {
+            setActiveTab("list");
+            if (filter === "missing") setFilter("all");
+          }}
           variant={activeTab === "list" ? "default" : "secondary"}
           size="sm"
           className="rounded-full"
@@ -634,20 +648,19 @@ const Compliance = () => {
           setOwnerTypeFilter("all");
         }}
       >
-        {activeTab === "list" && (
-          <SelectDropdown
-            value={filter}
-            onChange={setFilter}
-            options={[
-              { value: "all", label: "All Statuses" },
-              { value: "valid", label: "Valid Only" },
-              { value: "expiring", label: "Expiring Soon" },
-              { value: "expired", label: "Expired Only" },
-            ]}
-            placeholder="Status"
-            className="w-full sm:w-[135px]"
-          />
-        )}
+        <SelectDropdown
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: "all", label: "All Statuses" },
+            { value: "valid", label: "Valid Only" },
+            { value: "expiring", label: "Expiring Soon" },
+            { value: "expired", label: "Expired Only" },
+            ...(activeTab === "summary" ? [{ value: "missing", label: "Missing Only" }] : []),
+          ]}
+          placeholder="Status"
+          className="w-full sm:w-[135px]"
+        />
         <SelectDropdown
           value={ownerTypeFilter}
           onChange={setOwnerTypeFilter}
@@ -661,11 +674,11 @@ const Compliance = () => {
       {activeTab === "list" ? (
         <DataTable
           columns={[
-            { key: "person", label: "Person" },
-            { key: "role", label: "Role" },
-            { key: "docType", label: "Document Type" },
-            { key: "expiry", label: "Expiry Date" },
-            { key: "status", label: "Status" },
+            { key: "person", label: "Person", sortable: true, sortValue: (d: any) => d.personName },
+            { key: "role", label: "Role", sortable: true, sortValue: (d: any) => d.personType },
+            { key: "docType", label: "Document Type", sortable: true, sortValue: (d: any) => d.docType },
+            { key: "expiry", label: "Expiry Date", sortable: true, sortValue: (d: any) => d.rawExpiryDate },
+            { key: "status", label: "Status", sortable: true, sortValue: (d: any) => STATUS_URGENCY[d.status] ?? 9 },
             { key: "actions", label: "Actions" },
           ]}
           data={documents}
@@ -674,7 +687,11 @@ const Compliance = () => {
           isEmpty={showEmpty}
           loadingMessage="Loading compliance records..."
           emptyTitle="No documents found"
-          emptyMessage="Upload a compliance document to get started."
+          emptyMessage={
+            search || filter !== "all" || ownerTypeFilter !== "all"
+              ? "No documents match the selected filters. Use Reset to see all uploads."
+              : "Upload a compliance document to get started."
+          }
           emptyIcon={ShieldCheck}
           renderRow={(doc) => (
             <tr key={doc.id} onClick={() => setSelectedDoc(doc)} className="cursor-pointer">
@@ -711,11 +728,11 @@ const Compliance = () => {
         /* Compliance Summary Matrix Tab */
         <DataTable
           columns={[
-            { key: "person", label: "Person" },
-            { key: "role", label: "Role" },
-            { key: "stateId", label: "State ID" },
-            { key: "securityLicense", label: "Security Licence" },
-            { key: "pistolLicense", label: "Pistol Licence" },
+            { key: "person", label: "Person", sortable: true, sortValue: (p: any) => p.name },
+            { key: "role", label: "Role", sortable: true, sortValue: (p: any) => p.type },
+            { key: "stateId", label: "State ID", sortable: true, sortValue: (p: any) => STATUS_URGENCY[p.stateId] ?? 9 },
+            { key: "securityLicense", label: "Security Licence", sortable: true, sortValue: (p: any) => STATUS_URGENCY[p.securityLicense] ?? 9 },
+            { key: "pistolLicense", label: "Pistol Licence", sortable: true, sortValue: (p: any) => STATUS_URGENCY[p.pistolLicense] ?? 9 },
           ]}
           data={filteredSummary}
           isEmpty={filteredSummary.length === 0}

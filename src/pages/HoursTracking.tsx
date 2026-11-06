@@ -33,6 +33,9 @@ import SelectDropdown from "@/components/common/SelectDropdown";
 import DateSelect from "@/components/common/DateSelect";
 import TableToolbar from "@/components/common/TableToolbar";
 import TablePagination from "@/components/common/TablePagination";
+import SortButton from "@/components/common/SortButton";
+import { downloadCsv } from "@/lib/csv";
+import { SortState, ariaSort, nextSort } from "@/lib/tableSort";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +72,10 @@ const HoursTracking = () => {
   const [clientFilter, setClientFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "scheduled" | "attendance" | "progress">("name");
+  // Column-header sort; when set it overrides the "Sort:" dropdown above
+  const [headerSort, setHeaderSort] = useState<SortState | null>(null);
+  const activeSortBy = headerSort?.key ?? sortBy;
+  const activeSortOrder = headerSort?.direction;
   const [page, setPage] = useState(1);
   const limit = 10;
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
@@ -89,14 +96,15 @@ const HoursTracking = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearchQuery, clientFilter, statusFilter, sortBy, period]);
+  }, [debouncedSearchQuery, clientFilter, statusFilter, sortBy, headerSort, period]);
 
   // Selected site for modal detail view
   const [selectedSite, setSelectedSite] = useState<any>(null);
   const [selectedModalManagerId, setSelectedModalManagerId] = useState<string | null>(null);
 
   const getDatesForPeriod = (p: typeof period) => {
-    if (p === "all") return { startDate: "", endDate: "" };
+    // The server treats missing dates as "this week", so All Time needs an explicit wide range
+    if (p === "all") return { startDate: "2000-01-01", endDate: "2100-12-31" };
     if (p === "custom") return { startDate: customStartDate, endDate: customEndDate };
 
     const now = new Date();
@@ -125,14 +133,15 @@ const HoursTracking = () => {
   const { startDate, endDate } = getDatesForPeriod(period);
 
   const { data: response, isLoading, error } = useQuery({
-    queryKey: ["hours-tracking", period, startDate, endDate, debouncedSearchQuery, clientFilter, statusFilter, sortBy, page],
+    queryKey: ["hours-tracking", period, startDate, endDate, debouncedSearchQuery, clientFilter, statusFilter, activeSortBy, activeSortOrder, page],
     queryFn: () => api.hoursTracking.list({
       startDate,
       endDate,
       search: debouncedSearchQuery,
       client: clientFilter,
       status: statusFilter,
-      sortBy,
+      sortBy: activeSortBy,
+      sortOrder: activeSortOrder,
       page,
       limit
     }).then(res => res.data),
@@ -201,48 +210,65 @@ const HoursTracking = () => {
     );
   };
 
-  const exportToCSV = () => {
-    if (processedSites.length === 0) return;
-    const headers = [
-      "SITE",
-      "CLIENT",
-      "SUPERVISOR",
-      "SCHEDULED HOURS",
-      "COMPLETED HOURS",
-      "REMAINING HOURS",
-      "PROGRESS (%)",
-      "GUARDS ASSIGNED",
-      "ATTENDANCE (%)",
-      "COMPLETED SHIFTS",
-      "SCHEDULED SHIFTS",
-      "STATUS"
-    ];
+  const [isExporting, setIsExporting] = useState(false);
 
-    const rows = processedSites.map((s: any) => [
-      s.name,
-      s.client,
-      s.manager,
-      formatHoursMinutes(s.totalScheduledHours),
-      formatHoursMinutes(s.completedHours),
-      formatHoursMinutes(s.remainingHours),
-      `${s.progress}%`,
-      s.totalGuardsAssigned,
-      `${s.attendancePct}%`,
-      s.completedShifts,
-      s.scheduledShifts,
-      s.status
-    ]);
+  const exportToCSV = async () => {
+    if (isExporting || totalItems === 0) return;
+    setIsExporting(true);
+    try {
+      // Same period/search/client/status/sort as the table, but without paging so every matching site is exported
+      const res = await api.hoursTracking.list({
+        startDate,
+        endDate,
+        search: debouncedSearchQuery,
+        client: clientFilter,
+        status: statusFilter,
+        sortBy: activeSortBy,
+        sortOrder: activeSortOrder,
+      });
+      const exportSites: any[] = res.data?.sites || [];
+      if (exportSites.length === 0) return;
 
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF"
-      + [headers.join(","), ...rows.map((r: any) => r.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(","))].join("\n");
+      const headers = [
+        "SITE",
+        "CLIENT",
+        "SUPERVISOR",
+        "SCHEDULED HOURS",
+        "COMPLETED HOURS",
+        "REMAINING HOURS",
+        "PROGRESS (%)",
+        "GUARDS ASSIGNED",
+        "ATTENDANCE (%)",
+        "COMPLETED SHIFTS",
+        "SCHEDULED SHIFTS",
+        "STATUS"
+      ];
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Site_Hours_Attendance_Report_${period}_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const rows = exportSites.map((s: any) => [
+        s.name,
+        s.client,
+        s.manager,
+        formatHoursMinutes(s.totalScheduledHours),
+        formatHoursMinutes(s.completedHours),
+        formatHoursMinutes(s.remainingHours),
+        `${s.progress}%`,
+        s.totalGuardsAssigned,
+        `${s.attendancePct}%`,
+        s.completedShifts,
+        s.scheduledShifts,
+        s.status
+      ]);
+
+      const statusPart = statusFilter === "all" ? "" : `_${statusFilter}`;
+      downloadCsv(
+        `Site_Hours_Attendance_Report_${period}${statusPart}_${new Date().toISOString().split("T")[0]}`,
+        [headers, ...rows],
+      );
+    } catch (err) {
+      console.error("Failed to export hours report:", err);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (!hasViewPermission) {
@@ -305,10 +331,10 @@ const HoursTracking = () => {
             {hasEditPermission && (
               <Button
                 onClick={exportToCSV}
-                disabled={isLoading || processedSites.length === 0}
+                disabled={isLoading || isExporting || totalItems === 0}
                 className="bg-primary hover:bg-primary/95 text-white flex gap-1.5 items-center px-4 py-2 text-xs font-semibold rounded-lg shadow-sm"
               >
-                <Download className="w-4 h-4" /> Export CSV
+                <Download className="w-4 h-4" /> {isExporting ? "Exporting..." : "Export CSV"}
               </Button>
             )}
           </div>
@@ -383,7 +409,10 @@ const HoursTracking = () => {
           />
           <SelectDropdown
             value={sortBy}
-            onChange={(val) => setSortBy(val as any)}
+            onChange={(val) => {
+              setHeaderSort(null);
+              setSortBy(val as any);
+            }}
             options={sortOptions}
             placeholder="Sort by"
             className="w-full sm:w-[160px]"
@@ -409,13 +438,27 @@ const HoursTracking = () => {
                     <thead>
                       <tr className="bg-secondary/50 border-b border-border">
                         <th className="w-12 px-4 py-4"></th>
-                        <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Site & Client</th>
-                        <th className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Supervisor</th>
-                        <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Guards</th>
-                        <th className="text-center text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Hours (Completed/Scheduled)</th>
-                        <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Remaining</th>
-                        <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Attendance</th>
-                        <th className="text-center text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Status</th>
+                        <th aria-sort={ariaSort(headerSort, "name")} className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">
+                          <SortButton label="Site & Client" direction={headerSort?.key === "name" ? headerSort.direction : undefined} onClick={() => setHeaderSort(nextSort(headerSort, "name"))} />
+                        </th>
+                        <th aria-sort={ariaSort(headerSort, "manager")} className="text-left text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">
+                          <SortButton label="Supervisor" direction={headerSort?.key === "manager" ? headerSort.direction : undefined} onClick={() => setHeaderSort(nextSort(headerSort, "manager"))} />
+                        </th>
+                        <th aria-sort={ariaSort(headerSort, "guards")} className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">
+                          <SortButton label="Guards" direction={headerSort?.key === "guards" ? headerSort.direction : undefined} onClick={() => setHeaderSort(nextSort(headerSort, "guards"))} />
+                        </th>
+                        <th aria-sort={ariaSort(headerSort, "scheduled")} className="text-center text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">
+                          <SortButton label="Hours (Completed/Scheduled)" direction={headerSort?.key === "scheduled" ? headerSort.direction : undefined} onClick={() => setHeaderSort(nextSort(headerSort, "scheduled"))} />
+                        </th>
+                        <th aria-sort={ariaSort(headerSort, "remaining")} className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">
+                          <SortButton label="Remaining" direction={headerSort?.key === "remaining" ? headerSort.direction : undefined} onClick={() => setHeaderSort(nextSort(headerSort, "remaining"))} />
+                        </th>
+                        <th aria-sort={ariaSort(headerSort, "attendance")} className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">
+                          <SortButton label="Attendance" direction={headerSort?.key === "attendance" ? headerSort.direction : undefined} onClick={() => setHeaderSort(nextSort(headerSort, "attendance"))} />
+                        </th>
+                        <th aria-sort={ariaSort(headerSort, "status")} className="text-center text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">
+                          <SortButton label="Status" direction={headerSort?.key === "status" ? headerSort.direction : undefined} onClick={() => setHeaderSort(nextSort(headerSort, "status"))} />
+                        </th>
                         <th className="text-right text-xs font-semibold text-muted-foreground px-5 py-4 uppercase tracking-wider">Action</th>
                       </tr>
                     </thead>

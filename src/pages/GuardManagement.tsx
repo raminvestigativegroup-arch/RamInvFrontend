@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { sites, Guard } from "@/data/dummyData";
-import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, Users, Loader2, FileText, Calendar, MapPin, Clock, ExternalLink } from "lucide-react";
+import { Search, Plus, Filter, MoreVertical, Mail, Phone, User, ShieldCheck, Trash2, AlertCircle, Image, Upload, Users, Loader2, FileText, Calendar, MapPin, Clock, ExternalLink, UserX, UserCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -104,6 +104,7 @@ const normalizeGuard = (guard: RawRecord, index: number): any => {
     profilePhoto: String(guard.profilePhoto || guard.avatar || ""),
     hoursThisWeek: Number(guard.hoursThisWeek || 0),
     scheduledHours: Number(guard.scheduledHours || 0),
+    isActive: guard.isActive !== false,
     isVerified: guard.isVerified === true || guard.verified === true || guard.verified === "true" || guard.isVerified === "true",
     roleId: String(guard.roleId || ""),
     managerId: String(guard.managerId || ""),
@@ -243,7 +244,11 @@ const GuardManagement = () => {
         params.search = debouncedSearch.trim();
       }
       if (verifiedFilter !== "all") {
-        params.verified = verifiedFilter === "verified" ? "true" : "false";
+        if (verifiedFilter === "active" || verifiedFilter === "inactive") {
+          params.accountStatus = verifiedFilter;
+        } else {
+          params.verified = verifiedFilter === "verified" ? "true" : "false";
+        }
       }
       if (siteFilter !== "all") {
         params.siteId = siteFilter;
@@ -310,6 +315,37 @@ const GuardManagement = () => {
       setErrors(prev => ({ ...prev, form: errMsg }));
     },
   });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => api.guards.setStatus(id, isActive),
+    onSettled: () => setStatusTarget(null),
+    onSuccess: async (_data, vars) => {
+      await queryClient.invalidateQueries({ queryKey: ["guards"] });
+      toast({
+        title: vars.isActive ? "Guard Activated" : "Guard Deactivated",
+        description: vars.isActive
+          ? "The account can sign in again."
+          : "The account has been signed out and can no longer sign in.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Status Update Failed",
+        description: error.response?.data?.message || "Failed to update account status.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Deactivating asks for confirmation first; activating applies straight away
+  const [statusTarget, setStatusTarget] = useState<{ id: string; name: string } | null>(null);
+  const toggleAccountStatus = (id: string, name: string, currentlyActive: boolean) => {
+    if (currentlyActive) {
+      setStatusTarget({ id, name });
+      return;
+    }
+    statusMutation.mutate({ id, isActive: true });
+  };
 
   const updateMutation = useMutation({
     mutationFn: (data: { id: string; firstName?: string; middleName?: string; lastName?: string; phoneNumber?: string; roleType?: string; verified?: string; profilePhoto?: string; managerId?: string | null }) =>
@@ -579,9 +615,11 @@ const GuardManagement = () => {
               { value: "all", label: "All Statuses" },
               { value: "verified", label: "Verified Only" },
               { value: "unverified", label: "Unverified Only" },
+              { value: "active", label: "Active Only" },
+              { value: "inactive", label: "Deactivated Only" },
             ]}
             placeholder="Status"
-            className="w-full sm:w-[135px]"
+            className="w-full sm:w-[160px]"
           />
 
           <SelectDropdown
@@ -670,7 +708,7 @@ const GuardManagement = () => {
                   { icon: MapPin, content: siteText },
                   { icon: User, content: guard.manager ? `Manager: ${guard.manager.name || `${guard.manager.firstName || ""} ${guard.manager.lastName || ""}`.trim()}` : "No Manager Assigned" },
                 ]}
-                footerLeft={undefined}
+                footerLeft={!guard.isActive ? <Badge variant="danger" showDot>Deactivated</Badge> : undefined}
                 footerMiddle={
                   <Badge variant={guard.isVerified ? "success" : "inactive"} showDot>
                     {guard.isVerified ? "Verified" : "Not Verified"}
@@ -691,6 +729,11 @@ const GuardManagement = () => {
                     label: "Document Verify",
                     icon: ShieldCheck,
                     onClick: () => setVerifyingGuard(guard)
+                  },
+                  hasEditPermission && {
+                    label: guard.isActive ? "Deactivate Account" : "Activate Account",
+                    icon: guard.isActive ? UserX : UserCheck,
+                    onClick: () => toggleAccountStatus(guard.id, guard.name, guard.isActive)
                   },
                   hasDeletePermission && {
                     label: "Delete Account",
@@ -781,7 +824,7 @@ const GuardManagement = () => {
           >
             {form.image ? (
               <>
-                <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
+                <img src={form.image} alt="Preview" className="w-full h-full object-contain" />
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Upload className="w-6 h-6 text-white" />
                 </div>
@@ -914,6 +957,42 @@ const GuardManagement = () => {
                 loading={deleteMutation.isPending}
               >
                 Delete Account
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Deactivate Confirmation Dialog */}
+      <AlertDialog open={!!statusTarget} onOpenChange={(val) => !val && setStatusTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-destructive" />
+              </div>
+              <AlertDialogTitle>Deactivate Guard Account?</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate <strong>{statusTarget?.name}</strong>? They will be signed out immediately and cannot sign in until the account is reactivated.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button variant="outline" disabled={statusMutation.isPending}>
+                Cancel
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (statusTarget) statusMutation.mutate({ id: statusTarget.id, isActive: false });
+                }}
+                loading={statusMutation.isPending}
+              >
+                Deactivate Account
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
