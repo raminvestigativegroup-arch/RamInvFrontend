@@ -42,8 +42,12 @@ const SelectDropdown: React.FC<SelectDropdownProps> = ({
 }) => {
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className={`w-full h-[38px] border mb-1 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed ${dropdownVariants[variant]} ${className}`}>
-        <div className="flex items-center gap-1.5 min-w-0">
+      <SelectTrigger
+        title={options.find((o) => o.value === value)?.label}
+        className={`w-full h-[38px] border mb-1 rounded-lg text-sm gap-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed [&>svg]:shrink-0 ${dropdownVariants[variant]} ${className}`}
+      >
+        {/* Long values stay on one line and end with an ellipsis instead of wrapping out of the box */}
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 text-left [&>span]:block [&>span]:min-w-0 [&>span]:truncate">
           {variant !== "default" && (
             <span className="h-1.5 w-1.5 rounded-full bg-current shrink-0" />
           )}
