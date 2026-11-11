@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { LIST_QUERY_OPTIONS } from "@/config/queryCache";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { Plus, MapPin, Users, ShieldCheck, Trash2, AlertCircle, User, UserCheck, Search, Mail, Phone, Calendar, Clock, CalendarClockIcon, Check } from "lucide-react";
@@ -194,6 +195,7 @@ const SiteManagement = () => {
     isError,
     error,
   } = useQuery({
+    ...LIST_QUERY_OPTIONS,
     queryKey: ["sites", debouncedSearch, statusFilter, managerFilter, page],
     queryFn: async () => {
       const params: any = {
@@ -308,6 +310,8 @@ const SiteManagement = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["sites"] });
+      // Hours & Attendance is built from schedules and sites
+      queryClient.invalidateQueries({ queryKey: ["hours-tracking"] });
       toast({ title: "Success", description: "Site created successfully." });
       setOpen(false);
       setForm({ name: "", address: "", manager: "", managerIds: [], status: "active", lat: "", lng: "" });
@@ -326,6 +330,8 @@ const SiteManagement = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["sites"] });
+      // Hours & Attendance is built from schedules and sites
+      queryClient.invalidateQueries({ queryKey: ["hours-tracking"] });
       toast({ title: "Success", description: "Site updated successfully." });
       setOpen(false);
       setEditingSite(null);
@@ -350,6 +356,8 @@ const SiteManagement = () => {
       setDeletingSite(null);
       toast({ title: "Success", description: "Site deleted successfully." });
       await queryClient.invalidateQueries({ queryKey: ["sites"] });
+      // Hours & Attendance is built from schedules and sites
+      queryClient.invalidateQueries({ queryKey: ["hours-tracking"] });
     },
     onError: (error: any) => {
       toast({

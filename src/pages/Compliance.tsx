@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { LIST_QUERY_OPTIONS } from "@/config/queryCache";
 import { api, API_BASE_URL } from "@/config/api";
 import { Upload, AlertTriangle, CheckCircle, XCircle, Loader2, FileText, Calendar, ShieldCheck, Plus, ExternalLink } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -117,6 +118,7 @@ const Compliance = () => {
   const { data: rawResponse, isLoading: isLoadingDocs, isFetching: isFetchingDocs, isError: isErrorDocs, error: errorDocs } = useQuery({
     // Only All Uploads filters on the server. The Summary Matrix needs every document to work out
     // each person's status, and applies its own filters in the browser.
+    ...LIST_QUERY_OPTIONS,
     queryKey: ["documents", activeTab === "list" ? [search, ownerTypeFilter, filter] : "all-documents"],
     queryFn: async () => {
       const params: any = {};
@@ -129,7 +131,6 @@ const Compliance = () => {
       const response = await api.documents.list(params);
       return response.data?.data || response.data || { documents: [], counts: { all: 0, valid: 0, expiring: 0, expired: 0 } };
     },
-    staleTime: 0,
   });
 
   // Extract documents and counts from query response

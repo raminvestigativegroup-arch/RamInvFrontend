@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, Fragment } from "react";
+import { LIST_QUERY_OPTIONS } from "@/config/queryCache";
 import {
   Download,
   Loader2,
@@ -133,6 +134,7 @@ const HoursTracking = () => {
   const { startDate, endDate } = getDatesForPeriod(period);
 
   const { data: response, isLoading, error } = useQuery({
+    ...LIST_QUERY_OPTIONS,
     queryKey: ["hours-tracking", period, startDate, endDate, debouncedSearchQuery, clientFilter, statusFilter, activeSortBy, activeSortOrder, page],
     queryFn: () => api.hoursTracking.list({
       startDate,

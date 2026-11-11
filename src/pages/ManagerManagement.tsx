@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { LIST_QUERY_OPTIONS } from "@/config/queryCache";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { sites, Manager } from "@/data/dummyData";
@@ -203,6 +204,7 @@ const ManagerManagement = () => {
     isError,
     error,
   } = useQuery({
+    ...LIST_QUERY_OPTIONS,
     queryKey: ["managers", debouncedSearch, verifiedFilter, page],
     queryFn: async () => {
       const params: any = {

@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { LIST_QUERY_OPTIONS } from "@/config/queryCache";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { Search, Plus, Mail, Phone, User, Trash2, Loader2, UserCheck, UserX, Upload, AlertCircle } from "lucide-react";
@@ -129,7 +130,8 @@ const OperationManagement = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["operationUsers", debouncedSearch, roleFilter, statusFilter],
+    ...LIST_QUERY_OPTIONS,
+    queryKey: ["operationUsers"],
     queryFn: async () => {
       const response = await api.operation.list();
       const list = normalizeUsersResponse(response.data);

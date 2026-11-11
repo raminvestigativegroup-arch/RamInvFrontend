@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { LIST_QUERY_OPTIONS } from "@/config/queryCache";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
 import { sites, Guard } from "@/data/dummyData";
@@ -234,6 +235,7 @@ const GuardManagement = () => {
     isError,
     error,
   } = useQuery({
+    ...LIST_QUERY_OPTIONS,
     queryKey: ["guards", debouncedSearch, verifiedFilter, siteFilter, complianceFilter, page],
     queryFn: async () => {
       const params: any = {
@@ -374,6 +376,7 @@ const GuardManagement = () => {
       setDeletingGuard(null);
       toast({ title: "Guard Deleted", description: "The guard has been removed successfully." });
       await queryClient.invalidateQueries({ queryKey: ["guards"] });
+      queryClient.invalidateQueries({ queryKey: ["hours-tracking"] });
     },
     onError: (error: any) => {
       toast({

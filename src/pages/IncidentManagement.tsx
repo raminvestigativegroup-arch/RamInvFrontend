@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { LIST_QUERY_OPTIONS } from "@/config/queryCache";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/config/api";
 import TablePagination from "@/components/common/TablePagination";
@@ -297,6 +298,7 @@ const IncidentManagement = () => {
   });
 
   const { data: incidentData = { incidents: [], pagination: { totalItems: 0, totalPages: 1, currentPage: 1, pageSize: limit } }, isLoading, isError, error } = useQuery({
+    ...LIST_QUERY_OPTIONS,
     queryKey: ["incidents", debouncedSearch, priorityFilter, siteFilter, guardFilter, dateFilter, sort, page],
     queryFn: async () => {
       const params: any = {

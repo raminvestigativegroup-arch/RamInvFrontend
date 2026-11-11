@@ -177,7 +177,7 @@ const Dashboard = () => {
                       <span className="text-muted-foreground">Hours</span>
                       <span className="text-foreground text-right">{guard.hoursThisWeek}h / {guard.scheduledHours}h</span>
                       <span className="text-muted-foreground">GPS</span>
-                      <span className="text-foreground text-right">{guard.lat.toFixed(4)}, {guard.lng.toFixed(4)}</span>
+                      <span className="text-foreground text-right">{guard.lat != null && guard.lng != null ? `${Number(guard.lat).toFixed(4)}, ${Number(guard.lng).toFixed(4)}` : "Not available"}</span>
                     </div>
                   </button>
                 ))}

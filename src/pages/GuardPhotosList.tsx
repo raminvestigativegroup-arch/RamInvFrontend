@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { LIST_QUERY_OPTIONS } from "@/config/queryCache";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api, API_BASE_URL } from "@/config/api";
@@ -158,6 +159,7 @@ const GuardPhotosList = () => {
     isError,
     error,
   } = useQuery({
+    ...LIST_QUERY_OPTIONS,
     queryKey: ["guards-photos-list", debouncedSearch, verifiedFilter, siteFilter, complianceFilter, sort, page],
     queryFn: async () => {
       const params: any = {

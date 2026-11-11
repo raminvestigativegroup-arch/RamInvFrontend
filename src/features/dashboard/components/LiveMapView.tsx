@@ -405,12 +405,6 @@ const LiveMapView = ({ onSelectGuard, selectedGuardId, guards: dynamicGuards, si
                 Close
               </button>
             </div>
-            <a
-              href="/dashboard/guards"
-              className="text-primary hover:underline text-xs font-semibold mt-3 inline-block"
-            >
-              View Profile →
-            </a>
           </div>
         )}
       </div>

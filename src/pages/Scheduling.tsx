@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { LIST_QUERY_OPTIONS } from "@/config/queryCache";
 import SortButton from "@/components/common/SortButton";
 import { SortState, ariaSort, nextSort, sortRows } from "@/lib/tableSort";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -128,6 +129,7 @@ const Scheduling = () => {
 
   // Fetch Scheduling Entries
   const { data: rawEntries = [], isLoading: isLoadingEntries, isError: isErrorEntries, error: errorEntries } = useQuery({
+    ...LIST_QUERY_OPTIONS,
     queryKey: ["scheduling", "list", filterSite],
     queryFn: async () => {
       const params: any = {};
@@ -236,6 +238,8 @@ const Scheduling = () => {
     mutationFn: (payload: any) => api.scheduling.create(payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["scheduling"] });
+      // Hours & Attendance is built from schedules and sites
+      queryClient.invalidateQueries({ queryKey: ["hours-tracking"] });
       toast({ title: "Schedule Created", description: "The shifts have been successfully scheduled." });
       setOpen(false);
     }
@@ -245,6 +249,8 @@ const Scheduling = () => {
     mutationFn: (data: { id: string, payload: any }) => api.scheduling.update(data.id, data.payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["scheduling"] });
+      // Hours & Attendance is built from schedules and sites
+      queryClient.invalidateQueries({ queryKey: ["hours-tracking"] });
       toast({ title: "Shift Updated", description: "The shift information has been updated." });
       setOpen(false);
       setEditEntry(null);
@@ -261,6 +267,8 @@ const Scheduling = () => {
       setDeletingId(null);
       toast({ title: "Shift Deleted", description: "The shift has been removed." });
       await queryClient.invalidateQueries({ queryKey: ["scheduling"] });
+      // Hours & Attendance is built from schedules and sites
+      queryClient.invalidateQueries({ queryKey: ["hours-tracking"] });
     },
     onError: (error: any) => {
       toast({
