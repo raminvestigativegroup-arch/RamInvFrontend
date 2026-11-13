@@ -26,7 +26,16 @@ const KpiCards = ({ kpis, loading }: KpiCardsProps) => {
   const guardsCapacity = totalGuards > 0 ? Math.round((activeGuards / totalGuards) * 100) : 0;
   const sitesCapacity = totalSites > 0 ? Math.round((activeSites / totalSites) * 100) : 0;
 
-  const cards = [
+  // Managers must not see how many sites the company services, so the Sites Covered card is hidden for them
+  let isManager = false;
+  try {
+    const u = JSON.parse(localStorage.getItem("user") || "null");
+    isManager = u?.userType === "manager" || u?.role === "manager";
+  } catch {
+    isManager = false;
+  }
+
+  const allCards: any[] = [
     {
       label: "Active Guards",
       value: formatValue(activeGuards),
@@ -100,8 +109,10 @@ const KpiCards = ({ kpis, loading }: KpiCardsProps) => {
     },
   ];
 
+  const cards = isManager ? allCards.filter((c) => c.label !== "Sites Covered") : allCards;
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div className={`grid grid-cols-1 sm:grid-cols-2 ${isManager ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-5`}>
       {cards.map((card) => {
         const Icon = card.icon;
         return (
